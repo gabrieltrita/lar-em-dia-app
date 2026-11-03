@@ -32,4 +32,14 @@ void main() {
     expect(Validators.matches('a', 'b'), ValidationError.mismatch);
     expect(Validators.matches('a', 'a'), isNull);
   });
+
+  test('amount accepts any BRL amount, positiveAmount only above zero', () {
+    expect(Validators.amount(''), ValidationError.required);
+    expect(Validators.amount('1,2,3'), ValidationError.invalidAmount);
+    expect(Validators.amount('-10,00'), isNull);
+    expect(Validators.positiveAmount(null), ValidationError.required);
+    expect(Validators.positiveAmount('0,00'), ValidationError.invalidAmount);
+    expect(Validators.positiveAmount('x'), ValidationError.invalidAmount);
+    expect(Validators.positiveAmount('0,01'), isNull);
+  });
 }

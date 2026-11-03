@@ -2,7 +2,15 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:lar_em_dia/core/dates/dates.dart';
+import 'package:lar_em_dia/core/forms/error_messages.dart';
+import 'package:lar_em_dia/core/money/money.dart';
+import 'package:lar_em_dia/core/routing/app_router.dart';
+import 'package:lar_em_dia/core/state/load_state.dart';
+import 'package:lar_em_dia/core/widgets/form_widgets.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
+import 'package:lar_em_dia/features/home/presentation/cubits/home_cubit.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
 class HomePage extends StatelessWidget {
@@ -11,7 +19,6 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final textTheme = Theme.of(context).textTheme;
     final firstName = context.select<SessionCubit, String?>(
       (cubit) => switch (cubit.state) {
         SessionAuthenticated(:final user) => user.firstName,
@@ -29,29 +36,141 @@ class HomePage extends StatelessWidget {
           ),
         ],
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (firstName != null) ...[
-                Text(
-                  l10n.homeGreeting(firstName),
-                  style: textTheme.titleLarge,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-              ],
-              Text(
-                l10n.homeHeadline,
-                style: textTheme.headlineSmall,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              Text(l10n.homeSubtitle, textAlign: TextAlign.center),
-            ],
+      body: BlocBuilder<HomeCubit, LoadState<HomeSummary>>(
+        builder: (context, state) => switch (state) {
+          Loading() => const Center(child: CircularProgressIndicator()),
+          LoadFailure(:final error) => RetryMessage(
+            message: error.localized(l10n),
+            onRetry: () => unawaited(context.read<HomeCubit>().load()),
           ),
+          Loaded(value: final summary) => RefreshIndicator(
+            onRefresh: () => context.read<HomeCubit>().load(),
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                if (firstName != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Text(
+                      l10n.homeGreeting(firstName),
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+                _BalanceCard(summary: summary),
+                const SizedBox(height: 16),
+                _IncomeCard(summary: summary),
+              ],
+            ),
+          ),
+        },
+      ),
+    );
+  }
+}
+
+Future<void> _pushAndReload(BuildContext context, String location) async {
+  final cubit = context.read<HomeCubit>();
+  await context.push<bool>(location);
+  await cubit.load();
+}
+
+class _BalanceCard extends StatelessWidget {
+  const new({required this.summary});
+
+  final HomeSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    final balance = summary.latestBalance;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.homeBalanceTitle, style: textTheme.titleMedium),
+            const SizedBox(height: 8),
+            if (balance == null)
+              Text(l10n.homeNoBalance)
+            else ...[
+              Text(
+                Money.format(balance.amountCents),
+                style: textTheme.headlineMedium,
+              ),
+              Text(l10n.homeBalanceAsOf(Dates.display(balance.asOf))),
+            ],
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              children: [
+                FilledButton(
+                  onPressed: () =>
+                      unawaited(_pushAndReload(context, AppRoutes.balanceForm)),
+                  child: Text(l10n.homeInformBalance),
+                ),
+                if (balance != null)
+                  OutlinedButton(
+                    onPressed: () =>
+                        unawaited(_pushAndReload(context, AppRoutes.balances)),
+                    child: Text(l10n.homeBalanceHistory),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _IncomeCard extends StatelessWidget {
+  const new({required this.summary});
+
+  final HomeSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    final month = MaterialLocalizations.of(context)
+        .formatMonthYear(summary.month);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.homeIncomeTitle(month), style: textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text(
+              Money.format(summary.incomeCents),
+              style: textTheme.headlineMedium,
+            ),
+            Text(
+              l10n.homeIncomeBreakdown(
+                Money.format(summary.receivedCents),
+                Money.format(summary.pendingCents),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              children: [
+                FilledButton(
+                  onPressed: () =>
+                      unawaited(_pushAndReload(context, AppRoutes.incomeForm)),
+                  child: Text(l10n.homeNewIncome),
+                ),
+                OutlinedButton(
+                  onPressed: () =>
+                      unawaited(_pushAndReload(context, AppRoutes.income)),
+                  child: Text(l10n.homeSeeIncome),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

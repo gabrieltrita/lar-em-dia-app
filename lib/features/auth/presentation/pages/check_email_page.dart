@@ -7,9 +7,9 @@ import 'package:lar_em_dia/core/forms/error_messages.dart';
 import 'package:lar_em_dia/core/forms/submission.dart';
 import 'package:lar_em_dia/core/forms/validators.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
+import 'package:lar_em_dia/core/widgets/form_widgets.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/auth_cubits.dart';
 import 'package:lar_em_dia/features/auth/presentation/widgets/auth_scaffold.dart';
-import 'package:lar_em_dia/features/auth/presentation/widgets/form_widgets.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
 class CheckEmailPage extends StatefulWidget {

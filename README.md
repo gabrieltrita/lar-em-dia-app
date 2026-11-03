@@ -39,7 +39,11 @@ lib/
   core/
     config/env.dart           compile-time configuration (--dart-define)
     di/                       get_it + injectable (injection.dart, register_module.dart)
+    dates/dates.dart          ISO dates for the API, dd/MM/yyyy for display, month helpers
     forms/                    Submission state and SubmissionCubit, validators, error code -> pt-BR text
+    money/                    Money (integer cents <-> R$ text) and MoneyInputFormatter
+    state/load_state.dart     loading / loaded / failure state for screens that fetch data
+    widgets/                  shared form widgets, DateField, confirmDeletion
     network/                  ApiClient ({ data, meta } envelope), ApiError (error.code), AuthInterceptor, TokenTransport
     routing/                  go_router routes (AppRoutes) and the session redirect
     session/session_events.dart   tells the app when the refresh token stopped working
@@ -61,6 +65,18 @@ tool/check_core_coverage.sh   fails below 100% line coverage in lib/core
 - Errors are `{ "error": { "code", "message", "details" } }`; `ApiClient` throws `ApiError`. Translate by `code` (and `details[field][].code`), never by `message`.
 - Tokens: login and refresh return `data.tokens.access_token` and `data.tokens.refresh_token`. Mobile uses the body mode and keeps the refresh token in secure storage. The web build uses the API's cookie mode: every request sends `X-Token-Transport: cookie` and `withCredentials`, so the refresh token lives in an httpOnly cookie and never reaches JavaScript.
 - DTOs use snake_case keys globally (`build.yaml` sets `field_rename: snake` for `json_serializable`).
+
+## Balance and income
+
+| Route | Page |
+|---|---|
+| `/` | Home: latest balance and this month's income (received and to receive), with shortcuts |
+| `/balances` | Balance history; tap to edit, trash icon to delete after confirmation |
+| `/balances/form` | Inform or edit a balance (`extra` carries the balance being edited); the amount may be negative and the date cannot be in the future |
+| `/income?month=YYYY-MM` | Income of a month with its total; arrows move between months, swipe left deletes after confirmation |
+| `/income/form` | New or edited income: category, description, amount, date and whether it was already received |
+
+Amounts are integer cents end to end (`amount_cents` in the API, `int` in the app); `Money` formats and parses BRL text without `double`. A received income is sent as `status: paid` with `paid_on` equal to its date. Category names come from the API in English and are shown in Portuguese by `key` (`categoryLabel`).
 
 ## Authentication
 

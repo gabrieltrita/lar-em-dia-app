@@ -27,28 +27,47 @@ void main() {
     }
   });
 
-  test('translates the first detail code of a field', () {
-    ApiError withDetail(String code) => ApiError(
-      code: 'validation_failed',
-      details: {
-        'email': [FieldError(code: code), const FieldError(code: 'invalid')],
-      },
-    );
+  ApiError withDetail(String field, String code) => ApiError(
+    code: 'validation_failed',
+    details: {
+      field: [FieldError(code: code), const FieldError(code: 'invalid')],
+    },
+  );
 
+  test('translates the first detail code of a field', () {
     final expected = {
       'blank': l10n.validationRequired,
       'required': l10n.validationRequired,
-      'too_short': l10n.validationPasswordTooShort,
-      'too_long': l10n.validationPasswordTooLong,
+      'too_short': l10n.validationInvalid,
+      'too_long': l10n.validationTooLong,
       'weak_password': l10n.validationWeakPassword,
       'confirmation': l10n.validationMismatch,
       'taken': l10n.validationTaken,
+      'in_future': l10n.validationInFuture,
+      'inactive': l10n.validationInactive,
+      'greater_than': l10n.validationAmountRequired,
+      'not_an_integer': l10n.validationAmountRequired,
       'whatever': l10n.validationInvalid,
     };
 
     for (final MapEntry(:key, :value) in expected.entries) {
-      expect(withDetail(key).localizedField(l10n, 'email'), value, reason: key);
+      expect(
+        withDetail('description', key).localizedField(l10n, 'description'),
+        value,
+        reason: key,
+      );
     }
+  });
+
+  test('uses the password rules for password lengths', () {
+    expect(
+      withDetail('password', 'too_short').localizedField(l10n, 'password'),
+      l10n.validationPasswordTooShort,
+    );
+    expect(
+      withDetail('password', 'too_long').localizedField(l10n, 'password'),
+      l10n.validationPasswordTooLong,
+    );
   });
 
   test('has no field message when the field has no details', () {
