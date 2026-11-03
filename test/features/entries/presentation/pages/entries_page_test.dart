@@ -5,7 +5,7 @@ import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/presentation/cubits/entry_cubits.dart';
-import 'package:lar_em_dia/features/entries/presentation/pages/income_page.dart';
+import 'package:lar_em_dia/features/entries/presentation/pages/entries_page.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/auth_fixtures.dart';
@@ -27,17 +27,18 @@ void main() {
   });
   tearDown(() => harness.dispose());
 
-  Future<void> pump(WidgetTester tester) => pumpPage(
-    tester,
-    BlocProvider(
-      create: (_) => started(
-        MonthEntriesCubit(repository),
-        (cubit) => cubit.load(november),
-      ),
-      child: const IncomePage(),
-    ),
-    session: harness.session,
-  );
+  Future<void> pump(WidgetTester tester, {EntryKind kind = EntryKind.income}) =>
+      pumpPage(
+        tester,
+        BlocProvider(
+          create: (_) => started(
+            MonthEntriesCubit(repository, kind),
+            (cubit) => cubit.load(november),
+          ),
+          child: const EntriesPage(),
+        ),
+        session: harness.session,
+      );
 
   testWidgets('lists the month with its total', (tester) async {
     await pump(tester);
@@ -50,6 +51,82 @@ void main() {
       find.text('Aluguel recebido · 10/11/2026 · A receber'),
       findsOneWidget,
     );
+  });
+
+  group('expenses', () {
+    setUp(() {
+      when(() => repository.categories(EntryKind.expense))
+          .thenAnswer((_) async => [housingCategory, groceriesCategory]);
+      when(() => repository.month(any(), kind: EntryKind.expense))
+          .thenAnswer((_) async => [housing, groceries]);
+    });
+
+    testWidgets('lists expenses with fixed and variable subtotals', (
+      tester,
+    ) async {
+      await pump(tester, kind: EntryKind.expense);
+
+      expect(find.text('Despesas'), findsOneWidget);
+      expect(find.text(r'Total do mês: R$ 2.800,00'), findsOneWidget);
+      expect(
+        find.text(r'Fixas R$ 2.000,00 · Variáveis R$ 800,00'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Moradia · Fixa · 10/11/2026 · A pagar'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Mercado · Variável · 07/11/2026 · Paga'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('filters by nature', (tester) async {
+      await pump(tester, kind: EntryKind.expense);
+
+      await tester.tap(find.text('Fixas'));
+      await tester.pumpAndSettle();
+      expect(find.text(r'Total do mês: R$ 2.000,00'), findsOneWidget);
+      expect(find.text('Aluguel de casa'), findsOneWidget);
+      expect(find.text('Mercado do mês'), findsNothing);
+
+      await tester.tap(find.text('Todas'));
+      await tester.pumpAndSettle();
+      expect(find.text('Mercado do mês'), findsOneWidget);
+    });
+
+    testWidgets('says when no expense has the chosen nature', (tester) async {
+      when(() => repository.month(any(), kind: EntryKind.expense))
+          .thenAnswer((_) async => [groceries]);
+      await pump(tester, kind: EntryKind.expense);
+
+      await tester.tap(find.text('Fixas'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Nenhuma despesa deste tipo neste mês.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('opens the expense form', (tester) async {
+      await pump(tester, kind: EntryKind.expense);
+
+      await tester.tap(find.byTooltip('Nova despesa'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(routeMarker(AppRoutes.expensesForm)), findsOneWidget);
+    });
+
+    testWidgets('confirms the deletion of an expense', (tester) async {
+      await pump(tester, kind: EntryKind.expense);
+
+      await tester.drag(find.text('Mercado do mês'), const Offset(-600, 0));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Apagar despesa?'), findsOneWidget);
+    });
   });
 
   testWidgets('moves between months', (tester) async {

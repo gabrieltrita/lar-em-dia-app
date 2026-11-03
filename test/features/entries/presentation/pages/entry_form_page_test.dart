@@ -8,6 +8,7 @@ import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/presentation/cubits/entry_cubits.dart';
 import 'package:lar_em_dia/features/entries/presentation/pages/entry_form_page.dart';
 import 'package:lar_em_dia/features/entries/presentation/widgets/category_label.dart';
+import 'package:lar_em_dia/features/entries/presentation/widgets/nature_label.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -24,9 +25,15 @@ void main() {
     popped = [];
     when(() => repository.categories(EntryKind.income))
         .thenAnswer((_) async => [salaryCategory, rentCategory]);
+    when(() => repository.categories(EntryKind.expense))
+        .thenAnswer((_) async => [housingCategory, groceriesCategory]);
   });
 
-  Future<void> pump(WidgetTester tester, {Entry? existing}) async {
+  Future<void> pump(
+    WidgetTester tester, {
+    Entry? existing,
+    EntryKind kind = EntryKind.income,
+  }) async {
     final router = GoRouter(
       routes: [
         GoRoute(
@@ -45,11 +52,12 @@ void main() {
               BlocProvider(
                 create: (_) => started(
                   CategoriesCubit(repository),
-                  (cubit) => cubit.load(EntryKind.income),
+                  (cubit) => cubit.load(kind),
                 ),
               ),
             ],
             child: EntryFormPage(
+              kind: kind,
               existing: existing,
               today: DateTime(2026, 11, 3),
             ),
@@ -132,7 +140,7 @@ void main() {
     await tester.tap(find.text('20'));
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('entry_received')));
+    await tester.tap(find.byKey(const Key('entry_settled')));
     await tester.tap(save);
     await tester.pumpAndSettle();
 
@@ -146,6 +154,99 @@ void main() {
       ),
     ).called(1);
     expect(popped, [true]);
+  });
+
+  group('expenses', () {
+    Future<void> pickCategory(WidgetTester tester, String label) async {
+      await tester.tap(find.byKey(const Key('entry_category')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(label).last);
+      await tester.pumpAndSettle();
+    }
+
+    bool selected(WidgetTester tester, EntryNature nature) => tester
+        .widget<SegmentedButton<EntryNature>>(
+          find.byKey(const Key('entry_nature')),
+        )
+        .selected
+        .contains(nature);
+
+    testWidgets('takes the nature from the category and allows changing it', (
+      tester,
+    ) async {
+      when(() => repository.create(any())).thenAnswer((_) async => groceries);
+      await pump(tester, kind: EntryKind.expense);
+      expect(find.text('Nova despesa'), findsOneWidget);
+      expect(find.text('Já paga'), findsOneWidget);
+
+      await pickCategory(tester, 'Moradia');
+      expect(selected(tester, EntryNature.fixed), isTrue);
+      await pickCategory(tester, 'Mercado');
+      expect(selected(tester, EntryNature.variable), isTrue);
+
+      await tester.tap(find.text('Fixa'));
+      await tester.pump();
+      await tester.tap(find.text('Fixa'));
+      await tester.pump();
+      expect(selected(tester, EntryNature.fixed), isTrue);
+
+      await tester.enterText(
+        find.byKey(const Key('entry_description')),
+        'Feira',
+      );
+      await tester.enterText(find.byKey(const Key('entry_amount')), '12000');
+      await tester.tap(save);
+      await tester.pumpAndSettle();
+
+      verify(
+        () => repository.create(
+          EntryDraft(
+            categoryId: groceriesCategory.id,
+            description: 'Feira',
+            amountCents: 12000,
+            dueOn: DateTime(2026, 11, 3),
+            status: EntryStatus.pending,
+            nature: EntryNature.fixed,
+          ),
+        ),
+      ).called(1);
+    });
+
+    testWidgets('keeps the nature of an existing expense', (tester) async {
+      when(() => repository.update(housing.id, any()))
+          .thenAnswer((_) async => housing);
+      await pump(tester, kind: EntryKind.expense, existing: housing);
+      expect(find.text('Editar despesa'), findsOneWidget);
+      expect(selected(tester, EntryNature.fixed), isTrue);
+
+      await tester.tap(save);
+      await tester.pumpAndSettle();
+
+      verify(() => repository.update(housing.id, housing.toDraft())).called(1);
+    });
+
+    testWidgets('names the nature in API errors', (tester) async {
+      when(() => repository.create(any())).thenThrow(
+        const ApiError(
+          code: 'validation_failed',
+          details: {
+            'nature': [FieldError(code: 'inclusion')],
+          },
+        ),
+      );
+      await pump(tester, kind: EntryKind.expense);
+
+      await pickCategory(tester, 'Mercado');
+      await tester.enterText(
+        find.byKey(const Key('entry_description')),
+        'Feira',
+      );
+      await tester.enterText(find.byKey(const Key('entry_amount')), '12000');
+      await tester.tap(save);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tipo de despesa: Valor inválido'), findsOneWidget);
+    });
   });
 
   testWidgets('lists the API field errors', (tester) async {
@@ -183,9 +284,29 @@ void main() {
     expect(find.byKey(const Key('entry_category')), findsOneWidget);
   });
 
-  test('labels every income category in Portuguese', () async {
+  test('labels every default category in Portuguese', () async {
     final l10n = await AppLocalizations.delegate.load(const Locale('pt'));
     const keys = [
+      'housing',
+      'utilities',
+      'internet_phone',
+      'subscriptions',
+      'education',
+      'insurance',
+      'health_plan',
+      'loans',
+      'groceries',
+      'restaurants',
+      'transport',
+      'health',
+      'leisure',
+      'travel',
+      'clothing',
+      'personal_care',
+      'pets',
+      'gifts_donations',
+      'taxes_fees',
+      'other_expense',
       'salary',
       'thirteenth_salary',
       'vacation_bonus',
@@ -206,5 +327,9 @@ void main() {
     expect(keys.where((key) => label(key) == key), isEmpty);
     expect(label('custom'), 'custom');
     expect(categoryLabel(l10n, null), '');
+    expect(EntryNature.values.map((n) => natureLabel(l10n, n)), [
+      'Fixa',
+      'Variável',
+    ]);
   });
 }

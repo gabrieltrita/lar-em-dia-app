@@ -19,11 +19,13 @@ void main() {
   });
 
   blocTest<HomeCubit, LoadState<HomeSummary>>(
-    'summarizes the latest balance and the month income',
+    'summarizes the latest balance and the month income and expenses',
     setUp: () {
       when(balances.latest).thenAnswer((_) async => balance);
       when(() => entries.month(november, kind: EntryKind.income))
           .thenAnswer((_) async => [salary, rent]);
+      when(() => entries.month(november, kind: EntryKind.expense))
+          .thenAnswer((_) async => [housing, groceries]);
     },
     build: () => HomeCubit(balances, entries),
     act: (cubit) => cubit.load(today: DateTime(2026, 11, 3)),
@@ -33,13 +35,19 @@ void main() {
         HomeSummary(
           month: november,
           latestBalance: balance,
-          receivedCents: 500000,
-          pendingCents: 150000,
+          income: const MonthTotals(settledCents: 500000, pendingCents: 150000),
+          expenses: const MonthTotals(
+            settledCents: 80000,
+            pendingCents: 200000,
+          ),
         ),
       ),
     ],
-    verify: (cubit) =>
-        expect((cubit.state as Loaded<HomeSummary>).value.incomeCents, 650000),
+    verify: (cubit) {
+      final summary = (cubit.state as Loaded<HomeSummary>).value;
+      expect(summary.totalsOf(EntryKind.income).totalCents, 650000);
+      expect(summary.totalsOf(EntryKind.expense).totalCents, 280000);
+    },
   );
 
   blocTest<HomeCubit, LoadState<HomeSummary>>(

@@ -10,6 +10,7 @@ import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/core/state/load_state.dart';
 import 'package:lar_em_dia/core/widgets/form_widgets.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
+import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/home/presentation/cubits/home_cubit.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
@@ -58,7 +59,10 @@ class HomePage extends StatelessWidget {
                   ),
                 _BalanceCard(summary: summary),
                 const SizedBox(height: 16),
-                _IncomeCard(summary: summary),
+                for (final kind in EntryKind.values) ...[
+                  _EntriesCard(kind: kind, summary: summary),
+                  const SizedBox(height: 16),
+                ],
               ],
             ),
           ),
@@ -125,9 +129,10 @@ class _BalanceCard extends StatelessWidget {
   }
 }
 
-class _IncomeCard extends StatelessWidget {
-  const new({required this.summary});
+class _EntriesCard extends StatelessWidget {
+  const new({required this.kind, required this.summary});
 
+  final EntryKind kind;
   final HomeSummary summary;
 
   @override
@@ -136,22 +141,27 @@ class _IncomeCard extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final month = MaterialLocalizations.of(context)
         .formatMonthYear(summary.month);
+    final totals = summary.totalsOf(kind);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(l10n.homeIncomeTitle(month), style: textTheme.titleMedium),
+            Text(
+              l10n.homeEntriesTitle(kind.name, month),
+              style: textTheme.titleMedium,
+            ),
             const SizedBox(height: 8),
             Text(
-              Money.format(summary.incomeCents),
+              Money.format(totals.totalCents),
               style: textTheme.headlineMedium,
             ),
             Text(
-              l10n.homeIncomeBreakdown(
-                Money.format(summary.receivedCents),
-                Money.format(summary.pendingCents),
+              l10n.homeEntriesBreakdown(
+                kind.name,
+                Money.format(totals.settledCents),
+                Money.format(totals.pendingCents),
               ),
             ),
             const SizedBox(height: 12),
@@ -159,14 +169,16 @@ class _IncomeCard extends StatelessWidget {
               spacing: 8,
               children: [
                 FilledButton(
-                  onPressed: () =>
-                      unawaited(_pushAndReload(context, AppRoutes.incomeForm)),
-                  child: Text(l10n.homeNewIncome),
+                  onPressed: () => unawaited(
+                    _pushAndReload(context, AppRoutes.entryForm(kind)),
+                  ),
+                  child: Text(l10n.entryFormNewTitle(kind.name)),
                 ),
                 OutlinedButton(
-                  onPressed: () =>
-                      unawaited(_pushAndReload(context, AppRoutes.income)),
-                  child: Text(l10n.homeSeeIncome),
+                  onPressed: () => unawaited(
+                    _pushAndReload(context, AppRoutes.entries(kind)),
+                  ),
+                  child: Text(l10n.homeSeeEntries(kind.name)),
                 ),
               ],
             ),

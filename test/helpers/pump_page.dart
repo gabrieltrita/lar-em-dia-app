@@ -28,6 +28,8 @@ Future<void> pumpPage(
         AppRoutes.balanceForm,
         AppRoutes.income,
         AppRoutes.incomeForm,
+        AppRoutes.expenses,
+        AppRoutes.expensesForm,
       ])
         GoRoute(
           path: path,

@@ -93,8 +93,41 @@ void main() {
       'amount_cents': 500000,
       'due_on': '2026-11-05',
       'status': 'paid',
+      'nature': null,
       'paid_on': '2026-11-05',
     });
+  });
+
+  test('sends and reads the nature of an expense', () async {
+    final repository = build(
+      (_) => FakeAdapter.json(201, {
+        'data': {...entryJson('entry-3'), 'kind': 'expense', 'nature': 'fixed'},
+      }),
+    );
+
+    final created = await repository.create(housing.toDraft());
+
+    expect(created.nature, EntryNature.fixed);
+    expect(adapter.requests.single.data, containsPair('nature', 'fixed'));
+  });
+
+  test('reads the default nature of expense categories', () async {
+    final repository = build(
+      (_) => FakeAdapter.json(200, {
+        'data': [
+          {
+            'id': 'cat-housing',
+            'kind': 'expense',
+            'key': 'housing',
+            'name': 'Housing',
+            'position': 0,
+            'default_nature': 'fixed',
+          },
+        ],
+      }),
+    );
+
+    expect(await repository.categories(EntryKind.expense), [housingCategory]);
   });
 
   test('updates a pending entry clearing the payment date', () async {

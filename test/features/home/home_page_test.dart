@@ -33,6 +33,8 @@ void main() {
       when(balances.latest).thenAnswer((_) async => balance);
       when(() => entries.month(any(), kind: EntryKind.income))
           .thenAnswer((_) async => [salary, rent]);
+      when(() => entries.month(any(), kind: EntryKind.expense))
+          .thenAnswer((_) async => [housing, groceries]);
     });
     tearDown(() => harness.dispose());
 
@@ -45,6 +47,17 @@ void main() {
       ),
       session: harness.session,
     );
+
+    testWidgets('shows the month expenses', (tester) async {
+      await pump(tester);
+
+      expect(find.textContaining('Despesas de '), findsOneWidget);
+      expect(find.text(r'R$ 2.800,00'), findsOneWidget);
+      expect(
+        find.text(r'Pagas R$ 800,00 · A pagar R$ 2.000,00'),
+        findsOneWidget,
+      );
+    });
 
     testWidgets('shows the balance and the month income', (tester) async {
       await pump(tester);
@@ -72,10 +85,14 @@ void main() {
       ('Histórico', AppRoutes.balances),
       ('Nova receita', AppRoutes.incomeForm),
       ('Ver receitas', AppRoutes.income),
+      ('Nova despesa', AppRoutes.expensesForm),
+      ('Ver despesas', AppRoutes.expenses),
     ]) {
       testWidgets('$button opens $route and reloads on return', (tester) async {
         await pump(tester);
 
+        await tester.ensureVisible(find.text(button));
+        await tester.pumpAndSettle();
         await tester.tap(find.text(button));
         await tester.pumpAndSettle();
         expect(find.text(routeMarker(route)), findsOneWidget);
@@ -117,7 +134,7 @@ void main() {
       final balances = MockBalanceRepository();
       final entries = MockEntryRepository();
       when(balances.latest).thenAnswer((_) async => null);
-      when(() => entries.month(any(), kind: EntryKind.income))
+      when(() => entries.month(any(), kind: any(named: 'kind')))
           .thenAnswer((_) async => []);
       getIt
         ..allowReassignment = true
