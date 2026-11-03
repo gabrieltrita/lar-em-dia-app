@@ -20,8 +20,12 @@ abstract class MonthEntries with _$MonthEntries {
 
   const new _();
 
-  int get totalCents =>
-      entries.fold(0, (sum, entry) => sum + entry.amountCents);
+  List<Entry> withNature(EntryNature? nature) => nature == null
+      ? entries
+      : entries.where((entry) => entry.nature == nature).toList();
+
+  int totalCents([EntryNature? nature]) =>
+      withNature(nature).fold(0, (sum, entry) => sum + entry.amountCents);
 }
 
 @freezed
@@ -29,12 +33,13 @@ abstract class MonthEntriesState with _$MonthEntriesState {
   const factory({
     required DateTime month,
     required LoadState<MonthEntries> data,
+    EntryNature? nature,
   }) = _MonthEntriesState;
 }
 
 @injectable
 class MonthEntriesCubit extends Cubit<MonthEntriesState> {
-  new(this._repository)
+  new(this._repository, @factoryParam this.kind)
     : super(
         MonthEntriesState(
           month: Dates.firstOfMonth(DateTime.now()),
@@ -42,14 +47,14 @@ class MonthEntriesCubit extends Cubit<MonthEntriesState> {
         ),
       );
 
-  static const EntryKind kind = EntryKind.income;
+  final EntryKind kind;
 
   final EntryRepository _repository;
 
   Future<void> load([DateTime? month]) async {
     final target = Dates.firstOfMonth(month ?? state.month);
     emit(
-      MonthEntriesState(
+      state.copyWith(
         month: target,
         data: const LoadState<MonthEntries>.loading(),
       ),
@@ -74,6 +79,8 @@ class MonthEntriesCubit extends Cubit<MonthEntriesState> {
       emit(state.copyWith(data: LoadState.failure(error)));
     }
   }
+
+  void filter(EntryNature? nature) => emit(state.copyWith(nature: nature));
 
   Future<void> previous() => load(Dates.addMonths(state.month, -1));
 

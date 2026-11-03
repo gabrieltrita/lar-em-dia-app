@@ -52,6 +52,45 @@ final rent = Entry(
   status: EntryStatus.pending,
 );
 
+const housingCategory = Category(
+  id: 'cat-housing',
+  kind: EntryKind.expense,
+  key: 'housing',
+  name: 'Housing',
+  defaultNature: EntryNature.fixed,
+);
+
+const groceriesCategory = Category(
+  id: 'cat-groceries',
+  kind: EntryKind.expense,
+  key: 'groceries',
+  name: 'Groceries',
+  defaultNature: EntryNature.variable,
+);
+
+final housing = Entry(
+  id: 'entry-3',
+  kind: EntryKind.expense,
+  categoryId: housingCategory.id,
+  description: 'Aluguel de casa',
+  amountCents: 200000,
+  dueOn: DateTime(2026, 11, 10),
+  status: EntryStatus.pending,
+  nature: EntryNature.fixed,
+);
+
+final groceries = Entry(
+  id: 'entry-4',
+  kind: EntryKind.expense,
+  categoryId: groceriesCategory.id,
+  description: 'Mercado do mês',
+  amountCents: 80000,
+  dueOn: DateTime(2026, 11, 7),
+  status: EntryStatus.paid,
+  nature: EntryNature.variable,
+  paidOn: DateTime(2026, 11, 7),
+);
+
 void registerFinanceFallbacks() {
   registerFallbackValue(DateTime(2026));
   registerFallbackValue(EntryKind.income);

@@ -17,11 +17,13 @@ import 'package:lar_em_dia/features/entries/domain/category.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/presentation/cubits/entry_cubits.dart';
 import 'package:lar_em_dia/features/entries/presentation/widgets/category_label.dart';
+import 'package:lar_em_dia/features/entries/presentation/widgets/nature_label.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
 class EntryFormPage extends StatefulWidget {
-  const new({this.existing, this.today, super.key});
+  const new({required this.kind, this.existing, this.today, super.key});
 
+  final EntryKind kind;
   final Entry? existing;
   final DateTime? today;
 
@@ -41,9 +43,12 @@ class _EntryFormPageState extends State<EntryFormPage> {
     },
   );
   late String? _categoryId = widget.existing?.categoryId;
+  late EntryNature? _nature = widget.existing?.nature;
   late DateTime _dueOn =
       widget.existing?.dueOn ?? Dates.dateOnly(widget.today ?? DateTime.now());
-  late bool _received = widget.existing?.isPaid ?? false;
+  late bool _settled = widget.existing?.isPaid ?? false;
+
+  bool get _isExpense => widget.kind == EntryKind.expense;
 
   @override
   void dispose() {
@@ -63,7 +68,8 @@ class _EntryFormPageState extends State<EntryFormPage> {
           description: _description.text.trim(),
           amountCents: Money.parse(_amount.text)!,
           dueOn: _dueOn,
-          status: _received ? EntryStatus.paid : EntryStatus.pending,
+          status: _settled ? EntryStatus.paid : EntryStatus.pending,
+          nature: _isExpense ? _nature : null,
         ),
         existing: widget.existing,
       ),
@@ -72,7 +78,8 @@ class _EntryFormPageState extends State<EntryFormPage> {
 
   List<String> _failureMessages(AppLocalizations l10n, ApiError error) {
     final labels = {
-      'category': l10n.entryCategoryLabel,
+      'category': l10n.entryCategoryLabel(widget.kind.name),
+      'nature': l10n.entryNatureLabel,
       'description': l10n.entryDescriptionLabel,
       'amount_cents': l10n.amountLabel,
       'due_on': l10n.entryDueOnLabel,
@@ -89,7 +96,9 @@ class _EntryFormPageState extends State<EntryFormPage> {
     return DropdownButtonFormField<String>(
       key: const Key('entry_category'),
       initialValue: _categoryId,
-      decoration: InputDecoration(labelText: l10n.entryCategoryLabel),
+      decoration: InputDecoration(
+        labelText: l10n.entryCategoryLabel(widget.kind.name),
+      ),
       items: [
         for (final category in categories)
           DropdownMenuItem(
@@ -97,8 +106,36 @@ class _EntryFormPageState extends State<EntryFormPage> {
             child: Text(categoryLabel(l10n, category)),
           ),
       ],
-      onChanged: (value) => setState(() => _categoryId = value),
+      onChanged: (value) => setState(() {
+        _categoryId = value;
+        _nature = categories
+            .firstWhere((category) => category.id == value)
+            .defaultNature;
+      }),
       validator: (value) => Validators.required(value)?.localized(l10n),
+    );
+  }
+
+  Widget _natureField(AppLocalizations l10n) {
+    return InputDecorator(
+      decoration: InputDecoration(
+        labelText: l10n.entryNatureLabel,
+        border: InputBorder.none,
+      ),
+      child: SegmentedButton<EntryNature>(
+        key: const Key('entry_nature'),
+        segments: [
+          for (final nature in EntryNature.values)
+            ButtonSegment(
+              value: nature,
+              label: Text(natureLabel(l10n, nature)),
+            ),
+        ],
+        selected: {?_nature},
+        emptySelectionAllowed: true,
+        onSelectionChanged: (selection) =>
+            setState(() => _nature = selection.firstOrNull ?? _nature),
+      ),
     );
   }
 
@@ -116,17 +153,16 @@ class _EntryFormPageState extends State<EntryFormPage> {
         appBar: AppBar(
           title: Text(
             widget.existing == null
-                ? l10n.entryFormNewTitle
-                : l10n.entryFormEditTitle,
+                ? l10n.entryFormNewTitle(widget.kind.name)
+                : l10n.entryFormEditTitle(widget.kind.name),
           ),
         ),
         body: switch (categories) {
           Loading() => const Center(child: CircularProgressIndicator()),
           LoadFailure(:final error) => RetryMessage(
             message: error.localized(l10n),
-            onRetry: () => unawaited(
-              context.read<CategoriesCubit>().load(EntryKind.income),
-            ),
+            onRetry: () =>
+                unawaited(context.read<CategoriesCubit>().load(widget.kind)),
           ),
           Loaded(value: final options) => SingleChildScrollView(
             padding: const EdgeInsets.all(24),
@@ -137,6 +173,10 @@ class _EntryFormPageState extends State<EntryFormPage> {
                 children: [
                   _categoryField(l10n, options),
                   const SizedBox(height: 16),
+                  if (_isExpense) ...[
+                    _natureField(l10n),
+                    const SizedBox(height: 8),
+                  ],
                   TextFormField(
                     key: const Key('entry_description'),
                     controller: _description,
@@ -169,11 +209,11 @@ class _EntryFormPageState extends State<EntryFormPage> {
                   ),
                   const SizedBox(height: 8),
                   SwitchListTile(
-                    key: const Key('entry_received'),
-                    title: Text(l10n.entryReceivedLabel),
-                    value: _received,
+                    key: const Key('entry_settled'),
+                    title: Text(l10n.entrySettledLabel(widget.kind.name)),
+                    value: _settled,
                     contentPadding: EdgeInsets.zero,
-                    onChanged: (value) => setState(() => _received = value),
+                    onChanged: (value) => setState(() => _settled = value),
                   ),
                   if (state case SubmissionFailure(:final error)) ...[
                     const SizedBox(height: 16),

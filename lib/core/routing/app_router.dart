@@ -21,8 +21,8 @@ import 'package:lar_em_dia/features/balance/presentation/pages/balance_form_page
 import 'package:lar_em_dia/features/balance/presentation/pages/balances_page.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/presentation/cubits/entry_cubits.dart';
+import 'package:lar_em_dia/features/entries/presentation/pages/entries_page.dart';
 import 'package:lar_em_dia/features/entries/presentation/pages/entry_form_page.dart';
-import 'package:lar_em_dia/features/entries/presentation/pages/income_page.dart';
 import 'package:lar_em_dia/features/home/presentation/cubits/home_cubit.dart';
 import 'package:lar_em_dia/features/home/presentation/home_page.dart';
 
@@ -40,6 +40,18 @@ abstract final class AppRoutes {
   static const balanceForm = '/balances/form';
   static const income = '/income';
   static const incomeForm = '/income/form';
+  static const expenses = '/expenses';
+  static const expensesForm = '/expenses/form';
+
+  static String entries(EntryKind kind) => switch (kind) {
+    EntryKind.income => income,
+    EntryKind.expense => expenses,
+  };
+
+  static String entryForm(EntryKind kind) => switch (kind) {
+    EntryKind.income => incomeForm,
+    EntryKind.expense => expensesForm,
+  };
 
   static const Set<String> public = {
     login,
@@ -66,6 +78,33 @@ C _started<C>(C cubit, Future<void> Function(C cubit) start) {
   unawaited(start(cubit));
   return cubit;
 }
+
+List<GoRoute> _entryRoutes(EntryKind kind) => [
+  GoRoute(
+    path: AppRoutes.entries(kind),
+    builder: (context, state) => BlocProvider(
+      create: (_) => _started(
+        getIt<MonthEntriesCubit>(param1: kind),
+        (cubit) =>
+            cubit.load(Dates.parseMonth(state.uri.queryParameters['month'])),
+      ),
+      child: const EntriesPage(),
+    ),
+  ),
+  GoRoute(
+    path: AppRoutes.entryForm(kind),
+    builder: (context, state) => MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => getIt<EntryFormCubit>()),
+        BlocProvider(
+          create: (_) =>
+              _started(getIt<CategoriesCubit>(), (cubit) => cubit.load(kind)),
+        ),
+      ],
+      child: EntryFormPage(kind: kind, existing: state.extra as Entry?),
+    ),
+  ),
+];
 
 GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
   initialLocation: AppRoutes.home,
@@ -95,32 +134,7 @@ GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
         child: BalanceFormPage(existing: state.extra as Balance?),
       ),
     ),
-    GoRoute(
-      path: AppRoutes.income,
-      builder: (context, state) => BlocProvider(
-        create: (_) => _started(
-          getIt<MonthEntriesCubit>(),
-          (cubit) =>
-              cubit.load(Dates.parseMonth(state.uri.queryParameters['month'])),
-        ),
-        child: const IncomePage(),
-      ),
-    ),
-    GoRoute(
-      path: AppRoutes.incomeForm,
-      builder: (context, state) => MultiBlocProvider(
-        providers: [
-          BlocProvider(create: (_) => getIt<EntryFormCubit>()),
-          BlocProvider(
-            create: (_) => _started(
-              getIt<CategoriesCubit>(),
-              (cubit) => cubit.load(EntryKind.income),
-            ),
-          ),
-        ],
-        child: EntryFormPage(existing: state.extra as Entry?),
-      ),
-    ),
+    for (final kind in EntryKind.values) ..._entryRoutes(kind),
     GoRoute(
       path: AppRoutes.splash,
       builder: (context, state) => const SplashPage(),

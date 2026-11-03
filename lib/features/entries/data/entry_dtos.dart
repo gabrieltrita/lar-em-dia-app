@@ -13,13 +13,20 @@ abstract class CategoryDto with _$CategoryDto {
     required EntryKind kind,
     required String key,
     required String name,
+    EntryNature? defaultNature,
   }) = _CategoryDto;
 
   const new _();
 
   factory fromJson(Map<String, dynamic> json) => _$CategoryDtoFromJson(json);
 
-  Category toDomain() => Category(id: id, kind: kind, key: key, name: name);
+  Category toDomain() => Category(
+    id: id,
+    kind: kind,
+    key: key,
+    name: name,
+    defaultNature: defaultNature,
+  );
 }
 
 @freezed
@@ -32,6 +39,7 @@ abstract class EntryDto with _$EntryDto {
     required int amountCents,
     required String dueOn,
     required EntryStatus status,
+    EntryNature? nature,
     String? paidOn,
   }) = _EntryDto;
 
@@ -47,6 +55,7 @@ abstract class EntryDto with _$EntryDto {
     amountCents: amountCents,
     dueOn: Dates.parseIso(dueOn),
     status: status,
+    nature: nature,
     paidOn: paidOn == null ? null : Dates.parseIso(paidOn!),
   );
 }

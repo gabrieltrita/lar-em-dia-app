@@ -6,6 +6,8 @@ enum EntryKind { income, expense }
 
 enum EntryStatus { pending, paid }
 
+enum EntryNature { fixed, variable }
+
 @freezed
 abstract class EntryDraft with _$EntryDraft {
   const factory({
@@ -14,6 +16,7 @@ abstract class EntryDraft with _$EntryDraft {
     required int amountCents,
     required DateTime dueOn,
     required EntryStatus status,
+    EntryNature? nature,
   }) = _EntryDraft;
 }
 
@@ -27,6 +30,7 @@ abstract class Entry with _$Entry {
     required int amountCents,
     required DateTime dueOn,
     required EntryStatus status,
+    EntryNature? nature,
     DateTime? paidOn,
   }) = _Entry;
 
@@ -40,5 +44,6 @@ abstract class Entry with _$Entry {
     amountCents: amountCents,
     dueOn: dueOn,
     status: status,
+    nature: nature,
   );
 }

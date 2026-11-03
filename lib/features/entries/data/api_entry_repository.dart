@@ -80,6 +80,7 @@ class ApiEntryRepository implements EntryRepository {
       'amount_cents': draft.amountCents,
       'due_on': dueOn,
       'status': draft.status.name,
+      'nature': draft.nature?.name,
       'paid_on': draft.status == EntryStatus.paid ? dueOn : null,
     };
   }

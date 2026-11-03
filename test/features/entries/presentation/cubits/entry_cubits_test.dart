@@ -34,18 +34,61 @@ void main() {
   );
 
   test('MonthEntries sums the month', () {
-    expect(loaded().totalCents, 650000);
+    expect(loaded().totalCents(), 650000);
   });
 
+  test('MonthEntries filters and sums by nature', () {
+    final expenses = MonthEntries(
+      entries: [housing, groceries],
+      categories: const {},
+    );
+
+    expect(expenses.withNature(null), [housing, groceries]);
+    expect(expenses.withNature(EntryNature.fixed), [housing]);
+    expect(expenses.totalCents(EntryNature.variable), 80000);
+  });
+
+  blocTest<MonthEntriesCubit, MonthEntriesState>(
+    'loads expenses and keeps the nature filter across months',
+    setUp: () {
+      when(() => repository.categories(EntryKind.expense))
+          .thenAnswer((_) async => [housingCategory, groceriesCategory]);
+      when(() => repository.month(any(), kind: EntryKind.expense))
+          .thenAnswer((_) async => [housing, groceries]);
+    },
+    build: () => MonthEntriesCubit(repository, EntryKind.expense),
+    act: (cubit) async {
+      cubit.filter(EntryNature.fixed);
+      await cubit.load(november);
+    },
+    verify: (cubit) {
+      expect(cubit.state.nature, EntryNature.fixed);
+      expect(
+        cubit.state.data,
+        LoadState.loaded(
+          MonthEntries(
+            entries: [housing, groceries],
+            categories: {
+              housingCategory.id: housingCategory,
+              groceriesCategory.id: groceriesCategory,
+            },
+          ),
+        ),
+      );
+      verify(() => repository.month(november, kind: EntryKind.expense))
+          .called(1);
+    },
+  );
+
   test('starts on the current month', () {
-    final cubit = MonthEntriesCubit(repository);
+    final cubit = MonthEntriesCubit(repository, EntryKind.income);
     expect(cubit.state.month.day, 1);
     expect(cubit.state.month.month, DateTime.now().month);
   });
 
   blocTest<MonthEntriesCubit, MonthEntriesState>(
     'loads a month with its categories',
-    build: () => MonthEntriesCubit(repository),
+    build: () => MonthEntriesCubit(repository, EntryKind.income),
     act: (cubit) => cubit.load(DateTime(2026, 11, 20)),
     expect: () => [
       MonthEntriesState(
@@ -58,7 +101,7 @@ void main() {
 
   blocTest<MonthEntriesCubit, MonthEntriesState>(
     'moves to the previous and the next month',
-    build: () => MonthEntriesCubit(repository),
+    build: () => MonthEntriesCubit(repository, EntryKind.income),
     seed: () => MonthEntriesState(
       month: november,
       data: const LoadState<MonthEntries>.loading(),
@@ -77,7 +120,7 @@ void main() {
 
   blocTest<MonthEntriesCubit, MonthEntriesState>(
     'ignores a month that is no longer selected',
-    build: () => MonthEntriesCubit(repository),
+    build: () => MonthEntriesCubit(repository, EntryKind.income),
     act: (cubit) async {
       final first = cubit.load(october);
       await cubit.load(november);
@@ -94,7 +137,7 @@ void main() {
     setUp: () =>
         when(() => repository.month(any(), kind: EntryKind.income))
             .thenThrow(failure),
-    build: () => MonthEntriesCubit(repository),
+    build: () => MonthEntriesCubit(repository, EntryKind.income),
     act: (cubit) => cubit.load(november),
     skip: 1,
     expect: () => [
@@ -107,7 +150,7 @@ void main() {
 
   test('delete reloads on success and returns the error otherwise', () async {
     when(() => repository.delete('entry-1')).thenAnswer((_) async {});
-    final cubit = MonthEntriesCubit(repository);
+    final cubit = MonthEntriesCubit(repository, EntryKind.income);
     await cubit.load(november);
 
     expect(await cubit.delete(salary), isNull);

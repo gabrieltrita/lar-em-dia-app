@@ -21,8 +21,8 @@ import 'package:lar_em_dia/features/balance/presentation/pages/balance_form_page
 import 'package:lar_em_dia/features/balance/presentation/pages/balances_page.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/domain/entry_repository.dart';
+import 'package:lar_em_dia/features/entries/presentation/pages/entries_page.dart';
 import 'package:lar_em_dia/features/entries/presentation/pages/entry_form_page.dart';
-import 'package:lar_em_dia/features/entries/presentation/pages/income_page.dart';
 import 'package:lar_em_dia/features/home/presentation/home_page.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
@@ -76,10 +76,12 @@ void main() {
       entries = MockEntryRepository();
       when(balances.latest).thenAnswer((_) async => null);
       when(balances.list).thenAnswer((_) async => []);
-      when(() => entries.month(any(), kind: EntryKind.income))
+      when(() => entries.month(any(), kind: any(named: 'kind')))
           .thenAnswer((_) async => []);
       when(() => entries.categories(EntryKind.income))
           .thenAnswer((_) async => [salaryCategory]);
+      when(() => entries.categories(EntryKind.expense))
+          .thenAnswer((_) async => [housingCategory]);
       getIt
         ..registerSingleton<AuthRepository>(repository)
         ..registerSingleton<BalanceRepository>(balances)
@@ -178,8 +180,10 @@ void main() {
       final pages = {
         AppRoutes.balances: BalancesPage,
         AppRoutes.balanceForm: BalanceFormPage,
-        '${AppRoutes.income}?month=2026-02': IncomePage,
+        '${AppRoutes.income}?month=2026-02': EntriesPage,
         AppRoutes.incomeForm: EntryFormPage,
+        '${AppRoutes.expenses}?month=2026-03': EntriesPage,
+        AppRoutes.expensesForm: EntryFormPage,
       };
       for (final MapEntry(key: location, value: page) in pages.entries) {
         router.go(location);
@@ -187,6 +191,8 @@ void main() {
         expect(find.byType(page), findsOneWidget, reason: location);
       }
       verify(() => entries.month(DateTime(2026, 2), kind: EntryKind.income))
+          .called(1);
+      verify(() => entries.month(DateTime(2026, 3), kind: EntryKind.expense))
           .called(1);
 
       router.go(AppRoutes.balanceForm, extra: balance);
@@ -196,6 +202,10 @@ void main() {
       router.go(AppRoutes.incomeForm, extra: salary);
       await tester.pumpAndSettle();
       expect(find.text('Editar receita'), findsOneWidget);
+
+      router.go(AppRoutes.expensesForm, extra: housing);
+      await tester.pumpAndSettle();
+      expect(find.text('Editar despesa'), findsOneWidget);
     });
   });
 }

@@ -12,17 +12,40 @@ import 'package:lar_em_dia/features/entries/domain/entry_repository.dart';
 part 'home_cubit.freezed.dart';
 
 @freezed
+abstract class MonthTotals with _$MonthTotals {
+  const factory({required int settledCents, required int pendingCents}) =
+      _MonthTotals;
+
+  factory of(List<Entry> entries) {
+    int sum({required bool paid}) => entries
+        .where((entry) => entry.isPaid == paid)
+        .fold(0, (total, entry) => total + entry.amountCents);
+    return MonthTotals(
+      settledCents: sum(paid: true),
+      pendingCents: sum(paid: false),
+    );
+  }
+
+  const new _();
+
+  int get totalCents => settledCents + pendingCents;
+}
+
+@freezed
 abstract class HomeSummary with _$HomeSummary {
   const factory({
     required DateTime month,
-    required int receivedCents,
-    required int pendingCents,
+    required MonthTotals income,
+    required MonthTotals expenses,
     Balance? latestBalance,
   }) = _HomeSummary;
 
   const new _();
 
-  int get incomeCents => receivedCents + pendingCents;
+  MonthTotals totalsOf(EntryKind kind) => switch (kind) {
+    EntryKind.income => income,
+    EntryKind.expense => expenses,
+  };
 }
 
 @injectable
@@ -39,16 +62,14 @@ class HomeCubit extends Cubit<LoadState<HomeSummary>> {
     try {
       final latest = await _balances.latest();
       final income = await _entries.month(month, kind: EntryKind.income);
-      int sum({required bool paid}) => income
-          .where((entry) => entry.isPaid == paid)
-          .fold(0, (total, entry) => total + entry.amountCents);
+      final expenses = await _entries.month(month, kind: EntryKind.expense);
       emit(
         LoadState.loaded(
           HomeSummary(
             month: month,
             latestBalance: latest,
-            receivedCents: sum(paid: true),
-            pendingCents: sum(paid: false),
+            income: MonthTotals.of(income),
+            expenses: MonthTotals.of(expenses),
           ),
         ),
       );

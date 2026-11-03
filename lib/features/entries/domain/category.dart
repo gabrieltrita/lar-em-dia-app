@@ -10,5 +10,6 @@ abstract class Category with _$Category {
     required EntryKind kind,
     required String key,
     required String name,
+    EntryNature? defaultNature,
   }) = _Category;
 }

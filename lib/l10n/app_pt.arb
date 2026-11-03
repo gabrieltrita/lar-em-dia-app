@@ -83,18 +83,24 @@
   "homeNoBalance": "Você ainda não informou seu saldo. Comece por ele para projetar os próximos meses.",
   "homeInformBalance": "Informar saldo",
   "homeBalanceHistory": "Histórico",
-  "homeIncomeTitle": "Receitas de {month}",
-  "@homeIncomeTitle": {
+  "homeEntriesTitle": "{kind, select, income{Receitas de {month}} other{Despesas de {month}}}",
+  "@homeEntriesTitle": {
     "placeholders": {
+      "kind": {
+        "type": "String"
+      },
       "month": {
         "type": "String"
       }
     }
   },
-  "homeIncomeBreakdown": "Recebidas {received} · A receber {pending}",
-  "@homeIncomeBreakdown": {
+  "homeEntriesBreakdown": "{kind, select, income{Recebidas {settled} · A receber {pending}} other{Pagas {settled} · A pagar {pending}}}",
+  "@homeEntriesBreakdown": {
     "placeholders": {
-      "received": {
+      "kind": {
+        "type": "String"
+      },
+      "settled": {
         "type": "String"
       },
       "pending": {
@@ -102,8 +108,122 @@
       }
     }
   },
-  "homeNewIncome": "Nova receita",
-  "homeSeeIncome": "Ver receitas",
+  "homeSeeEntries": "{kind, select, income{Ver receitas} other{Ver despesas}}",
+  "@homeSeeEntries": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "entriesTitle": "{kind, select, income{Receitas} other{Despesas}}",
+  "@entriesTitle": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "entriesEmpty": "{kind, select, income{Nenhuma receita neste mês.} other{Nenhuma despesa neste mês.}}",
+  "@entriesEmpty": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "entriesEmptyFilter": "Nenhuma despesa deste tipo neste mês.",
+  "entriesTotal": "Total do mês: {total}",
+  "@entriesTotal": {
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "entriesNatureBreakdown": "Fixas {fixed} · Variáveis {variable}",
+  "@entriesNatureBreakdown": {
+    "placeholders": {
+      "fixed": {
+        "type": "String"
+      },
+      "variable": {
+        "type": "String"
+      }
+    }
+  },
+  "entriesFilterAll": "Todas",
+  "entriesFilterFixed": "Fixas",
+  "entriesFilterVariable": "Variáveis",
+  "previousMonth": "Mês anterior",
+  "nextMonth": "Próximo mês",
+  "entrySettled": "{kind, select, income{Recebida} other{Paga}}",
+  "@entrySettled": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "entryPending": "{kind, select, income{A receber} other{A pagar}}",
+  "@entryPending": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "entryDeleteTitle": "{kind, select, income{Apagar receita?} other{Apagar despesa?}}",
+  "@entryDeleteTitle": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "entryDeleteMessage": "\"{description}\" será apagada.",
+  "@entryDeleteMessage": {
+    "placeholders": {
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "entryFormNewTitle": "{kind, select, income{Nova receita} other{Nova despesa}}",
+  "@entryFormNewTitle": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "entryFormEditTitle": "{kind, select, income{Editar receita} other{Editar despesa}}",
+  "@entryFormEditTitle": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "entryCategoryLabel": "{kind, select, income{Tipo de receita} other{Categoria}}",
+  "@entryCategoryLabel": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "entrySettledLabel": "{kind, select, income{Já recebida} other{Já paga}}",
+  "@entrySettledLabel": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "entryNatureLabel": "Tipo de despesa",
+  "entryNatureFixed": "Fixa",
+  "entryNatureVariable": "Variável",
   "balancesTitle": "Saldos",
   "balancesEmpty": "Nenhum saldo informado ainda.",
   "balanceFormNewTitle": "Informar saldo",
@@ -118,35 +238,8 @@
       }
     }
   },
-  "incomeTitle": "Receitas",
-  "incomeEmpty": "Nenhuma receita neste mês.",
-  "incomeTotal": "Total do mês: {total}",
-  "@incomeTotal": {
-    "placeholders": {
-      "total": {
-        "type": "String"
-      }
-    }
-  },
-  "incomePreviousMonth": "Mês anterior",
-  "incomeNextMonth": "Próximo mês",
-  "incomeReceived": "Recebida",
-  "incomePending": "A receber",
-  "incomeDeleteTitle": "Apagar receita?",
-  "incomeDeleteMessage": "\"{description}\" será apagada.",
-  "@incomeDeleteMessage": {
-    "placeholders": {
-      "description": {
-        "type": "String"
-      }
-    }
-  },
-  "entryFormNewTitle": "Nova receita",
-  "entryFormEditTitle": "Editar receita",
-  "entryCategoryLabel": "Tipo de receita",
   "entryDescriptionLabel": "Descrição",
   "entryDueOnLabel": "Data",
-  "entryReceivedLabel": "Já recebida",
   "validationAmountRequired": "Informe um valor maior que zero",
   "validationInFuture": "A data não pode estar no futuro",
   "validationDateTaken": "Já existe um saldo nessa data",
@@ -161,5 +254,25 @@
   "categoryAlimonyReceived": "Pensão recebida",
   "categoryTaxRefund": "Restituição de IR",
   "categoryReimbursement": "Reembolso",
-  "categoryOtherIncome": "Outras receitas"
+  "categoryOtherIncome": "Outras receitas",
+  "categoryHousing": "Moradia",
+  "categoryUtilities": "Contas da casa",
+  "categoryInternetPhone": "Internet e telefone",
+  "categorySubscriptions": "Assinaturas",
+  "categoryEducation": "Educação",
+  "categoryInsurance": "Seguros",
+  "categoryHealthPlan": "Plano de saúde",
+  "categoryLoans": "Empréstimos e financiamentos",
+  "categoryGroceries": "Mercado",
+  "categoryRestaurants": "Restaurantes e delivery",
+  "categoryTransport": "Transporte",
+  "categoryHealth": "Saúde",
+  "categoryLeisure": "Lazer",
+  "categoryTravel": "Viagens",
+  "categoryClothing": "Roupas",
+  "categoryPersonalCare": "Cuidados pessoais",
+  "categoryPets": "Pets",
+  "categoryGiftsDonations": "Presentes e doações",
+  "categoryTaxesFees": "Impostos e taxas",
+  "categoryOtherExpense": "Outras despesas"
 }
