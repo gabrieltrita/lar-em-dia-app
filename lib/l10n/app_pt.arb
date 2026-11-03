@@ -116,6 +116,40 @@
       }
     }
   },
+  "homeProjectionTitle": "Saldo previsto no fim de {month}",
+  "@homeProjectionTitle": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "homeSeeProjection": "Ver projeção",
+  "projectionTitle": "Projeção",
+  "projectionNoBalance": "Informe seu saldo para ver a projeção dos próximos meses.",
+  "projectionAnchor": "A partir do saldo de {amount} em {date}",
+  "@projectionAnchor": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "projectionChartLabel": "Gráfico do saldo previsto no fim de cada mês",
+  "projectionMonthFlow": "Entradas {income} · Saídas {expense}",
+  "@projectionMonthFlow": {
+    "placeholders": {
+      "income": {
+        "type": "String"
+      },
+      "expense": {
+        "type": "String"
+      }
+    }
+  },
   "entriesTitle": "{kind, select, income{Receitas} other{Despesas}}",
   "@entriesTitle": {
     "placeholders": {

@@ -3,11 +3,15 @@ import 'package:lar_em_dia/features/balance/domain/balance_repository.dart';
 import 'package:lar_em_dia/features/entries/domain/category.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/domain/entry_repository.dart';
+import 'package:lar_em_dia/features/projection/domain/projection.dart';
+import 'package:lar_em_dia/features/projection/domain/projection_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockBalanceRepository extends Mock implements BalanceRepository;
 
 class MockEntryRepository extends Mock implements EntryRepository;
+
+class MockProjectionRepository extends Mock implements ProjectionRepository;
 
 final november = DateTime(2026, 11);
 
@@ -89,6 +93,31 @@ final groceries = Entry(
   status: EntryStatus.paid,
   nature: EntryNature.variable,
   paidOn: DateTime(2026, 11, 7),
+);
+
+final novemberProjection = ProjectionMonth(
+  month: november,
+  openingCents: 123456,
+  incomeCents: 650000,
+  expenseCents: 280000,
+  fixedExpenseCents: 200000,
+  variableExpenseCents: 80000,
+  closingCents: 493456,
+);
+
+final decemberProjection = ProjectionMonth(
+  month: DateTime(2026, 12),
+  openingCents: 493456,
+  incomeCents: 0,
+  expenseCents: 600000,
+  fixedExpenseCents: 200000,
+  variableExpenseCents: 400000,
+  closingCents: -106544,
+);
+
+final projection = Projection(
+  anchor: ProjectionAnchor(amountCents: 123456, asOf: DateTime(2026, 11, 3)),
+  months: [novemberProjection, decemberProjection],
 );
 
 void registerFinanceFallbacks() {

@@ -17,6 +17,8 @@ abstract final class Dates {
     return DateTime(parsed.year, parsed.month, parsed.day);
   }
 
+  static String toMonth(DateTime value) => toIso(value).substring(0, 7);
+
   static String display(DateTime value) => _display.format(value);
 
   static DateTime firstOfMonth(DateTime value) =>

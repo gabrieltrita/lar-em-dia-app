@@ -8,6 +8,8 @@ import 'package:lar_em_dia/features/balance/domain/balance.dart';
 import 'package:lar_em_dia/features/balance/domain/balance_repository.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/domain/entry_repository.dart';
+import 'package:lar_em_dia/features/projection/domain/projection.dart';
+import 'package:lar_em_dia/features/projection/domain/projection_repository.dart';
 
 part 'home_cubit.freezed.dart';
 
@@ -38,6 +40,7 @@ abstract class HomeSummary with _$HomeSummary {
     required MonthTotals income,
     required MonthTotals expenses,
     Balance? latestBalance,
+    ProjectionMonth? projected,
   }) = _HomeSummary;
 
   const new _();
@@ -50,11 +53,12 @@ abstract class HomeSummary with _$HomeSummary {
 
 @injectable
 class HomeCubit extends Cubit<LoadState<HomeSummary>> {
-  new(this._balances, this._entries)
+  new(this._balances, this._entries, this._projections)
     : super(const LoadState<HomeSummary>.loading());
 
   final BalanceRepository _balances;
   final EntryRepository _entries;
+  final ProjectionRepository _projections;
 
   Future<void> load({DateTime? today}) async {
     emit(const LoadState<HomeSummary>.loading());
@@ -63,6 +67,9 @@ class HomeCubit extends Cubit<LoadState<HomeSummary>> {
       final latest = await _balances.latest();
       final income = await _entries.month(month, kind: EntryKind.income);
       final expenses = await _entries.month(month, kind: EntryKind.expense);
+      final projection = latest == null
+          ? null
+          : await _projections.fetch(from: month, months: 1);
       emit(
         LoadState.loaded(
           HomeSummary(
@@ -70,6 +77,7 @@ class HomeCubit extends Cubit<LoadState<HomeSummary>> {
             latestBalance: latest,
             income: MonthTotals.of(income),
             expenses: MonthTotals.of(expenses),
+            projected: projection?.months.first,
           ),
         ),
       );
