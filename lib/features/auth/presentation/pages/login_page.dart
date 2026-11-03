@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lar_em_dia/core/config/env.dart';
 import 'package:lar_em_dia/core/forms/error_messages.dart';
 import 'package:lar_em_dia/core/forms/submission.dart';
 import 'package:lar_em_dia/core/forms/validators.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/core/widgets/form_widgets.dart';
+import 'package:lar_em_dia/demo/demo_seed.dart';
 import 'package:lar_em_dia/features/auth/domain/login_result.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/auth_cubits.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
@@ -15,7 +17,9 @@ import 'package:lar_em_dia/features/auth/presentation/widgets/auth_scaffold.dart
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
 class LoginPage extends StatefulWidget {
-  const new({super.key});
+  const new({this.demo = Env.demo, super.key});
+
+  final bool demo;
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -23,8 +27,12 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final _email = TextEditingController();
-  final _password = TextEditingController();
+  late final _email = TextEditingController(
+    text: widget.demo ? DemoSeed.email : null,
+  );
+  late final _password = TextEditingController(
+    text: widget.demo ? DemoSeed.password : null,
+  );
 
   @override
   void dispose() {
@@ -64,6 +72,15 @@ class _LoginPageState extends State<LoginPage> {
       builder: (context, state) => AuthScaffold(
         title: l10n.loginTitle,
         children: [
+          if (widget.demo) ...[
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: InfoMessage(l10n.loginDemoNotice),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           Form(
             key: _formKey,
             child: AutofillGroup(
