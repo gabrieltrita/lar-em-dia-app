@@ -23,11 +23,15 @@ extension ApiErrorMessages on ApiError {
     }
     return switch (errors.first.code) {
       'blank' || 'required' => l10n.validationRequired,
-      'too_short' => l10n.validationPasswordTooShort,
-      'too_long' => l10n.validationPasswordTooLong,
+      'too_short' when field == 'password' => l10n.validationPasswordTooShort,
+      'too_long' when field == 'password' => l10n.validationPasswordTooLong,
+      'too_long' => l10n.validationTooLong,
       'weak_password' => l10n.validationWeakPassword,
       'confirmation' => l10n.validationMismatch,
       'taken' => l10n.validationTaken,
+      'in_future' => l10n.validationInFuture,
+      'inactive' => l10n.validationInactive,
+      'greater_than' || 'not_an_integer' => l10n.validationAmountRequired,
       _ => l10n.validationInvalid,
     };
   }
@@ -41,5 +45,6 @@ extension ValidationErrorMessages on ValidationError {
     ValidationError.passwordTooLong => l10n.validationPasswordTooLong,
     ValidationError.weakPassword => l10n.validationWeakPassword,
     ValidationError.mismatch => l10n.validationMismatch,
+    ValidationError.invalidAmount => l10n.validationAmountRequired,
   };
 }

@@ -1,3 +1,5 @@
+import 'package:lar_em_dia/core/money/money.dart';
+
 enum ValidationError {
   required,
   invalidEmail,
@@ -5,6 +7,7 @@ enum ValidationError {
   passwordTooLong,
   weakPassword,
   mismatch,
+  invalidAmount,
 }
 
 abstract final class Validators {
@@ -40,6 +43,22 @@ abstract final class Validators {
         _lower.hasMatch(value) &&
         _digit.hasMatch(value);
     return strong ? null : ValidationError.weakPassword;
+  }
+
+  static ValidationError? amount(String? value) {
+    final missing = required(value);
+    if (missing != null) {
+      return missing;
+    }
+    return Money.parse(value!) == null ? ValidationError.invalidAmount : null;
+  }
+
+  static ValidationError? positiveAmount(String? value) {
+    final invalid = amount(value);
+    if (invalid != null) {
+      return invalid;
+    }
+    return Money.parse(value!)! > 0 ? null : ValidationError.invalidAmount;
   }
 
   static ValidationError? matches(String? value, String other) =>

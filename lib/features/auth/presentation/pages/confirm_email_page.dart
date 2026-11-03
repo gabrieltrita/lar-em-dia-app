@@ -5,11 +5,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lar_em_dia/core/forms/submission.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
+import 'package:lar_em_dia/core/widgets/form_widgets.dart';
 import 'package:lar_em_dia/features/auth/domain/auth_user.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/auth_cubits.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
 import 'package:lar_em_dia/features/auth/presentation/widgets/auth_scaffold.dart';
-import 'package:lar_em_dia/features/auth/presentation/widgets/form_widgets.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
 class ConfirmEmailPage extends StatefulWidget {

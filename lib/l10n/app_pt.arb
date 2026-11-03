@@ -1,12 +1,12 @@
 {
   "@@locale": "pt",
   "appTitle": "Lar em Dia",
-  "homeHeadline": "Seu orçamento familiar, mês a mês",
-  "homeSubtitle": "Em breve: saldo, receitas, despesas e a projeção do fim do mês.",
   "homeGreeting": "Olá, {name}!",
   "@homeGreeting": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "logout": "Sair",
@@ -63,5 +63,103 @@
   "errorValidationFailed": "Confira os campos destacados.",
   "errorRateLimited": "Muitas tentativas. Aguarde um pouco e tente de novo.",
   "errorNetwork": "Não foi possível conectar. Verifique sua internet.",
-  "errorUnknown": "Algo deu errado. Tente de novo."
+  "errorUnknown": "Algo deu errado. Tente de novo.",
+  "retry": "Tentar de novo",
+  "save": "Salvar",
+  "cancel": "Cancelar",
+  "delete": "Apagar",
+  "edit": "Editar",
+  "amountLabel": "Valor",
+  "dateLabel": "Data",
+  "homeBalanceTitle": "Saldo informado",
+  "homeBalanceAsOf": "em {date}",
+  "@homeBalanceAsOf": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "homeNoBalance": "Você ainda não informou seu saldo. Comece por ele para projetar os próximos meses.",
+  "homeInformBalance": "Informar saldo",
+  "homeBalanceHistory": "Histórico",
+  "homeIncomeTitle": "Receitas de {month}",
+  "@homeIncomeTitle": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "homeIncomeBreakdown": "Recebidas {received} · A receber {pending}",
+  "@homeIncomeBreakdown": {
+    "placeholders": {
+      "received": {
+        "type": "String"
+      },
+      "pending": {
+        "type": "String"
+      }
+    }
+  },
+  "homeNewIncome": "Nova receita",
+  "homeSeeIncome": "Ver receitas",
+  "balancesTitle": "Saldos",
+  "balancesEmpty": "Nenhum saldo informado ainda.",
+  "balanceFormNewTitle": "Informar saldo",
+  "balanceFormEditTitle": "Editar saldo",
+  "balanceAmountHelper": "Pode ser negativo: digite - antes do valor",
+  "balanceDeleteTitle": "Apagar saldo?",
+  "balanceDeleteMessage": "O saldo de {date} será apagado.",
+  "@balanceDeleteMessage": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "incomeTitle": "Receitas",
+  "incomeEmpty": "Nenhuma receita neste mês.",
+  "incomeTotal": "Total do mês: {total}",
+  "@incomeTotal": {
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "incomePreviousMonth": "Mês anterior",
+  "incomeNextMonth": "Próximo mês",
+  "incomeReceived": "Recebida",
+  "incomePending": "A receber",
+  "incomeDeleteTitle": "Apagar receita?",
+  "incomeDeleteMessage": "\"{description}\" será apagada.",
+  "@incomeDeleteMessage": {
+    "placeholders": {
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "entryFormNewTitle": "Nova receita",
+  "entryFormEditTitle": "Editar receita",
+  "entryCategoryLabel": "Tipo de receita",
+  "entryDescriptionLabel": "Descrição",
+  "entryDueOnLabel": "Data",
+  "entryReceivedLabel": "Já recebida",
+  "validationAmountRequired": "Informe um valor maior que zero",
+  "validationInFuture": "A data não pode estar no futuro",
+  "validationDateTaken": "Já existe um saldo nessa data",
+  "validationInactive": "Esta opção não está mais disponível",
+  "validationTooLong": "Texto muito longo",
+  "categorySalary": "Salário",
+  "categoryThirteenthSalary": "13º salário",
+  "categoryVacationBonus": "Férias",
+  "categoryBonus": "Bônus e PLR",
+  "categoryExtraIncome": "Renda extra",
+  "categoryRentReceived": "Aluguel recebido",
+  "categoryAlimonyReceived": "Pensão recebida",
+  "categoryTaxRefund": "Restituição de IR",
+  "categoryReimbursement": "Reembolso",
+  "categoryOtherIncome": "Outras receitas"
 }

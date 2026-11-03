@@ -16,11 +16,19 @@ import 'package:lar_em_dia/features/auth/presentation/pages/register_page.dart';
 import 'package:lar_em_dia/features/auth/presentation/pages/reset_password_page.dart';
 import 'package:lar_em_dia/features/auth/presentation/pages/splash_page.dart';
 import 'package:lar_em_dia/features/auth/presentation/pages/two_factor_page.dart';
+import 'package:lar_em_dia/features/balance/domain/balance_repository.dart';
+import 'package:lar_em_dia/features/balance/presentation/pages/balance_form_page.dart';
+import 'package:lar_em_dia/features/balance/presentation/pages/balances_page.dart';
+import 'package:lar_em_dia/features/entries/domain/entry.dart';
+import 'package:lar_em_dia/features/entries/domain/entry_repository.dart';
+import 'package:lar_em_dia/features/entries/presentation/pages/entry_form_page.dart';
+import 'package:lar_em_dia/features/entries/presentation/pages/income_page.dart';
 import 'package:lar_em_dia/features/home/presentation/home_page.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../helpers/auth_fixtures.dart';
+import '../../helpers/finance_fixtures.dart';
 
 void main() {
   group('sessionRedirect', () {
@@ -53,14 +61,29 @@ void main() {
     late SessionCubit session;
     late GoRouter router;
 
+    late MockBalanceRepository balances;
+    late MockEntryRepository entries;
+
     setUpAll(() {
+      registerFinanceFallbacks();
       configureDependencies();
       getIt.allowReassignment = true;
     });
 
     setUp(() {
       repository = MockAuthRepository();
-      getIt.registerSingleton<AuthRepository>(repository);
+      balances = MockBalanceRepository();
+      entries = MockEntryRepository();
+      when(balances.latest).thenAnswer((_) async => null);
+      when(balances.list).thenAnswer((_) async => []);
+      when(() => entries.month(any(), kind: EntryKind.income))
+          .thenAnswer((_) async => []);
+      when(() => entries.categories(EntryKind.income))
+          .thenAnswer((_) async => [salaryCategory]);
+      getIt
+        ..registerSingleton<AuthRepository>(repository)
+        ..registerSingleton<BalanceRepository>(balances)
+        ..registerSingleton<EntryRepository>(entries);
       events = SessionEvents();
       session = SessionCubit(repository, events);
       router = buildRouter(session);
@@ -143,6 +166,36 @@ void main() {
       router.go(AppRoutes.twoFactor, extra: 'c1');
       await tester.pumpAndSettle();
       expect(find.byType(TwoFactorPage), findsOneWidget);
+    });
+
+    testWidgets('opens the balance and income pages when signed in', (
+      tester,
+    ) async {
+      await pumpRouter(tester);
+      session.signedIn(ana);
+      await tester.pumpAndSettle();
+
+      final pages = {
+        AppRoutes.balances: BalancesPage,
+        AppRoutes.balanceForm: BalanceFormPage,
+        '${AppRoutes.income}?month=2026-02': IncomePage,
+        AppRoutes.incomeForm: EntryFormPage,
+      };
+      for (final MapEntry(key: location, value: page) in pages.entries) {
+        router.go(location);
+        await tester.pumpAndSettle();
+        expect(find.byType(page), findsOneWidget, reason: location);
+      }
+      verify(() => entries.month(DateTime(2026, 2), kind: EntryKind.income))
+          .called(1);
+
+      router.go(AppRoutes.balanceForm, extra: balance);
+      await tester.pumpAndSettle();
+      expect(find.text('Editar saldo'), findsOneWidget);
+
+      router.go(AppRoutes.incomeForm, extra: salary);
+      await tester.pumpAndSettle();
+      expect(find.text('Editar receita'), findsOneWidget);
     });
   });
 }

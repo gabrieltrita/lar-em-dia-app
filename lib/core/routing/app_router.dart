@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lar_em_dia/core/dates/dates.dart';
 import 'package:lar_em_dia/core/di/injection.dart';
 import 'package:lar_em_dia/core/routing/stream_listenable.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/auth_cubits.dart';
@@ -12,6 +15,15 @@ import 'package:lar_em_dia/features/auth/presentation/pages/register_page.dart';
 import 'package:lar_em_dia/features/auth/presentation/pages/reset_password_page.dart';
 import 'package:lar_em_dia/features/auth/presentation/pages/splash_page.dart';
 import 'package:lar_em_dia/features/auth/presentation/pages/two_factor_page.dart';
+import 'package:lar_em_dia/features/balance/domain/balance.dart';
+import 'package:lar_em_dia/features/balance/presentation/cubits/balance_cubits.dart';
+import 'package:lar_em_dia/features/balance/presentation/pages/balance_form_page.dart';
+import 'package:lar_em_dia/features/balance/presentation/pages/balances_page.dart';
+import 'package:lar_em_dia/features/entries/domain/entry.dart';
+import 'package:lar_em_dia/features/entries/presentation/cubits/entry_cubits.dart';
+import 'package:lar_em_dia/features/entries/presentation/pages/entry_form_page.dart';
+import 'package:lar_em_dia/features/entries/presentation/pages/income_page.dart';
+import 'package:lar_em_dia/features/home/presentation/cubits/home_cubit.dart';
 import 'package:lar_em_dia/features/home/presentation/home_page.dart';
 
 abstract final class AppRoutes {
@@ -24,6 +36,10 @@ abstract final class AppRoutes {
   static const confirmEmail = '/confirm-email';
   static const forgotPassword = '/forgot-password';
   static const resetPassword = '/reset-password';
+  static const balances = '/balances';
+  static const balanceForm = '/balances/form';
+  static const income = '/income';
+  static const incomeForm = '/income/form';
 
   static const Set<String> public = {
     login,
@@ -46,6 +62,11 @@ String? sessionRedirect(SessionState session, String location) {
   };
 }
 
+C _started<C>(C cubit, Future<void> Function(C cubit) start) {
+  unawaited(start(cubit));
+  return cubit;
+}
+
 GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
   initialLocation: AppRoutes.home,
   refreshListenable: StreamListenable(sessionCubit.stream),
@@ -54,7 +75,51 @@ GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
   routes: [
     GoRoute(
       path: AppRoutes.home,
-      builder: (context, state) => const HomePage(),
+      builder: (context, state) => BlocProvider(
+        create: (_) => _started(getIt<HomeCubit>(), (cubit) => cubit.load()),
+        child: const HomePage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.balances,
+      builder: (context, state) => BlocProvider(
+        create: (_) =>
+            _started(getIt<BalancesCubit>(), (cubit) => cubit.load()),
+        child: const BalancesPage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.balanceForm,
+      builder: (context, state) => BlocProvider(
+        create: (_) => getIt<BalanceFormCubit>(),
+        child: BalanceFormPage(existing: state.extra as Balance?),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.income,
+      builder: (context, state) => BlocProvider(
+        create: (_) => _started(
+          getIt<MonthEntriesCubit>(),
+          (cubit) =>
+              cubit.load(Dates.parseMonth(state.uri.queryParameters['month'])),
+        ),
+        child: const IncomePage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.incomeForm,
+      builder: (context, state) => MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => getIt<EntryFormCubit>()),
+          BlocProvider(
+            create: (_) => _started(
+              getIt<CategoriesCubit>(),
+              (cubit) => cubit.load(EntryKind.income),
+            ),
+          ),
+        ],
+        child: EntryFormPage(existing: state.extra as Entry?),
+      ),
     ),
     GoRoute(
       path: AppRoutes.splash,
