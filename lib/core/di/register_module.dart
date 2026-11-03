@@ -4,8 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:injectable/injectable.dart';
 import 'package:lar_em_dia/core/config/env.dart';
 import 'package:lar_em_dia/core/network/auth_interceptor.dart';
+import 'package:lar_em_dia/core/network/token_transport.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
+import 'package:lar_em_dia/core/session/session_events.dart';
 import 'package:lar_em_dia/core/storage/token_storage.dart';
+import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
 
 @module
 abstract class RegisterModule {
@@ -13,20 +16,32 @@ abstract class RegisterModule {
   FlutterSecureStorage get secureStorage => const FlutterSecureStorage();
 
   @lazySingleton
-  Dio dio(TokenStorage tokenStorage) {
+  TokenTransport get tokenTransport => TokenTransport.platform;
+
+  @lazySingleton
+  Dio dio(
+    TokenStorage tokenStorage,
+    TokenTransport transport,
+    SessionEvents sessionEvents,
+  ) {
     final options = BaseOptions(
       baseUrl: Env.apiBaseUrl,
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 20),
       contentType: Headers.jsonContentType,
+      extra: {'withCredentials': transport.usesCookie},
     );
-    final dio = Dio(options);
-    dio.interceptors.add(
-      AuthInterceptor(tokenStorage: tokenStorage, client: Dio(options)),
-    );
-    return dio;
+    return Dio(options)
+      ..interceptors.add(
+        AuthInterceptor(
+          tokenStorage: tokenStorage,
+          client: Dio(options),
+          transport: transport,
+          sessionEvents: sessionEvents,
+        ),
+      );
   }
 
   @lazySingleton
-  GoRouter get router => buildRouter();
+  GoRouter router(SessionCubit sessionCubit) => buildRouter(sessionCubit);
 }

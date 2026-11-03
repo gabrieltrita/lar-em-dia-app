@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lar_em_dia/core/network/auth_interceptor.dart';
+import 'package:lar_em_dia/core/network/token_transport.dart';
+import 'package:lar_em_dia/core/session/session_events.dart';
 
 import '../../helpers/fake_adapter.dart';
 import '../../helpers/memory_token_storage.dart';
@@ -10,8 +12,14 @@ void main() {
   late List<RequestOptions> apiRequests;
   late List<RequestOptions> refreshRequests;
   late Dio dio;
+  late SessionEvents events;
+  late int expirations;
 
-  void build({required FakeHandler api, required FakeHandler refresh}) {
+  void build({
+    required FakeHandler api,
+    required FakeHandler refresh,
+    TokenTransport transport = TokenTransport.body,
+  }) {
     apiRequests = [];
     refreshRequests = [];
     final adapter = FakeAdapter((options) {
@@ -27,7 +35,12 @@ void main() {
     dio = Dio(BaseOptions(baseUrl: 'http://api.test'))
       ..httpClientAdapter = adapter
       ..interceptors.add(
-        AuthInterceptor(tokenStorage: storage, client: client),
+        AuthInterceptor(
+          tokenStorage: storage,
+          client: client,
+          transport: transport,
+          sessionEvents: events,
+        ),
       );
   }
 
@@ -47,7 +60,12 @@ void main() {
 
   setUp(() {
     storage = MemoryTokenStorage(accessToken: 'old', refreshToken: 'r1');
+    events = SessionEvents();
+    expirations = 0;
+    events.expired.listen((_) => expirations++);
   });
+
+  tearDown(() => events.dispose());
 
   test('sends the access token as a Bearer header', () async {
     build(
@@ -119,6 +137,8 @@ void main() {
     );
 
     await expectLater(dio.get<dynamic>('/me'), throwsA(isA<DioException>()));
+    await Future<void>.delayed(Duration.zero);
+    expect(expirations, 1);
   });
 
   test('clears the tokens when the refresh is rejected', () async {
@@ -132,6 +152,8 @@ void main() {
     await expectLater(dio.get<dynamic>('/me'), throwsA(isA<DioException>()));
     expect(storage.accessToken, isNull);
     expect(storage.refreshToken, isNull);
+    await Future<void>.delayed(Duration.zero);
+    expect(expirations, 1);
   });
 
   test('clears the tokens when the refresh has no access token', () async {
@@ -153,5 +175,49 @@ void main() {
     await expectLater(dio.get<dynamic>('/me'), throwsA(isA<DioException>()));
     expect(apiRequests, hasLength(2));
     expect(refreshRequests, hasLength(1));
+  });
+  test('does not refresh a 401 from an auth endpoint', () async {
+    build(
+      api: (_) => FakeAdapter.json(401, {
+        'error': {'code': 'invalid_credentials'},
+      }),
+      refresh: (_) => throw StateError('no refresh expected'),
+    );
+
+    await expectLater(
+      dio.post<dynamic>('/auth/login'),
+      throwsA(isA<DioException>()),
+    );
+    expect(refreshRequests, isEmpty);
+    expect(expirations, 0);
+  });
+
+  test('sends no transport header in body mode', () async {
+    build(
+      api: (options) => okUnless401(options, 'old'),
+      refresh: (_) => throw StateError('no refresh expected'),
+    );
+
+    await dio.get<dynamic>('/me');
+
+    expect(apiRequests.single.headers, isNot(contains(TokenTransport.header)));
+  });
+
+  test('in cookie mode, asks for cookies and refreshes without a stored '
+      'refresh token', () async {
+    storage = MemoryTokenStorage(accessToken: 'old');
+    build(
+      api: (options) => okUnless401(options, 'new'),
+      refresh: (_) => sessionWith(access: 'new'),
+      transport: TokenTransport.cookie,
+    );
+
+    final response = await dio.get<dynamic>('/me');
+
+    expect(response.data, {'data': 'ok'});
+    expect(apiRequests.first.headers[TokenTransport.header], 'cookie');
+    expect(refreshRequests.single.headers[TokenTransport.header], 'cookie');
+    expect(refreshRequests.single.data, isEmpty);
+    expect(storage.accessToken, 'new');
   });
 }

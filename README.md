@@ -34,13 +34,15 @@ Generated files (`*.g.dart`, `*.freezed.dart`, `*.config.dart`, `lib/l10n/gen/`)
 
 ```
 lib/
-  main.dart                   bootstrap: DI, then App
-  app.dart                    MaterialApp.router, theme, localization
+  main.dart                   bootstrap: path URLs on web, DI, session restore, then App
+  app.dart                    MaterialApp.router, theme, localization, SessionCubit provider
   core/
     config/env.dart           compile-time configuration (--dart-define)
     di/                       get_it + injectable (injection.dart, register_module.dart)
-    network/                  ApiClient ({ data, meta } envelope), ApiError (error.code), AuthInterceptor
-    routing/app_router.dart   go_router routes
+    forms/                    Submission state and SubmissionCubit, validators, error code -> pt-BR text
+    network/                  ApiClient ({ data, meta } envelope), ApiError (error.code), AuthInterceptor, TokenTransport
+    routing/                  go_router routes (AppRoutes) and the session redirect
+    session/session_events.dart   tells the app when the refresh token stopped working
     storage/token_storage.dart
     theme/app_theme.dart
   features/
@@ -57,7 +59,23 @@ tool/check_core_coverage.sh   fails below 100% line coverage in lib/core
 
 - Successful responses are `{ "data": ..., "meta": ... }`; `ApiClient` returns them as `ApiResponse<T>`.
 - Errors are `{ "error": { "code", "message", "details" } }`; `ApiClient` throws `ApiError`. Translate by `code` (and `details[field][].code`), never by `message`.
-- Tokens: login and refresh return `data.tokens.access_token` and `data.tokens.refresh_token`. Mobile uses the body mode. The web build will switch to the API's cookie mode (`X-Token-Transport: cookie`) when login lands in wave 1.
+- Tokens: login and refresh return `data.tokens.access_token` and `data.tokens.refresh_token`. Mobile uses the body mode and keeps the refresh token in secure storage. The web build uses the API's cookie mode: every request sends `X-Token-Transport: cookie` and `withCredentials`, so the refresh token lives in an httpOnly cookie and never reaches JavaScript.
+- DTOs use snake_case keys globally (`build.yaml` sets `field_rename: snake` for `json_serializable`).
+
+## Authentication
+
+| Route | Page |
+|---|---|
+| `/login` | Email and password; moves to `/two-factor` when the account has 2FA, and offers a new confirmation link when the email is not confirmed |
+| `/two-factor` | TOTP or backup code for the login challenge (only reachable from the login) |
+| `/register` | Sign up with the terms and privacy consents, then `/check-email` |
+| `/check-email` | Resend the confirmation link |
+| `/confirm-email?token=` | Link from the confirmation email; confirms and signs in |
+| `/forgot-password`, `/reset-password?token=` | Password recovery (the reset link comes by email) |
+
+`SessionCubit` is the single source of truth for the session (`unknown`, `authenticated`, `unauthenticated`). It restores the session on start through `POST /auth/refresh`, and the router redirects on every change: unknown shows the splash, signed out users only reach the public pages, signed in users go home. When a refresh fails, `AuthInterceptor` clears the tokens and `SessionEvents` signs the user out.
+
+The API email links point to the web routes above (`FRONTEND_URL` in the API). Deep links for the mobile apps come later.
 
 ## Quality
 
