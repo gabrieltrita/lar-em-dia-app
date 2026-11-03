@@ -63,6 +63,8 @@ class ProjectionChart extends StatelessWidget {
               sideTitles: SideTitles(
                 showTitles: true,
                 reservedSize: 48,
+                minIncluded: false,
+                maxIncluded: false,
                 getTitlesWidget: (value, meta) => SideTitleWidget(
                   meta: meta,
                   child: Text(_axisLabel.format(value), style: textStyle),
