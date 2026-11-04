@@ -50,10 +50,22 @@ abstract class ProjectionMonthDto with _$ProjectionMonthDto {
 }
 
 @freezed
+abstract class ProjectionAlertsDto with _$ProjectionAlertsDto {
+  const factory({
+    String? firstNegativeMonth,
+    @Default(0) int negativeMonthsCount,
+  }) = _ProjectionAlertsDto;
+
+  factory fromJson(Map<String, dynamic> json) =>
+      _$ProjectionAlertsDtoFromJson(json);
+}
+
+@freezed
 abstract class ProjectionDto with _$ProjectionDto {
   const factory({
     required List<ProjectionMonthDto> months,
     ProjectionAnchorDto? anchor,
+    @Default(ProjectionAlertsDto()) ProjectionAlertsDto alerts,
   }) = _ProjectionDto;
 
   const new _();
@@ -63,5 +75,7 @@ abstract class ProjectionDto with _$ProjectionDto {
   Projection toDomain() => Projection(
     anchor: anchor?.toDomain(),
     months: [for (final month in months) month.toDomain()],
+    firstNegativeMonth: Dates.parseMonth(alerts.firstNegativeMonth),
+    negativeMonthsCount: alerts.negativeMonthsCount,
   );
 }

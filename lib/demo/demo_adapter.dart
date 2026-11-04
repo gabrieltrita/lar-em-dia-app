@@ -150,11 +150,20 @@ class DemoServer {
       throw const DemoBadRequest('invalid_months');
     }
     final anchor = database.latestBalance();
+    final rows = database.projection(from: month, months: months);
+    final negative = [
+      for (final row in rows)
+        if (row['negative'] == true) row['month'],
+    ];
     return _data({
       'anchor': anchor == null
           ? null
           : {'amount_cents': anchor['amount_cents'], 'as_of': anchor['as_of']},
-      'months': database.projection(from: month, months: months),
+      'months': rows,
+      'alerts': {
+        'first_negative_month': negative.firstOrNull,
+        'negative_months_count': negative.length,
+      },
     });
   }
 

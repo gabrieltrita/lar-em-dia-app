@@ -123,16 +123,24 @@ class EntryFormCubit extends SubmissionCubit<Entry> {
     EntryDraft draft, {
     Entry? existing,
     Recurrence? recurrence,
+    Installments? installments,
   }) => run(
-    () => switch ((existing, recurrence)) {
-      (final entry?, _) => _repository.update(entry.id, draft),
-      (null, final repeat?) => _createSeries(draft, repeat),
-      (null, null) => _repository.create(draft),
+    () => switch ((existing, recurrence, installments)) {
+      (final entry?, _, _) => _repository.update(entry.id, draft),
+      (null, final repeat?, _) => _sent(
+        draft,
+        _repository.createSeries(draft, repeat),
+      ),
+      (null, null, final plan?) => _sent(
+        draft,
+        _repository.createInstallments(draft, plan),
+      ),
+      (null, null, null) => _repository.create(draft),
     },
   );
 
-  Future<Entry> _createSeries(EntryDraft draft, Recurrence recurrence) async {
-    final entries = await _repository.createSeries(draft, recurrence);
+  Future<Entry> _sent(EntryDraft draft, Future<List<Entry>> created) async {
+    final entries = await created;
     return entries.firstWhere((entry) => entry.dueOn == draft.dueOn);
   }
 }

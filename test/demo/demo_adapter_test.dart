@@ -201,6 +201,10 @@ void main() {
       expect(body['anchor'], {'amount_cents': 350000, 'as_of': '2026-11-01'});
       expect(body['months'], hasLength(12));
       expect((body['months'] as List).first, containsPair('month', '2026-11'));
+      expect(body['alerts'], {
+        'first_negative_month': '2027-01',
+        'negative_months_count': 3,
+      });
 
       final short =
           data(

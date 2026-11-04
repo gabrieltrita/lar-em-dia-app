@@ -27,6 +27,7 @@ class DemoDatabase {
 
   static const minSeriesCount = 2;
   static const maxSeriesCount = 36;
+  static const maxInstallmentsCount = 48;
 
   String nextId(String prefix) => '$prefix-${++_sequence}';
 
@@ -98,47 +99,95 @@ class DemoDatabase {
   }
 
   Row createSeries(Row input) {
+    final kind = input['kind'] ?? 'recurring';
+    final installments = kind == 'installments';
     final count = input['entries_count'];
-    final direction = input['direction'];
+    final direction = installments ? 'forward' : input['direction'];
+    final total = input['total_cents'];
     final errors = <String, List<String>>{
-      if (count is! int)
-        'entries_count': ['not_a_number']
-      else if (count < minSeriesCount)
-        'entries_count': ['greater_than_or_equal_to']
-      else if (count > maxSeriesCount)
-        'entries_count': ['less_than_or_equal_to'],
+      if (kind != 'recurring' && !installments) 'kind': ['inclusion'],
+      ..._countErrors(
+        count,
+        installments ? maxInstallmentsCount : maxSeriesCount,
+      ),
       if (direction != 'forward' && direction != 'backward')
         'direction': ['inclusion'],
+      ..._totalErrors(total, count, installments: installments),
     };
+    final amounts = installments && errors.isEmpty
+        ? _split(total! as int, count! as int)
+        : null;
     final Row base;
     try {
-      base = _entryFields(input);
+      base = _entryFields({
+        ...input,
+        if (installments) 'amount_cents': amounts?.first ?? 1,
+      });
     } on DemoValidationError catch (error) {
       throw DemoValidationError({...errors, ...error.details});
     }
+    if (installments && base['kind'] == 'income') {
+      errors['kind'] = ['only_for_expenses'];
+    }
     _raiseIfAny(errors);
-    final total = count! as int;
+    final size = count! as int;
     final row = {
       'id': nextId('series'),
-      'kind': 'recurring',
-      'entries_count': total,
+      'kind': kind,
+      'entries_count': size,
+      'total_cents': installments ? total : null,
     };
     series.add(row);
     final baseDueOn = _date(base, 'due_on');
     final step = direction == 'forward' ? 1 : -1;
     final dueDates = [
-      for (var offset = 0; offset < total; offset++)
+      for (var offset = 0; offset < size; offset++)
         _shift(baseDueOn, offset * step),
     ]..sort();
     final created = [
       for (final (index, dueOn) in dueDates.indexed)
-        _seriesEntry(base, dueOn, row['id']! as String, index + 1),
+        _seriesEntry(
+          {...base, 'amount_cents': amounts?[index] ?? base['amount_cents']},
+          dueOn,
+          row,
+          index + 1,
+        ),
     ];
     entries.addAll(created);
     return {...row, 'entries': created};
   }
 
-  Row _seriesEntry(Row base, DateTime dueOn, String seriesId, int position) {
+  static FieldErrors _countErrors(Object? count, int maximum) => {
+    if (count is! int)
+      'entries_count': ['not_a_number']
+    else if (count < minSeriesCount)
+      'entries_count': ['greater_than_or_equal_to']
+    else if (count > maximum)
+      'entries_count': ['less_than_or_equal_to'],
+  };
+
+  static FieldErrors _totalErrors(
+    Object? total,
+    Object? count, {
+    required bool installments,
+  }) => {
+    if (!installments && total != null)
+      'total_cents': ['present']
+    else if (installments && total is! int)
+      'total_cents': ['not_a_number']
+    else if (installments && (total! as int) < max(count is int ? count : 1, 1))
+      'total_cents': ['greater_than_or_equal_to'],
+  };
+
+  static List<int> _split(int total, int count) {
+    final share = total ~/ count;
+    return [
+      share + total - share * count,
+      for (var i = 1; i < count; i++) share,
+    ];
+  }
+
+  Row _seriesEntry(Row base, DateTime dueOn, Row series, int position) {
     final isBase = dueOn == _date(base, 'due_on');
     final paid = base['status'] == 'paid' && !dueOn.isAfter(today);
     return {
@@ -147,8 +196,10 @@ class DemoDatabase {
       'due_on': Dates.toIso(dueOn),
       if (!isBase) 'status': paid ? 'paid' : 'pending',
       if (!isBase) 'paid_on': paid ? Dates.toIso(dueOn) : null,
-      'series_id': seriesId,
+      'series_id': series['id'],
       'series_position': position,
+      'series_kind': series['kind'],
+      'series_count': series['entries_count'],
     };
   }
 
@@ -205,6 +256,7 @@ class DemoDatabase {
       'variable_expense_cents': variable,
       'closing_cents': opening + income - fixed - variable,
       'savings_cents': opening + income - fixed - variable - start,
+      'negative': opening + income - fixed - variable < 0,
     };
   }
 

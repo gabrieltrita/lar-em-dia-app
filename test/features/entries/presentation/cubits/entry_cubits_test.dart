@@ -220,6 +220,31 @@ void main() {
   );
 
   blocTest<EntryFormCubit, Submission<Entry>>(
+    'creates installments and succeeds with the first one',
+    setUp: () =>
+        when(
+          () => repository.createInstallments(
+            salary.toDraft(),
+            const Installments(count: 2),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            salary,
+            salary.copyWith(id: 'entry-9', dueOn: DateTime(2026, 12, 5)),
+          ],
+        ),
+    build: () => EntryFormCubit(repository),
+    act: (cubit) => cubit.save(
+      salary.toDraft(),
+      installments: const Installments(count: 2),
+    ),
+    expect: () => [
+      const Submission<Entry>.inProgress(),
+      Submission.success(salary),
+    ],
+  );
+
+  blocTest<EntryFormCubit, Submission<Entry>>(
     'updates an existing entry',
     setUp: () =>
         when(() => repository.update('entry-1', salary.toDraft()))

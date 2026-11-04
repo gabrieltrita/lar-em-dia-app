@@ -120,6 +120,8 @@ final decemberProjection = ProjectionMonth(
 final projection = Projection(
   anchor: ProjectionAnchor(amountCents: 123456, asOf: DateTime(2026, 11, 3)),
   months: [novemberProjection, decemberProjection],
+  firstNegativeMonth: DateTime(2026, 12),
+  negativeMonthsCount: 1,
 );
 
 void registerFinanceFallbacks() {
@@ -131,4 +133,5 @@ void registerFinanceFallbacks() {
   registerFallbackValue(
     const Recurrence(count: 2, direction: RecurrenceDirection.forward),
   );
+  registerFallbackValue(const Installments(count: 2));
 }

@@ -392,5 +392,75 @@
   "adminMakeAdmin": "Tornar administrador",
   "adminMakeAdminMessage": "A pessoa passa a acessar a administração depois de ativar a verificação em duas etapas.",
   "adminRemoveAdmin": "Remover administrador",
-  "adminRemoveAdminMessage": "A pessoa deixa de acessar a administração."
+  "adminRemoveAdminMessage": "A pessoa deixa de acessar a administração.",
+  "entryInstallmentsLabel": "Compra parcelada",
+  "entryInstallmentsCountLabel": "Número de parcelas",
+  "entryInstallmentsCount": "{count}x",
+  "@entryInstallmentsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "entryTotalAmountLabel": "Valor total",
+  "entryInstallmentsPreview": "{count}x de {amount}",
+  "@entryInstallmentsPreview": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "entryInstallmentsPreviewUneven": "1ª de {first} e {rest}x de {amount}",
+  "@entryInstallmentsPreviewUneven": {
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "rest": {
+        "type": "int"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "entryInstallment": "Parcela {position} de {count}",
+  "@entryInstallment": {
+    "placeholders": {
+      "position": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "entryInstallmentShort": "{position}/{count}",
+  "@entryInstallmentShort": {
+    "placeholders": {
+      "position": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "negativeMonthsAlert": "{count, plural, =1{Em {month} o saldo fica negativo.} other{A partir de {month}, {count} meses ficam no vermelho.}}",
+  "@negativeMonthsAlert": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "projectionNegativeMonth": "Mês no vermelho"
 }

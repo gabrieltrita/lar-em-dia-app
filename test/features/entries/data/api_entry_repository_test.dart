@@ -144,6 +144,68 @@ void main() {
     });
   });
 
+  test('creates installments from the total', () async {
+    final repository = build(
+      (_) => FakeAdapter.json(201, {
+        'data': {
+          'id': 'series-2',
+          'kind': 'installments',
+          'entries_count': 2,
+          'total_cents': 500001,
+          'entries': [
+            {
+              ...entryJson('entry-1'),
+              'kind': 'expense',
+              'nature': 'variable',
+              'amount_cents': 250001,
+              'series_id': 'series-2',
+              'series_position': 1,
+              'series_kind': 'installments',
+              'series_count': 2,
+            },
+          ],
+        },
+      }),
+    );
+
+    final created = await repository.createInstallments(
+      salary.toDraft(),
+      const Installments(count: 2),
+    );
+
+    expect(created.single.isInstallment, isTrue);
+    expect(created.single.isRecurring, isFalse);
+    expect(created.single.seriesCount, 2);
+    expect(adapter.requests.single.data, {
+      'category_id': 'cat-salary',
+      'description': 'Salário ACME',
+      'due_on': '2026-11-05',
+      'status': 'paid',
+      'nature': null,
+      'paid_on': '2026-11-05',
+      'kind': 'installments',
+      'total_cents': 500000,
+      'entries_count': 2,
+    });
+  });
+
+  test('ignores an unknown series kind', () async {
+    final repository = build(
+      (_) => FakeAdapter.json(200, {
+        'data': {
+          ...entryJson('entry-1'),
+          'series_id': 'series-9',
+          'series_kind': 'weekly',
+        },
+      }),
+    );
+
+    final entry = await repository.update('entry-1', salary.toDraft());
+
+    expect(entry.seriesKind, isNull);
+    expect(entry.isRecurring, isTrue);
+  });
+
   test('sends and reads the nature of an expense', () async {
     final repository = build(
       (_) => FakeAdapter.json(201, {

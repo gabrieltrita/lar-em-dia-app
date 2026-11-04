@@ -10,6 +10,8 @@ enum EntryNature { fixed, variable }
 
 enum RecurrenceDirection { forward, backward }
 
+enum SeriesKind { recurring, installments }
+
 @freezed
 abstract class Recurrence with _$Recurrence {
   const factory({required int count, required RecurrenceDirection direction}) =
@@ -18,6 +20,23 @@ abstract class Recurrence with _$Recurrence {
   static const minCount = 2;
   static const maxCount = 36;
   static const defaultCount = 12;
+}
+
+@freezed
+abstract class Installments with _$Installments {
+  const factory({required int count}) = _Installments;
+
+  const new _();
+
+  static const minCount = 2;
+  static const maxCount = 48;
+  static const defaultCount = 10;
+
+  List<int> split(int totalCents) {
+    final share = totalCents ~/ count;
+    final rest = totalCents - share * count;
+    return [share + rest, for (var i = 1; i < count; i++) share];
+  }
 }
 
 @freezed
@@ -46,13 +65,17 @@ abstract class Entry with _$Entry {
     DateTime? paidOn,
     String? seriesId,
     int? seriesPosition,
+    SeriesKind? seriesKind,
+    int? seriesCount,
   }) = _Entry;
 
   const new _();
 
   bool get isPaid => status == EntryStatus.paid;
 
-  bool get isRecurring => seriesId != null;
+  bool get isRecurring => seriesId != null && !isInstallment;
+
+  bool get isInstallment => seriesKind == SeriesKind.installments;
 
   EntryDraft toDraft() => EntryDraft(
     categoryId: categoryId,

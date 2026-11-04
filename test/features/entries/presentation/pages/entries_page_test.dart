@@ -66,6 +66,25 @@ void main() {
     );
   });
 
+  testWidgets('labels installments with their position', (tester) async {
+    when(() => repository.month(any(), kind: EntryKind.income)).thenAnswer(
+      (_) async => [
+        salary.copyWith(
+          seriesId: 'series-2',
+          seriesPosition: 3,
+          seriesKind: SeriesKind.installments,
+          seriesCount: 10,
+        ),
+      ],
+    );
+    await pump(tester);
+
+    expect(find.byIcon(Icons.credit_card), findsOneWidget);
+    expect(find.byIcon(Icons.repeat), findsNothing);
+    expect(find.text('Salário ACME 3/10'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('Parcela 3 de 10')), findsOneWidget);
+  });
+
   group('expenses', () {
     setUp(() {
       when(() => repository.categories(EntryKind.expense))

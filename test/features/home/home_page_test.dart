@@ -50,7 +50,7 @@ void main() {
     tearDown(() => harness.dispose());
 
     Future<void> pump(WidgetTester tester) {
-      tester.view.physicalSize = const Size(1200, 3000);
+      tester.view.physicalSize = const Size(1200, 4200);
       addTearDown(tester.view.resetPhysicalSize);
       return pumpPage(
         tester,
@@ -161,6 +161,38 @@ void main() {
         verify(balances.latest).called(2);
       });
     }
+
+    testWidgets('warns about a negative month and opens the projection', (
+      tester,
+    ) async {
+      await pump(tester);
+
+      final alert = find.text('Em dezembro de 2026 o saldo fica negativo.');
+      expect(alert, findsOneWidget);
+      await tester.tap(alert);
+      await tester.pumpAndSettle();
+
+      expect(find.text(routeMarker(AppRoutes.projection)), findsOneWidget);
+    });
+
+    testWidgets('has no warning when every month stays positive', (
+      tester,
+    ) async {
+      when(
+        () => projections.fetch(
+          from: any(named: 'from'),
+          months: any(named: 'months'),
+        ),
+      ).thenAnswer(
+        (_) async => projection.copyWith(
+          months: [novemberProjection],
+          firstNegativeMonth: null,
+        ),
+      );
+      await pump(tester);
+
+      expect(find.textContaining('saldo fica negativo'), findsNothing);
+    });
 
     testWidgets('shows the administration only to admins', (tester) async {
       await pump(tester);

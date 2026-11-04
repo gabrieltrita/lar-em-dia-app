@@ -43,6 +43,9 @@ abstract class EntryDto with _$EntryDto {
     String? paidOn,
     String? seriesId,
     int? seriesPosition,
+    @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)
+    SeriesKind? seriesKind,
+    int? seriesCount,
   }) = _EntryDto;
 
   const new _();
@@ -61,5 +64,7 @@ abstract class EntryDto with _$EntryDto {
     paidOn: paidOn == null ? null : Dates.parseIso(paidOn!),
     seriesId: seriesId,
     seriesPosition: seriesPosition,
+    seriesKind: seriesKind,
+    seriesCount: seriesCount,
   );
 }
