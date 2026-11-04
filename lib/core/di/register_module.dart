@@ -8,6 +8,7 @@ import 'package:lar_em_dia/core/network/token_transport.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/core/session/session_events.dart';
 import 'package:lar_em_dia/core/storage/token_storage.dart';
+import 'package:lar_em_dia/demo/demo_mode.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
 
 @module
@@ -31,11 +32,11 @@ abstract class RegisterModule {
       contentType: Headers.jsonContentType,
       extra: {'withCredentials': transport.usesCookie},
     );
-    return Dio(options)
+    return DemoMode.apply(Dio(options))
       ..interceptors.add(
         AuthInterceptor(
           tokenStorage: tokenStorage,
-          client: Dio(options),
+          client: DemoMode.apply(Dio(options)),
           transport: transport,
           sessionEvents: sessionEvents,
         ),

@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
+import 'package:lar_em_dia/demo/demo_seed.dart';
 import 'package:lar_em_dia/features/auth/domain/login_result.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/auth_cubits.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
@@ -22,11 +23,11 @@ void main() {
 
   final submit = find.widgetWithText(FilledButton, 'Entrar');
 
-  Future<void> pump(WidgetTester tester) => pumpPage(
+  Future<void> pump(WidgetTester tester, {bool demo = false}) => pumpPage(
     tester,
     BlocProvider(
       create: (_) => LoginCubit(harness.repository),
-      child: const LoginPage(),
+      child: LoginPage(demo: demo),
     ),
     session: harness.session,
   );
@@ -49,8 +50,26 @@ void main() {
     );
   }
 
+  testWidgets('explains the demo and fills in its account', (tester) async {
+    when(
+      () => harness.repository.login(
+        email: DemoSeed.email,
+        password: DemoSeed.password,
+      ),
+    ).thenAnswer((_) async => const LoginResult.authenticated(ana));
+    await pump(tester, demo: true);
+
+    expect(find.textContaining('Modo demonstração'), findsOneWidget);
+    expect(find.text(DemoSeed.email), findsOneWidget);
+    await tester.tap(submit);
+    await tester.pumpAndSettle();
+
+    expect(harness.session.state, const SessionState.authenticated(ana));
+  });
+
   testWidgets('validates the fields before calling the API', (tester) async {
     await pump(tester);
+    expect(find.textContaining('Modo demonstração'), findsNothing);
 
     await tester.tap(submit);
     await tester.pump();

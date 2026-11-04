@@ -100,6 +100,20 @@ Amounts are integer cents end to end (`amount_cents` in the API, `int` in the ap
 
 The API email links point to the web routes above (`FRONTEND_URL` in the API). Deep links for the mobile apps come later.
 
+## Demo build
+
+`--dart-define=DEMO=true` builds an app that needs no API: both Dio clients get `DemoAdapter` (`lib/demo`) as their `HttpClientAdapter`, an in-memory fake of the Lar em Dia API in the spirit of Ember's Mirage. Everything above the adapter is the real app (repositories, DTOs, `AuthInterceptor`, refresh, error codes).
+
+```bash
+flutter run -d chrome --dart-define=DEMO=true
+flutter build web --release --no-web-resources-cdn --dart-define=DEMO=true
+```
+
+- `DemoServer` answers login, refresh, logout, `/me`, categories, balances and entries (CRUD, filters, paging, the API's validation codes) and `GET /projection` with the API's rule. Email flows answer success without sending anything.
+- `DemoSeed` creates the demo family relative to today: a balance on the first day of the month, a year of salary and fixed and variable expenses, the 13th salary in December and a trip that leaves one month negative. Entries due up to today are paid.
+- The login page shows a demo notice with the account filled in (`DemoSeed.email` / `DemoSeed.password`). Data lives in memory, so reloading the page starts over.
+- The demo uses hash URLs (`/#/projection`), so the web build opens from any address without server rewrites.
+
 ## Quality
 
 ```bash

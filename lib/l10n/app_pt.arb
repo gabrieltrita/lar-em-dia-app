@@ -17,6 +17,7 @@
   "firstNameLabel": "Nome",
   "lastNameLabel": "Sobrenome (opcional)",
   "loginTitle": "Entrar",
+  "loginDemoNotice": "Modo demonstração: os dados são de exemplo e voltam ao início quando a página é recarregada. É só tocar em Entrar.",
   "loginSubmit": "Entrar",
   "loginCreateAccount": "Criar conta",
   "loginForgotPassword": "Esqueci minha senha",
