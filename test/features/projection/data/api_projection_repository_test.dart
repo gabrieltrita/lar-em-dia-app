@@ -35,6 +35,7 @@ void main() {
         monthJson(novemberProjection, '2026-11'),
         monthJson(decemberProjection, '2026-12'),
       ],
+      'alerts': {'first_negative_month': '2026-12', 'negative_months_count': 1},
     });
 
     final result = await repository.fetch(from: DateTime(2026, 11, 20));

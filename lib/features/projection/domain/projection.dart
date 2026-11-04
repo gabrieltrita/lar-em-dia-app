@@ -33,5 +33,7 @@ abstract class Projection with _$Projection {
   const factory({
     required List<ProjectionMonth> months,
     ProjectionAnchor? anchor,
+    DateTime? firstNegativeMonth,
+    @Default(0) int negativeMonthsCount,
   }) = _Projection;
 }

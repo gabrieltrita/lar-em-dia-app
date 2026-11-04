@@ -78,6 +78,25 @@ class ApiEntryRepository implements EntryRepository {
   }
 
   @override
+  Future<List<Entry>> createInstallments(
+    EntryDraft draft,
+    Installments installments,
+  ) async {
+    final body = _body(draft)..remove('amount_cents');
+    final response = await _client.post<List<Entry>>(
+      seriesPath,
+      decode: (data) => _decodeList((data! as Json)['entries']),
+      body: {
+        ...body,
+        'kind': SeriesKind.installments.name,
+        'total_cents': draft.amountCents,
+        'entries_count': installments.count,
+      },
+    );
+    return response.data;
+  }
+
+  @override
   Future<Entry> update(String id, EntryDraft draft) async {
     final response = await _client.patch<Entry>(
       '$path/$id',

@@ -159,6 +159,12 @@ void main() {
     expect(popped, [true]);
   });
 
+  testWidgets('offers installments only on expenses', (tester) async {
+    await pump(tester);
+
+    expect(find.byKey(const Key('entry_installments')), findsNothing);
+  });
+
   testWidgets('names the repetition fields in API errors', (tester) async {
     when(() => repository.createSeries(any(), any())).thenThrow(
       const ApiError(
@@ -279,6 +285,105 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(() => repository.update(housing.id, housing.toDraft())).called(1);
+    });
+
+    testWidgets('creates installments from the total', (tester) async {
+      when(() => repository.createInstallments(any(), any())).thenAnswer(
+        (_) async => [groceries.copyWith(dueOn: DateTime(2026, 11, 3))],
+      );
+      await pump(tester, kind: EntryKind.expense);
+
+      await pickCategory(tester, 'Mercado');
+      await tester.enterText(
+        find.byKey(const Key('entry_description')),
+        'Sofá',
+      );
+      await tester.enterText(find.byKey(const Key('entry_amount')), '120000');
+      await tester.tap(find.byKey(const Key('entry_repeat')));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const Key('entry_installments')));
+      await tester.tap(find.byKey(const Key('entry_installments')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('entry_repeat_count')), findsNothing);
+      expect(find.text('Valor total'), findsOneWidget);
+      expect(find.text(r'10x de R$ 120,00'), findsOneWidget);
+
+      await tester.enterText(find.byKey(const Key('entry_amount')), '101');
+      await tester.pump();
+      expect(find.text(r'1ª de R$ 0,11 e 9x de R$ 0,10'), findsOneWidget);
+      await tester.enterText(find.byKey(const Key('entry_amount')), '9');
+      await tester.pump();
+      expect(find.byKey(const Key('entry_installments_preview')), findsNothing);
+
+      await tester.enterText(find.byKey(const Key('entry_amount')), '120000');
+      await tester.ensureVisible(
+        find.byKey(const Key('entry_installments_count')),
+      );
+      await tester.tap(find.byKey(const Key('entry_installments_count')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('3x').last);
+      await tester.pumpAndSettle();
+      expect(find.text(r'3x de R$ 400,00'), findsOneWidget);
+      await tester.ensureVisible(save);
+      await tester.tap(save);
+      await tester.pumpAndSettle();
+
+      verify(
+        () => repository.createInstallments(
+          EntryDraft(
+            categoryId: groceriesCategory.id,
+            description: 'Sofá',
+            amountCents: 120000,
+            dueOn: DateTime(2026, 11, 3),
+            status: EntryStatus.pending,
+            nature: EntryNature.variable,
+          ),
+          const Installments(count: 3),
+        ),
+      ).called(1);
+      verifyNever(() => repository.createSeries(any(), any()));
+    });
+
+    testWidgets('turns installments off when repeating', (tester) async {
+      await pump(tester, kind: EntryKind.expense);
+
+      await tester.tap(find.byKey(const Key('entry_installments')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('entry_repeat')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('entry_installments_count')), findsNothing);
+      expect(find.byKey(const Key('entry_repeat_count')), findsOneWidget);
+      expect(find.text('Valor'), findsOneWidget);
+    });
+
+    testWidgets('names the installment fields in API errors', (tester) async {
+      when(() => repository.createInstallments(any(), any())).thenThrow(
+        const ApiError(
+          code: 'validation_failed',
+          details: {
+            'total_cents': [FieldError(code: 'greater_than_or_equal_to')],
+            'kind': [FieldError(code: 'only_for_expenses')],
+          },
+        ),
+      );
+      await pump(tester, kind: EntryKind.expense);
+
+      await pickCategory(tester, 'Mercado');
+      await tester.enterText(
+        find.byKey(const Key('entry_description')),
+        'Sofá',
+      );
+      await tester.enterText(find.byKey(const Key('entry_amount')), '120000');
+      await tester.tap(find.byKey(const Key('entry_installments')));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(save);
+      await tester.tap(save);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Valor total: '), findsOneWidget);
+      expect(find.textContaining('Compra parcelada: '), findsOneWidget);
     });
 
     testWidgets('names the nature in API errors', (tester) async {

@@ -50,6 +50,8 @@ class _EntryFormPageState extends State<EntryFormPage> {
   bool _repeat = false;
   int _repeatCount = Recurrence.defaultCount;
   RecurrenceDirection _repeatDirection = RecurrenceDirection.forward;
+  bool _installments = false;
+  int _installmentsCount = Installments.defaultCount;
 
   bool get _isExpense => widget.kind == EntryKind.expense;
 
@@ -80,6 +82,9 @@ class _EntryFormPageState extends State<EntryFormPage> {
         recurrence: _repeat
             ? Recurrence(count: _repeatCount, direction: _repeatDirection)
             : null,
+        installments: _installments
+            ? Installments(count: _installmentsCount)
+            : null,
       ),
     );
   }
@@ -90,6 +95,8 @@ class _EntryFormPageState extends State<EntryFormPage> {
       'nature': l10n.entryNatureLabel,
       'description': l10n.entryDescriptionLabel,
       'amount_cents': l10n.amountLabel,
+      'total_cents': l10n.entryTotalAmountLabel,
+      'kind': l10n.entryInstallmentsLabel,
       'due_on': l10n.entryDueOnLabel,
       'entries_count': l10n.entryRepeatCountLabel,
       'direction': l10n.entryRepeatDirectionLabel,
@@ -156,7 +163,10 @@ class _EntryFormPageState extends State<EntryFormPage> {
         title: Text(l10n.entryRepeatLabel),
         value: _repeat,
         contentPadding: EdgeInsets.zero,
-        onChanged: (value) => setState(() => _repeat = value),
+        onChanged: (value) => setState(() {
+          _repeat = value;
+          _installments = _installments && !value;
+        }),
       ),
       if (_repeat) ...[
         const SizedBox(height: 8),
@@ -198,6 +208,50 @@ class _EntryFormPageState extends State<EntryFormPage> {
             selected: {_repeatDirection},
             onSelectionChanged: (selection) =>
                 setState(() => _repeatDirection = selection.single),
+          ),
+        ),
+      ],
+    ];
+  }
+
+  List<Widget> _installmentsFields(AppLocalizations l10n) {
+    return [
+      SwitchListTile(
+        key: const Key('entry_installments'),
+        title: Text(l10n.entryInstallmentsLabel),
+        value: _installments,
+        contentPadding: EdgeInsets.zero,
+        onChanged: (value) => setState(() {
+          _installments = value;
+          _repeat = _repeat && !value;
+        }),
+      ),
+      if (_installments) ...[
+        const SizedBox(height: 8),
+        DropdownButtonFormField<int>(
+          key: const Key('entry_installments_count'),
+          initialValue: _installmentsCount,
+          decoration: InputDecoration(
+            labelText: l10n.entryInstallmentsCountLabel,
+          ),
+          items: [
+            for (
+              var count = Installments.minCount;
+              count <= Installments.maxCount;
+              count++
+            )
+              DropdownMenuItem(
+                value: count,
+                child: Text(l10n.entryInstallmentsCount(count)),
+              ),
+          ],
+          onChanged: (value) => setState(() => _installmentsCount = value!),
+        ),
+        ValueListenableBuilder(
+          valueListenable: _amount,
+          builder: (context, value, _) => _InstallmentsPreview(
+            totalCents: Money.parse(value.text),
+            installments: Installments(count: _installmentsCount),
           ),
         ),
       ],
@@ -256,7 +310,9 @@ class _EntryFormPageState extends State<EntryFormPage> {
                     key: const Key('entry_amount'),
                     controller: _amount,
                     decoration: InputDecoration(
-                      labelText: l10n.amountLabel,
+                      labelText: _installments
+                          ? l10n.entryTotalAmountLabel
+                          : l10n.amountLabel,
                       prefixText: r'R$ ',
                     ),
                     keyboardType: TextInputType.number,
@@ -281,6 +337,7 @@ class _EntryFormPageState extends State<EntryFormPage> {
                     onChanged: (value) => setState(() => _settled = value),
                   ),
                   if (_isNew) ..._repeatFields(l10n),
+                  if (_isNew && _isExpense) ..._installmentsFields(l10n),
                   if (state case SubmissionFailure(:final error)) ...[
                     const SizedBox(height: 16),
                     ErrorBanner(_failureMessages(l10n, error)),
@@ -296,6 +353,40 @@ class _EntryFormPageState extends State<EntryFormPage> {
             ),
           ),
         },
+      ),
+    );
+  }
+}
+
+class _InstallmentsPreview extends StatelessWidget {
+  const new({required this.totalCents, required this.installments});
+
+  final int? totalCents;
+  final Installments installments;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final total = totalCents;
+    if (total == null || total < installments.count) {
+      return const SizedBox.shrink();
+    }
+    final [first, ...others] = installments.split(total);
+    final share = others.first;
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Text(
+        first == share
+            ? l10n.entryInstallmentsPreview(
+                installments.count,
+                Money.format(share),
+              )
+            : l10n.entryInstallmentsPreviewUneven(
+                Money.format(first),
+                others.length,
+                Money.format(share),
+              ),
+        key: const Key('entry_installments_preview'),
       ),
     );
   }

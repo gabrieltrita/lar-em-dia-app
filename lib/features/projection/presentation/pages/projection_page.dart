@@ -11,6 +11,7 @@ import 'package:lar_em_dia/core/state/load_state.dart';
 import 'package:lar_em_dia/core/widgets/form_widgets.dart';
 import 'package:lar_em_dia/features/projection/domain/projection.dart';
 import 'package:lar_em_dia/features/projection/presentation/cubits/projection_cubit.dart';
+import 'package:lar_em_dia/features/projection/presentation/widgets/negative_months_alert.dart';
 import 'package:lar_em_dia/features/projection/presentation/widgets/projection_chart.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
@@ -31,8 +32,10 @@ class ProjectionPage extends StatelessWidget {
             onRetry: () => unawaited(cubit.load()),
           ),
           Loaded(value: Projection(anchor: null)) => const _NoBalance(),
-          Loaded(value: Projection(:final months, :final anchor?)) =>
-            _ProjectionView(anchor: anchor, months: months),
+          Loaded(value: final projection) => _ProjectionView(
+            projection: projection,
+            anchor: projection.anchor!,
+          ),
         },
       ),
     );
@@ -71,10 +74,12 @@ class _NoBalance extends StatelessWidget {
 }
 
 class _ProjectionView extends StatelessWidget {
-  const new({required this.anchor, required this.months});
+  const new({required this.projection, required this.anchor});
 
+  final Projection projection;
   final ProjectionAnchor anchor;
-  final List<ProjectionMonth> months;
+
+  List<ProjectionMonth> get months => projection.months;
 
   @override
   Widget build(BuildContext context) {
@@ -91,6 +96,13 @@ class _ProjectionView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
+          if (projection.firstNegativeMonth case final first?) ...[
+            NegativeMonthsAlert(
+              firstMonth: first,
+              count: projection.negativeMonthsCount,
+            ),
+            const SizedBox(height: 16),
+          ],
           _SavingsCard(month: months.last),
           const SizedBox(height: 16),
           SizedBox(
@@ -155,6 +167,13 @@ class _MonthTile extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     return ListTile(
       contentPadding: EdgeInsets.zero,
+      leading: month.isNegative
+          ? Icon(
+              Icons.warning_amber,
+              color: colors.error,
+              semanticLabel: l10n.projectionNegativeMonth,
+            )
+          : const SizedBox(width: 24),
       title: Text(
         MaterialLocalizations.of(context).formatMonthYear(month.month),
       ),

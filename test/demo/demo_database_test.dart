@@ -275,6 +275,67 @@ void main() {
     });
   });
 
+  group('installments', () {
+    Row installments(Object? total, Object? count, [Row extra = const {}]) =>
+        database.createSeries({
+          'kind': 'installments',
+          'category_id': rent,
+          'description': 'Sofa',
+          'due_on': '2026-11-10',
+          'total_cents': total,
+          'entries_count': count,
+          'direction': 'backward',
+          ...extra,
+        });
+
+    test('split the total forwards with the leftover on the first', () {
+      final created = installments(10000, 3);
+      final rows = created['entries']! as List<Row>;
+
+      expect(created, containsPair('kind', 'installments'));
+      expect(created, containsPair('total_cents', 10000));
+      expect([for (final row in rows) row['amount_cents']], [3334, 3333, 3333]);
+      expect(
+        [for (final row in rows) row['due_on']],
+        ['2026-11-10', '2026-12-10', '2027-01-10'],
+      );
+      expect(rows.last, containsPair('series_kind', 'installments'));
+      expect(rows.last, containsPair('series_count', 3));
+    });
+
+    test('accept up to 48 installments and reject more', () {
+      expect(installments(4800, 48)['entries'], hasLength(48));
+      expect(errorsOf(() => installments(4900, 49)), {
+        'entries_count': ['less_than_or_equal_to'],
+      });
+    });
+
+    test('validate the total, the kind and the entry', () {
+      expect(errorsOf(() => installments(null, 3)), {
+        'total_cents': ['not_a_number'],
+      });
+      expect(errorsOf(() => installments(2, 3)), {
+        'total_cents': ['greater_than_or_equal_to'],
+      });
+      expect(errorsOf(() => installments(1, 'x')), {
+        'entries_count': ['not_a_number'],
+      });
+      expect(errorsOf(() => installments(9000, 3, {'category_id': salary})), {
+        'kind': ['only_for_expenses'],
+      });
+      expect(errorsOf(() => installments(null, 3, {'description': ''})), {
+        'total_cents': ['not_a_number'],
+        'description': ['blank'],
+      });
+      expect(errorsOf(() => installments(9000, 3, {'kind': 'weekly'})), {
+        'kind': ['inclusion'],
+        'total_cents': ['present'],
+        'amount_cents': ['greater_than'],
+      });
+      expect(database.entries, isEmpty);
+    });
+  });
+
   group('projection', () {
     setUp(() {
       entry(salary, 20000, '2026-10-15');

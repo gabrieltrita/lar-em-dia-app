@@ -35,7 +35,19 @@ void main() {
         .where((entry) => entry['description'] == 'Salário');
     expect(salaries, hasLength(DemoSeed.months));
     expect(salaries.map((entry) => entry['series_id']).toSet(), hasLength(1));
-    expect(database.series, hasLength(7));
+    expect(database.series, hasLength(8));
+
+    final fridge = database
+        .filteredEntries(kind: 'expense')
+        .where((entry) => entry['description'] == 'Geladeira nova')
+        .toList();
+    expect(fridge, hasLength(DemoSeed.fridgeInstallments));
+    expect(fridge.map((entry) => entry['amount_cents']).toSet(), {
+      DemoSeed.fridgeCents ~/ DemoSeed.fridgeInstallments,
+    });
+    expect(fridge.first, containsPair('series_kind', 'installments'));
+    expect(months[2]['negative'], isTrue);
+    expect(months[0]['negative'], isFalse);
   });
 
   test('places the 13th salary in December wherever the year starts', () {

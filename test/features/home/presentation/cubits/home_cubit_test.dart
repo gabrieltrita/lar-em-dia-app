@@ -46,6 +46,8 @@ void main() {
           ),
           projected: novemberProjection,
           horizon: decemberProjection,
+          firstNegativeMonth: DateTime(2026, 12),
+          negativeMonthsCount: 1,
         ),
       ),
     ],

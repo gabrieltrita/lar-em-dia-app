@@ -42,6 +42,8 @@ abstract class HomeSummary with _$HomeSummary {
     Balance? latestBalance,
     ProjectionMonth? projected,
     ProjectionMonth? horizon,
+    DateTime? firstNegativeMonth,
+    @Default(0) int negativeMonthsCount,
   }) = _HomeSummary;
 
   const new _();
@@ -82,6 +84,8 @@ class HomeCubit extends Cubit<LoadState<HomeSummary>> {
             expenses: MonthTotals.of(expenses),
             projected: projection?.months.first,
             horizon: projection?.months.last,
+            firstNegativeMonth: projection?.firstNegativeMonth,
+            negativeMonthsCount: projection?.negativeMonthsCount ?? 0,
           ),
         ),
       );

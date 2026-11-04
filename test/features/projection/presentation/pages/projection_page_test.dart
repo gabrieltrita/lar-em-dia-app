@@ -7,6 +7,7 @@ import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/features/projection/domain/projection.dart';
 import 'package:lar_em_dia/features/projection/presentation/cubits/projection_cubit.dart';
 import 'package:lar_em_dia/features/projection/presentation/pages/projection_page.dart';
+import 'package:lar_em_dia/features/projection/presentation/widgets/negative_months_alert.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/auth_fixtures.dart';
@@ -80,6 +81,37 @@ void main() {
       tester.widget<Text>(find.text(r'R$ 4.934,56')).style?.color,
       isNot(error),
     );
+  });
+
+  testWidgets('warns about the months that close below zero', (tester) async {
+    await pump(tester);
+
+    expect(
+      find.text('Em dezembro de 2026 o saldo fica negativo.'),
+      findsOneWidget,
+    );
+    expect(find.bySemanticsLabel(RegExp('Mês no vermelho')), findsOneWidget);
+
+    answer(
+      () => projection.copyWith(
+        firstNegativeMonth: DateTime(2026, 11),
+        negativeMonthsCount: 2,
+      ),
+    );
+    await tester.drag(find.byType(ListView), const Offset(0, 300));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('A partir de novembro de 2026, 2 meses ficam no vermelho.'),
+      findsOneWidget,
+    );
+
+    answer(() => projection.copyWith(firstNegativeMonth: null));
+    await tester
+        .element(find.byType(ProjectionPage))
+        .read<ProjectionCubit>()
+        .load();
+    await tester.pumpAndSettle();
+    expect(find.byType(NegativeMonthsAlert), findsNothing);
   });
 
   testWidgets('shows the savings of the last month, in red when negative', (

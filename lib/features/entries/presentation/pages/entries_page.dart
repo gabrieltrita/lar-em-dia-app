@@ -257,10 +257,32 @@ class _EntryTile extends StatelessWidget {
         child: const Icon(Icons.delete_outline),
       ),
       child: ListTile(
-        leading: entry.isRecurring
-            ? Icon(Icons.repeat, semanticLabel: l10n.entryRecurring)
-            : const SizedBox(width: 24),
-        title: Text(entry.description),
+        leading: switch (entry) {
+          Entry(
+            isInstallment: true,
+            :final seriesPosition?,
+            :final seriesCount?,
+          ) =>
+            Icon(
+              Icons.credit_card,
+              semanticLabel: l10n.entryInstallment(seriesPosition, seriesCount),
+            ),
+          Entry(isRecurring: true) => Icon(
+            Icons.repeat,
+            semanticLabel: l10n.entryRecurring,
+          ),
+          _ => const SizedBox(width: 24),
+        },
+        title: Text(switch (entry) {
+          Entry(
+            isInstallment: true,
+            :final seriesPosition?,
+            :final seriesCount?,
+          ) =>
+            '${entry.description} '
+                '${l10n.entryInstallmentShort(seriesPosition, seriesCount)}',
+          _ => entry.description,
+        }),
         subtitle: Text(
           [
             categoryText,
