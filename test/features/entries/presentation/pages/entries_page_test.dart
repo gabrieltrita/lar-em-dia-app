@@ -53,6 +53,19 @@ void main() {
     );
   });
 
+  testWidgets('marks the entries of a series', (tester) async {
+    when(() => repository.month(any(), kind: EntryKind.income)).thenAnswer(
+      (_) async => [salary.copyWith(seriesId: 'series-1', seriesPosition: 1)],
+    );
+    await pump(tester);
+
+    expect(find.byIcon(Icons.repeat), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(RegExp('Lançamento repetido')),
+      findsOneWidget,
+    );
+  });
+
   group('expenses', () {
     setUp(() {
       when(() => repository.categories(EntryKind.expense))

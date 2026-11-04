@@ -59,6 +59,7 @@ class DemoServer {
         ),
         ('GET', ['entries']) => _entries(query),
         ('POST', ['entries']) => _data(database.createEntry(body), 201),
+        ('POST', ['entry_series']) => _data(database.createSeries(body), 201),
         ('GET', ['entries', final id]) => _data(database.findEntry(id)),
         ('PATCH', ['entries', final id]) => _data(
           database.updateEntry(id, body),

@@ -60,8 +60,11 @@ class HomePage extends StatelessWidget {
                   ),
                 _BalanceCard(summary: summary),
                 const SizedBox(height: 16),
-                if (summary.projected case final projected?) ...[
-                  _ProjectionCard(projected: projected),
+                if (summary case HomeSummary(
+                  :final projected?,
+                  :final horizon?,
+                )) ...[
+                  _ProjectionCard(projected: projected, horizon: horizon),
                   const SizedBox(height: 16),
                 ],
                 for (final kind in EntryKind.values) ...[
@@ -135,16 +138,17 @@ class _BalanceCard extends StatelessWidget {
 }
 
 class _ProjectionCard extends StatelessWidget {
-  const new({required this.projected});
+  const new({required this.projected, required this.horizon});
 
   final ProjectionMonth projected;
+  final ProjectionMonth horizon;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final textTheme = Theme.of(context).textTheme;
-    final month = MaterialLocalizations.of(context)
-        .formatMonthYear(projected.month);
+    final localizations = MaterialLocalizations.of(context);
+    final month = localizations.formatMonthYear(projected.month);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -159,6 +163,13 @@ class _ProjectionCard extends StatelessWidget {
                 color: projected.isNegative
                     ? Theme.of(context).colorScheme.error
                     : null,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              l10n.homeProjectionSavings(
+                localizations.formatMonthYear(horizon.month),
+                Money.format(horizon.savingsCents),
               ),
             ),
             const SizedBox(height: 12),

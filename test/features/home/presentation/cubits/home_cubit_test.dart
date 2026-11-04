@@ -28,7 +28,7 @@ void main() {
           .thenAnswer((_) async => [salary, rent]);
       when(() => entries.month(november, kind: EntryKind.expense))
           .thenAnswer((_) async => [housing, groceries]);
-      when(() => projections.fetch(from: november, months: 1))
+      when(() => projections.fetch(from: november, months: 12))
           .thenAnswer((_) async => projection);
     },
     build: () => HomeCubit(balances, entries, projections),
@@ -45,6 +45,7 @@ void main() {
             pendingCents: 200000,
           ),
           projected: novemberProjection,
+          horizon: decemberProjection,
         ),
       ),
     ],

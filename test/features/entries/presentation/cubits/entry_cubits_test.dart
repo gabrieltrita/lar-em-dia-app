@@ -11,6 +11,11 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../helpers/finance_fixtures.dart';
 
 void main() {
+  const recurrence = Recurrence(
+    count: 2,
+    direction: RecurrenceDirection.backward,
+  );
+
   late MockEntryRepository repository;
 
   const failure = ApiError(code: 'network_error');
@@ -190,6 +195,24 @@ void main() {
             .thenAnswer((_) async => salary),
     build: () => EntryFormCubit(repository),
     act: (cubit) => cubit.save(salary.toDraft()),
+    expect: () => [
+      const Submission<Entry>.inProgress(),
+      Submission.success(salary),
+    ],
+  );
+
+  blocTest<EntryFormCubit, Submission<Entry>>(
+    'creates a series and succeeds with the entry on the chosen date',
+    setUp: () =>
+        when(() => repository.createSeries(salary.toDraft(), recurrence))
+            .thenAnswer(
+              (_) async => [
+                salary.copyWith(id: 'entry-0', dueOn: DateTime(2026, 10, 5)),
+                salary,
+              ],
+            ),
+    build: () => EntryFormCubit(repository),
+    act: (cubit) => cubit.save(salary.toDraft(), recurrence: recurrence),
     expect: () => [
       const Submission<Entry>.inProgress(),
       Submission.success(salary),

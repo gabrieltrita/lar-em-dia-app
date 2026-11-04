@@ -29,6 +29,13 @@ void main() {
       everyElement(lessThanOrEqualTo('2026-11-03')),
     );
     expect(november.any((entry) => entry['status'] == 'pending'), isTrue);
+
+    final salaries = database
+        .filteredEntries(kind: 'income')
+        .where((entry) => entry['description'] == 'Salário');
+    expect(salaries, hasLength(DemoSeed.months));
+    expect(salaries.map((entry) => entry['series_id']).toSet(), hasLength(1));
+    expect(database.series, hasLength(7));
   });
 
   test('places the 13th salary in December wherever the year starts', () {

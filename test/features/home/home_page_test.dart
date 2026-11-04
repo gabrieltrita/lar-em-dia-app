@@ -73,6 +73,10 @@ void main() {
         find.text('Saldo previsto no fim de dezembro de 2026'),
         findsOneWidget,
       );
+      expect(
+        find.text(r'Economia acumulada até dezembro de 2026: -R$ 2.300,00'),
+        findsOneWidget,
+      );
       final closing = tester.widget<Text>(find.text(r'-R$ 1.065,44'));
       final context = tester.element(find.text(r'-R$ 1.065,44'));
       expect(closing.style?.color, Theme.of(context).colorScheme.error);

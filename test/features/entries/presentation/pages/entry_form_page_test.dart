@@ -129,10 +129,66 @@ void main() {
     expect(popped, [true]);
   });
 
+  testWidgets('creates a series in the chosen direction', (tester) async {
+    when(
+      () => repository.createSeries(any(), any()),
+    ).thenAnswer((_) async => [salary.copyWith(dueOn: DateTime(2026, 11, 3))]);
+    await pump(tester);
+
+    await fillIn(tester);
+    expect(find.byKey(const Key('entry_repeat_count')), findsNothing);
+    await tester.tap(find.byKey(const Key('entry_repeat')));
+    await tester.pumpAndSettle();
+    expect(find.text('12 meses'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('entry_repeat_count')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('6 meses').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Meses anteriores'));
+    await tester.pumpAndSettle();
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+
+    verify(
+      () => repository.createSeries(
+        any(),
+        const Recurrence(count: 6, direction: RecurrenceDirection.backward),
+      ),
+    ).called(1);
+    verifyNever(() => repository.create(any()));
+    expect(popped, [true]);
+  });
+
+  testWidgets('names the repetition fields in API errors', (tester) async {
+    when(() => repository.createSeries(any(), any())).thenThrow(
+      const ApiError(
+        code: 'validation_failed',
+        details: {
+          'entries_count': [FieldError(code: 'less_than_or_equal_to')],
+          'direction': [FieldError(code: 'inclusion')],
+        },
+      ),
+    );
+    await pump(tester);
+
+    await fillIn(tester);
+    await tester.tap(find.byKey(const Key('entry_repeat')));
+    await tester.pumpAndSettle();
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Quantidade de meses, contando este: Valor inválido'),
+      findsOneWidget,
+    );
+    expect(find.text('Repetir nos: Valor inválido'), findsOneWidget);
+  });
+
   testWidgets('edits an entry as received on another date', (tester) async {
     when(() => repository.update(rent.id, any())).thenAnswer((_) async => rent);
     await pump(tester, existing: rent);
     expect(find.text('Editar receita'), findsOneWidget);
+    expect(find.byKey(const Key('entry_repeat')), findsNothing);
     expect(find.text('Aluguel recebido'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('entry_due_on')));

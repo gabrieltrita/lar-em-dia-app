@@ -25,6 +25,7 @@ void main() {
     'fixed_expense_cents': month.fixedExpenseCents,
     'variable_expense_cents': month.variableExpenseCents,
     'closing_cents': month.closingCents,
+    'savings_cents': month.savingsCents,
   };
 
   test('reads the anchor and the months from the given month', () async {

@@ -41,6 +41,7 @@ abstract class HomeSummary with _$HomeSummary {
     required MonthTotals expenses,
     Balance? latestBalance,
     ProjectionMonth? projected,
+    ProjectionMonth? horizon,
   }) = _HomeSummary;
 
   const new _();
@@ -60,6 +61,8 @@ class HomeCubit extends Cubit<LoadState<HomeSummary>> {
   final EntryRepository _entries;
   final ProjectionRepository _projections;
 
+  static const horizonMonths = 12;
+
   Future<void> load({DateTime? today}) async {
     emit(const LoadState<HomeSummary>.loading());
     final month = Dates.firstOfMonth(today ?? DateTime.now());
@@ -69,7 +72,7 @@ class HomeCubit extends Cubit<LoadState<HomeSummary>> {
       final expenses = await _entries.month(month, kind: EntryKind.expense);
       final projection = latest == null
           ? null
-          : await _projections.fetch(from: month, months: 1);
+          : await _projections.fetch(from: month, months: horizonMonths);
       emit(
         LoadState.loaded(
           HomeSummary(
@@ -78,6 +81,7 @@ class HomeCubit extends Cubit<LoadState<HomeSummary>> {
             income: MonthTotals.of(income),
             expenses: MonthTotals.of(expenses),
             projected: projection?.months.first,
+            horizon: projection?.months.last,
           ),
         ),
       );

@@ -103,6 +103,7 @@ final novemberProjection = ProjectionMonth(
   fixedExpenseCents: 200000,
   variableExpenseCents: 80000,
   closingCents: 493456,
+  savingsCents: 370000,
 );
 
 final decemberProjection = ProjectionMonth(
@@ -113,6 +114,7 @@ final decemberProjection = ProjectionMonth(
   fixedExpenseCents: 200000,
   variableExpenseCents: 400000,
   closingCents: -106544,
+  savingsCents: -230000,
 );
 
 final projection = Projection(
@@ -126,4 +128,7 @@ void registerFinanceFallbacks() {
   registerFallbackValue(salary.toDraft());
   registerFallbackValue(salary);
   registerFallbackValue(balance);
+  registerFallbackValue(
+    const Recurrence(count: 2, direction: RecurrenceDirection.forward),
+  );
 }

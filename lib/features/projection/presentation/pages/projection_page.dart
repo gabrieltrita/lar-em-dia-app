@@ -91,6 +91,8 @@ class _ProjectionView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
+          _SavingsCard(month: months.last),
+          const SizedBox(height: 16),
           SizedBox(
             height: 240,
             child: ProjectionChart(
@@ -101,6 +103,42 @@ class _ProjectionView extends StatelessWidget {
           const SizedBox(height: 16),
           for (final month in months) _MonthTile(month: month),
         ],
+      ),
+    );
+  }
+}
+
+class _SavingsCard extends StatelessWidget {
+  const new({required this.month});
+
+  final ProjectionMonth month;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    final colors = Theme.of(context).colorScheme;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.projectionSavingsTitle(
+                MaterialLocalizations.of(context).formatMonthYear(month.month),
+              ),
+              style: textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              Money.format(month.savingsCents),
+              style: textTheme.headlineSmall?.copyWith(
+                color: month.isSaving ? null : colors.error,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -130,6 +168,7 @@ class _MonthTile extends StatelessWidget {
             Money.format(month.fixedExpenseCents),
             Money.format(month.variableExpenseCents),
           ),
+          l10n.projectionMonthSavings(Money.format(month.savingsCents)),
         ].join('\n'),
       ),
       trailing: Text(

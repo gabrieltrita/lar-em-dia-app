@@ -119,9 +119,20 @@ class EntryFormCubit extends SubmissionCubit<Entry> {
 
   final EntryRepository _repository;
 
-  Future<void> save(EntryDraft draft, {Entry? existing}) => run(
-    () => existing == null
-        ? _repository.create(draft)
-        : _repository.update(existing.id, draft),
+  Future<void> save(
+    EntryDraft draft, {
+    Entry? existing,
+    Recurrence? recurrence,
+  }) => run(
+    () => switch ((existing, recurrence)) {
+      (final entry?, _) => _repository.update(entry.id, draft),
+      (null, final repeat?) => _createSeries(draft, repeat),
+      (null, null) => _repository.create(draft),
+    },
   );
+
+  Future<Entry> _createSeries(EntryDraft draft, Recurrence recurrence) async {
+    final entries = await _repository.createSeries(draft, recurrence);
+    return entries.firstWhere((entry) => entry.dueOn == draft.dueOn);
+  }
 }
