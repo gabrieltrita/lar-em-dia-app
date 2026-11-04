@@ -12,6 +12,7 @@ import 'package:lar_em_dia/core/widgets/form_widgets.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/home/presentation/cubits/home_cubit.dart';
+import 'package:lar_em_dia/features/projection/domain/projection.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
 class HomePage extends StatelessWidget {
@@ -59,6 +60,10 @@ class HomePage extends StatelessWidget {
                   ),
                 _BalanceCard(summary: summary),
                 const SizedBox(height: 16),
+                if (summary.projected case final projected?) ...[
+                  _ProjectionCard(projected: projected),
+                  const SizedBox(height: 16),
+                ],
                 for (final kind in EntryKind.values) ...[
                   _EntriesCard(kind: kind, summary: summary),
                   const SizedBox(height: 16),
@@ -121,6 +126,46 @@ class _BalanceCard extends StatelessWidget {
                     child: Text(l10n.homeBalanceHistory),
                   ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProjectionCard extends StatelessWidget {
+  const new({required this.projected});
+
+  final ProjectionMonth projected;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    final month = MaterialLocalizations.of(context)
+        .formatMonthYear(projected.month);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.homeProjectionTitle(month), style: textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text(
+              Money.format(projected.closingCents),
+              style: textTheme.headlineMedium?.copyWith(
+                color: projected.isNegative
+                    ? Theme.of(context).colorScheme.error
+                    : null,
+              ),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: () =>
+                  unawaited(_pushAndReload(context, AppRoutes.projection)),
+              child: Text(l10n.homeSeeProjection),
             ),
           ],
         ),

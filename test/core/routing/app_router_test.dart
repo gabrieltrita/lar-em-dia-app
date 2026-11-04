@@ -24,6 +24,8 @@ import 'package:lar_em_dia/features/entries/domain/entry_repository.dart';
 import 'package:lar_em_dia/features/entries/presentation/pages/entries_page.dart';
 import 'package:lar_em_dia/features/entries/presentation/pages/entry_form_page.dart';
 import 'package:lar_em_dia/features/home/presentation/home_page.dart';
+import 'package:lar_em_dia/features/projection/domain/projection_repository.dart';
+import 'package:lar_em_dia/features/projection/presentation/pages/projection_page.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -63,6 +65,7 @@ void main() {
 
     late MockBalanceRepository balances;
     late MockEntryRepository entries;
+    late MockProjectionRepository projections;
 
     setUpAll(() {
       registerFinanceFallbacks();
@@ -74,6 +77,13 @@ void main() {
       repository = MockAuthRepository();
       balances = MockBalanceRepository();
       entries = MockEntryRepository();
+      projections = MockProjectionRepository();
+      when(
+        () => projections.fetch(
+          from: any(named: 'from'),
+          months: any(named: 'months'),
+        ),
+      ).thenAnswer((_) async => projection);
       when(balances.latest).thenAnswer((_) async => null);
       when(balances.list).thenAnswer((_) async => []);
       when(() => entries.month(any(), kind: any(named: 'kind')))
@@ -85,7 +95,8 @@ void main() {
       getIt
         ..registerSingleton<AuthRepository>(repository)
         ..registerSingleton<BalanceRepository>(balances)
-        ..registerSingleton<EntryRepository>(entries);
+        ..registerSingleton<EntryRepository>(entries)
+        ..registerSingleton<ProjectionRepository>(projections);
       events = SessionEvents();
       session = SessionCubit(repository, events);
       router = buildRouter(session);
@@ -184,6 +195,7 @@ void main() {
         AppRoutes.incomeForm: EntryFormPage,
         '${AppRoutes.expenses}?month=2026-03': EntriesPage,
         AppRoutes.expensesForm: EntryFormPage,
+        AppRoutes.projection: ProjectionPage,
       };
       for (final MapEntry(key: location, value: page) in pages.entries) {
         router.go(location);

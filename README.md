@@ -66,19 +66,22 @@ tool/check_core_coverage.sh   fails below 100% line coverage in lib/core
 - Tokens: login and refresh return `data.tokens.access_token` and `data.tokens.refresh_token`. Mobile uses the body mode and keeps the refresh token in secure storage. The web build uses the API's cookie mode: every request sends `X-Token-Transport: cookie` and `withCredentials`, so the refresh token lives in an httpOnly cookie and never reaches JavaScript.
 - DTOs use snake_case keys globally (`build.yaml` sets `field_rename: snake` for `json_serializable`).
 
-## Balance, income and expenses
+## Balance, income, expenses and projection
 
 | Route | Page |
 |---|---|
-| `/` | Home: latest balance and this month's income (received and to receive) and expenses (paid and to pay), with shortcuts |
+| `/` | Home: latest balance, the projected balance at the end of this month, and this month's income (received and to receive) and expenses (paid and to pay), with shortcuts |
 | `/balances` | Balance history; tap to edit, trash icon to delete after confirmation |
 | `/balances/form` | Inform or edit a balance (`extra` carries the balance being edited); the amount may be negative and the date cannot be in the future |
 | `/income?month=YYYY-MM` | Income of a month with its total; arrows move between months, swipe left deletes after confirmation |
 | `/income/form` | New or edited income: category, description, amount, date and whether it was already received |
 | `/expenses?month=YYYY-MM` | Expenses of a month with the total and the fixed and variable subtotals; the All / Fixed / Variable chips filter the list and the total |
 | `/expenses/form` | New or edited expense: category, fixed or variable (preselected by the category's `default_nature`), description, amount, date and whether it was already paid |
+| `/projection` | Projected balance at the end of each of the next 12 months: a line chart (`fl_chart`) and a list with income, expenses (fixed and variable) and the closing balance; negative months in red. Without a balance it asks for one first |
 
 Income and expenses share the same pages and cubits: `EntriesPage` and `EntryFormPage` take the `EntryKind`, `MonthEntriesCubit` receives it as an injectable `@factoryParam` (`getIt<MonthEntriesCubit>(param1: kind)`), and the texts that differ use ICU `select` messages on the kind in `app_pt.arb`.
+
+The projection comes from the API's `GET /projection` (`ProjectionRepository`); the app never recomputes balances. Chart values are converted to `double` only for drawing.
 
 Amounts are integer cents end to end (`amount_cents` in the API, `int` in the app); `Money` formats and parses BRL text without `double`. A received income or paid expense is sent as `status: paid` with `paid_on` equal to its date. Category names come from the API in English and are shown in Portuguese by `key` (`categoryLabel`).
 

@@ -25,6 +25,8 @@ import 'package:lar_em_dia/features/entries/presentation/pages/entries_page.dart
 import 'package:lar_em_dia/features/entries/presentation/pages/entry_form_page.dart';
 import 'package:lar_em_dia/features/home/presentation/cubits/home_cubit.dart';
 import 'package:lar_em_dia/features/home/presentation/home_page.dart';
+import 'package:lar_em_dia/features/projection/presentation/cubits/projection_cubit.dart';
+import 'package:lar_em_dia/features/projection/presentation/pages/projection_page.dart';
 
 abstract final class AppRoutes {
   static const home = '/';
@@ -42,6 +44,7 @@ abstract final class AppRoutes {
   static const incomeForm = '/income/form';
   static const expenses = '/expenses';
   static const expensesForm = '/expenses/form';
+  static const projection = '/projection';
 
   static String entries(EntryKind kind) => switch (kind) {
     EntryKind.income => income,
@@ -135,6 +138,14 @@ GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
       ),
     ),
     for (final kind in EntryKind.values) ..._entryRoutes(kind),
+    GoRoute(
+      path: AppRoutes.projection,
+      builder: (context, state) => BlocProvider(
+        create: (_) =>
+            _started(getIt<ProjectionCubit>(), (cubit) => cubit.load()),
+        child: const ProjectionPage(),
+      ),
+    ),
     GoRoute(
       path: AppRoutes.splash,
       builder: (context, state) => const SplashPage(),

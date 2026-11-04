@@ -11,11 +11,13 @@ import '../../../../helpers/finance_fixtures.dart';
 void main() {
   late MockBalanceRepository balances;
   late MockEntryRepository entries;
+  late MockProjectionRepository projections;
 
   setUpAll(registerFinanceFallbacks);
   setUp(() {
     balances = MockBalanceRepository();
     entries = MockEntryRepository();
+    projections = MockProjectionRepository();
   });
 
   blocTest<HomeCubit, LoadState<HomeSummary>>(
@@ -26,8 +28,10 @@ void main() {
           .thenAnswer((_) async => [salary, rent]);
       when(() => entries.month(november, kind: EntryKind.expense))
           .thenAnswer((_) async => [housing, groceries]);
+      when(() => projections.fetch(from: november, months: 1))
+          .thenAnswer((_) async => projection);
     },
-    build: () => HomeCubit(balances, entries),
+    build: () => HomeCubit(balances, entries, projections),
     act: (cubit) => cubit.load(today: DateTime(2026, 11, 3)),
     expect: () => [
       const LoadState<HomeSummary>.loading(),
@@ -40,6 +44,7 @@ void main() {
             settledCents: 80000,
             pendingCents: 200000,
           ),
+          projected: novemberProjection,
         ),
       ),
     ],
@@ -51,10 +56,32 @@ void main() {
   );
 
   blocTest<HomeCubit, LoadState<HomeSummary>>(
+    'skips the projection without a balance',
+    setUp: () {
+      when(balances.latest).thenAnswer((_) async => null);
+      when(() => entries.month(november, kind: any(named: 'kind')))
+          .thenAnswer((_) async => []);
+    },
+    build: () => HomeCubit(balances, entries, projections),
+    act: (cubit) => cubit.load(today: DateTime(2026, 11, 3)),
+    skip: 1,
+    expect: () => [
+      LoadState.loaded(
+        HomeSummary(
+          month: november,
+          income: const MonthTotals(settledCents: 0, pendingCents: 0),
+          expenses: const MonthTotals(settledCents: 0, pendingCents: 0),
+        ),
+      ),
+    ],
+    verify: (_) => verifyZeroInteractions(projections),
+  );
+
+  blocTest<HomeCubit, LoadState<HomeSummary>>(
     'uses the current month by default and reports failures',
     setUp: () =>
         when(balances.latest).thenThrow(const ApiError(code: 'network_error')),
-    build: () => HomeCubit(balances, entries),
+    build: () => HomeCubit(balances, entries, projections),
     act: (cubit) => cubit.load(),
     expect: () => const [
       LoadState<HomeSummary>.loading(),

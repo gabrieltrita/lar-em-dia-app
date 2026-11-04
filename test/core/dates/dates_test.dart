@@ -4,6 +4,7 @@ import 'package:lar_em_dia/core/dates/dates.dart';
 void main() {
   test('converts dates to and from ISO strings', () {
     expect(Dates.toIso(DateTime(2026, 3, 7, 15, 30)), '2026-03-07');
+    expect(Dates.toMonth(DateTime(2026, 3, 7)), '2026-03');
     expect(Dates.parseIso('2026-03-07'), DateTime(2026, 3, 7));
     expect(Dates.dateOnly(DateTime(2026, 3, 7, 23, 59)), DateTime(2026, 3, 7));
   });

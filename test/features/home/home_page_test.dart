@@ -25,12 +25,22 @@ void main() {
     late AuthHarness harness;
     late MockBalanceRepository balances;
     late MockEntryRepository entries;
+    late MockProjectionRepository projections;
 
     setUp(() {
       harness = AuthHarness()..session.signedIn(ana);
       balances = MockBalanceRepository();
       entries = MockEntryRepository();
+      projections = MockProjectionRepository();
       when(balances.latest).thenAnswer((_) async => balance);
+      when(
+        () => projections.fetch(
+          from: any(named: 'from'),
+          months: any(named: 'months'),
+        ),
+      ).thenAnswer(
+        (_) async => projection.copyWith(months: [decemberProjection]),
+      );
       when(() => entries.month(any(), kind: EntryKind.income))
           .thenAnswer((_) async => [salary, rent]);
       when(() => entries.month(any(), kind: EntryKind.expense))
@@ -38,15 +48,58 @@ void main() {
     });
     tearDown(() => harness.dispose());
 
-    Future<void> pump(WidgetTester tester) => pumpPage(
+    Future<void> pump(WidgetTester tester) {
+      tester.view.physicalSize = const Size(1200, 3000);
+      addTearDown(tester.view.resetPhysicalSize);
+      return pumpPage(
+        tester,
+        BlocProvider(
+          create: (_) => started(
+            HomeCubit(balances, entries, projections),
+            (cubit) => cubit.load(),
+          ),
+          child: const HomePage(),
+        ),
+        session: harness.session,
+      );
+    }
+
+    testWidgets('shows the projected end of the month in red when negative', (
       tester,
-      BlocProvider(
-        create: (_) =>
-            started(HomeCubit(balances, entries), (cubit) => cubit.load()),
-        child: const HomePage(),
-      ),
-      session: harness.session,
-    );
+    ) async {
+      await pump(tester);
+
+      expect(
+        find.text('Saldo previsto no fim de dezembro de 2026'),
+        findsOneWidget,
+      );
+      final closing = tester.widget<Text>(find.text(r'-R$ 1.065,44'));
+      final context = tester.element(find.text(r'-R$ 1.065,44'));
+      expect(closing.style?.color, Theme.of(context).colorScheme.error);
+    });
+
+    testWidgets('shows a positive projection in the default color', (
+      tester,
+    ) async {
+      when(
+        () => projections.fetch(
+          from: any(named: 'from'),
+          months: any(named: 'months'),
+        ),
+      ).thenAnswer((_) async => projection);
+      await pump(tester);
+
+      final closing = tester.widget<Text>(find.text(r'R$ 4.934,56'));
+      final context = tester.element(find.text(r'R$ 4.934,56'));
+      expect(closing.style?.color, isNot(Theme.of(context).colorScheme.error));
+    });
+
+    testWidgets('hides the projection without a balance', (tester) async {
+      when(balances.latest).thenAnswer((_) async => null);
+      await pump(tester);
+
+      expect(find.text('Ver projeção'), findsNothing);
+    });
 
     testWidgets('shows the month expenses', (tester) async {
       await pump(tester);
@@ -87,6 +140,7 @@ void main() {
       ('Ver receitas', AppRoutes.income),
       ('Nova despesa', AppRoutes.expensesForm),
       ('Ver despesas', AppRoutes.expenses),
+      ('Ver projeção', AppRoutes.projection),
     ]) {
       testWidgets('$button opens $route and reloads on return', (tester) async {
         await pump(tester);
