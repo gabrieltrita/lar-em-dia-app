@@ -27,8 +27,13 @@ class DemoServer {
   static const pageSize = 25;
   static const maxPageSize = 100;
 
+  static const twoFactorSecret = 'JBSWY3DPEHPK3PXP';
+  static const backupCodesCount = 10;
+
   final DemoDatabase database;
   bool signedIn = false;
+  bool twoFactorEnabled = false;
+  bool _twoFactorPending = false;
 
   DemoResponse handle(
     String method,
@@ -46,7 +51,12 @@ class DemoServer {
     }
     try {
       return switch ((method, segments)) {
-        ('GET', ['me']) => _data(DemoSeed.user),
+        ('GET', ['me']) => _data(_user()),
+        (_, ['me', 'two_factor', ...final action]) => _twoFactor(
+          method,
+          action.join('/'),
+          body,
+        ),
         ('GET', ['categories']) => _data(database.categoriesOf(query['kind'])),
         ('GET', ['balances']) => _page(database.sortedBalances(), query),
         ('POST', ['balances']) => _data(database.createBalance(body), 201),
@@ -113,8 +123,80 @@ class DemoServer {
     }
   }
 
+  Map<String, Object?> _user() => {
+    ...DemoSeed.user,
+    'two_factor_enabled': twoFactorEnabled,
+  };
+
+  DemoResponse _twoFactor(
+    String method,
+    String action,
+    Map<String, Object?> body,
+  ) {
+    switch ((method, action)) {
+      case ('GET', ''):
+        return _data({
+          'enabled': twoFactorEnabled,
+          'required': false,
+          'backup_codes_remaining': twoFactorEnabled ? backupCodesCount : 0,
+        });
+      case ('POST', 'setup'):
+        if (twoFactorEnabled) {
+          return _error(422, 'two_factor_already_enabled', 'Already enabled');
+        }
+        return _reauthenticated(body, () {
+          _twoFactorPending = true;
+          return _data({
+            'secret': twoFactorSecret,
+            'provisioning_uri':
+                'otpauth://totp/Lar%20em%20Dia:${DemoSeed.email}'
+                '?secret=$twoFactorSecret&issuer=Lar%20em%20Dia',
+          });
+        });
+      case ('POST', 'enable'):
+        if (!_twoFactorPending || !_isCode(body['code'])) {
+          return _error(422, 'invalid_two_factor_code', 'Invalid code');
+        }
+        _twoFactorPending = false;
+        twoFactorEnabled = true;
+        return _backupCodes();
+      case ('POST', 'backup_codes'):
+        return _reauthenticated(body, _backupCodes);
+      case ('DELETE', ''):
+        return _reauthenticated(body, () {
+          twoFactorEnabled = false;
+          return const DemoResponse(204);
+        });
+      default:
+        throw const DemoNotFound();
+    }
+  }
+
+  DemoResponse _reauthenticated(
+    Map<String, Object?> body,
+    DemoResponse Function() action,
+  ) {
+    if (body['current_password'] != DemoSeed.password) {
+      return _error(422, 'invalid_current_password', 'Invalid password');
+    }
+    if (twoFactorEnabled && !_isCode(body['code'])) {
+      return _error(422, 'invalid_two_factor_code', 'Invalid code');
+    }
+    return action();
+  }
+
+  static bool _isCode(Object? code) =>
+      code is String && RegExp(r'^\d{6}$').hasMatch(code);
+
+  static DemoResponse _backupCodes() => _data({
+    'backup_codes': [
+      for (var index = 1; index <= backupCodesCount; index++)
+        'demo-${index.toString().padLeft(4, '0')}',
+    ],
+  });
+
   DemoResponse _session() => _data({
-    'user': DemoSeed.user,
+    'user': _user(),
     'tokens': {
       'access_token': accessToken,
       'refresh_token': refreshToken,

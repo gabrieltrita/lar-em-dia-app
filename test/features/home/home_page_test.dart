@@ -205,6 +205,22 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(routeMarker(AppRoutes.adminUsers)), findsOneWidget);
+      await tester.tap(find.text(closedAndBack));
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(find.text('Métricas de uso'), 200);
+      await tester.tap(find.text('Métricas de uso'));
+      await tester.pumpAndSettle();
+      expect(find.text(routeMarker(AppRoutes.adminMetrics)), findsOneWidget);
+    });
+
+    testWidgets('opens the security page', (tester) async {
+      await pump(tester);
+
+      await tester.tap(find.byTooltip('Segurança'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(routeMarker(AppRoutes.security)), findsOneWidget);
     });
 
     testWidgets('retries after a failure', (tester) async {

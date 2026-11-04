@@ -4,6 +4,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/core/state/load_state.dart';
+import 'package:lar_em_dia/features/admin/domain/admin_metrics.dart';
 import 'package:lar_em_dia/features/admin/domain/admin_user.dart';
 import 'package:lar_em_dia/features/admin/presentation/cubits/admin_cubits.dart';
 import 'package:lar_em_dia/features/auth/domain/auth_user.dart';
@@ -159,6 +160,30 @@ void main() {
       expect(cubit.state.users, LoadState.loaded([carla, bruno]));
       await cubit.close();
     });
+  });
+
+  group('AdminMetricsCubit', () {
+    blocTest<AdminMetricsCubit, LoadState<AdminMetrics>>(
+      'loads the metrics',
+      setUp: () => when(repository.metrics).thenAnswer((_) async => metrics),
+      build: () => AdminMetricsCubit(repository),
+      act: (cubit) => cubit.load(),
+      expect: () => const [
+        LoadState<AdminMetrics>.loading(),
+        LoadState.loaded(metrics),
+      ],
+    );
+
+    blocTest<AdminMetricsCubit, LoadState<AdminMetrics>>(
+      'reports a failed load',
+      setUp: () => when(repository.metrics).thenThrow(failure),
+      build: () => AdminMetricsCubit(repository),
+      act: (cubit) => cubit.load(),
+      expect: () => const [
+        LoadState<AdminMetrics>.loading(),
+        LoadState<AdminMetrics>.failure(failure),
+      ],
+    );
   });
 
   group('AdminUserCubit', () {

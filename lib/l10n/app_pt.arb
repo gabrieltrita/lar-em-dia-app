@@ -462,5 +462,55 @@
       }
     }
   },
-  "projectionNegativeMonth": "Mês no vermelho"
+  "projectionNegativeMonth": "Mês no vermelho",
+  "errorInvalidCurrentPassword": "Senha atual incorreta.",
+  "errorTwoFactorAlreadyEnabled": "A verificação em duas etapas já está ativa.",
+  "errorTwoFactorRequired": "Administradores não podem desativar a verificação em duas etapas.",
+  "errorReauthenticationUnavailable": "Confirme sua identidade com a senha da conta.",
+  "securityTitle": "Segurança",
+  "securityTwoFactorTitle": "Verificação em duas etapas",
+  "securityTwoFactorOn": "Ativa. Você tem {count} códigos de recuperação.",
+  "@securityTwoFactorOn": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "securityTwoFactorOff": "Desativada. Ative para proteger sua conta com um código do app autenticador.",
+  "securityTwoFactorRequired": "Obrigatória para administradores.",
+  "securityEnable": "Ativar",
+  "securityDisable": "Desativar",
+  "securityNewBackupCodes": "Gerar novos códigos de recuperação",
+  "securityConfirmIdentity": "Confirme sua identidade",
+  "securityConfirm": "Confirmar",
+  "enrollmentPasswordHint": "Digite sua senha para começar.",
+  "enrollmentContinue": "Continuar",
+  "enrollmentScan": "Escaneie o QR code com o app autenticador (Google Authenticator, Authy, 1Password…) ou digite a chave abaixo.",
+  "enrollmentSecretLabel": "Chave",
+  "enrollmentCopySecret": "Copiar chave",
+  "enrollmentCodeHint": "Digite o código de 6 dígitos que aparece no app.",
+  "enrollmentEnable": "Ativar verificação",
+  "enrollmentQrLabel": "QR code para o app autenticador",
+  "backupCodesTitle": "Códigos de recuperação",
+  "backupCodesHint": "Guarde estes códigos em um lugar seguro. Cada um funciona uma vez, se você perder o celular. Eles não aparecem de novo.",
+  "backupCodesCopy": "Copiar códigos",
+  "backupCodesDone": "Concluir",
+  "copied": "Copiado.",
+  "homeSecurity": "Segurança",
+  "adminMetrics": "Métricas de uso",
+  "adminMetricsUsers": "Contas",
+  "adminMetricsEngagement": "Uso",
+  "adminMetricsTotal": "Total",
+  "adminMetricsConfirmed": "Confirmadas",
+  "adminMetricsActive": "Ativas em 30 dias",
+  "adminMetricsNew": "Novas em 30 dias",
+  "adminMetricsDeactivated": "Desativadas",
+  "adminMetricsTwoFactor": "Com 2FA",
+  "adminMetricsWithBalance": "Informaram saldo",
+  "adminMetricsWithEntries": "Têm lançamentos",
+  "adminMetricsWithFiveSeries": "Têm 5 ou mais séries",
+  "adminMetricsEntries30d": "Lançamentos em 30 dias",
+  "adminMetricsSignups": "Cadastros por semana",
+  "adminMetricsChartLabel": "Gráfico de cadastros nas últimas 12 semanas"
 }

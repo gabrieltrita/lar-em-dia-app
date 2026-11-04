@@ -6,6 +6,7 @@ import 'package:lar_em_dia/core/dates/dates.dart';
 import 'package:lar_em_dia/core/di/injection.dart';
 import 'package:lar_em_dia/core/routing/stream_listenable.dart';
 import 'package:lar_em_dia/features/admin/presentation/cubits/admin_cubits.dart';
+import 'package:lar_em_dia/features/admin/presentation/pages/admin_metrics_page.dart';
 import 'package:lar_em_dia/features/admin/presentation/pages/admin_user_detail_page.dart';
 import 'package:lar_em_dia/features/admin/presentation/pages/admin_users_page.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/auth_cubits.dart';
@@ -30,6 +31,9 @@ import 'package:lar_em_dia/features/home/presentation/cubits/home_cubit.dart';
 import 'package:lar_em_dia/features/home/presentation/home_page.dart';
 import 'package:lar_em_dia/features/projection/presentation/cubits/projection_cubit.dart';
 import 'package:lar_em_dia/features/projection/presentation/pages/projection_page.dart';
+import 'package:lar_em_dia/features/security/presentation/cubits/security_cubits.dart';
+import 'package:lar_em_dia/features/security/presentation/pages/security_page.dart';
+import 'package:lar_em_dia/features/security/presentation/pages/two_factor_enrollment_page.dart';
 
 abstract final class AppRoutes {
   static const home = '/';
@@ -50,6 +54,9 @@ abstract final class AppRoutes {
   static const projection = '/projection';
   static const admin = '/admin';
   static const adminUsers = '$admin/users';
+  static const adminMetrics = '$admin/metrics';
+  static const security = '/security';
+  static const twoFactorEnrollment = '/security/two-factor';
 
   static String adminUser(String id) => '$adminUsers/$id';
 
@@ -157,6 +164,29 @@ GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
         create: (_) =>
             _started(getIt<ProjectionCubit>(), (cubit) => cubit.load()),
         child: const ProjectionPage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.adminMetrics,
+      builder: (context, state) => BlocProvider(
+        create: (_) =>
+            _started(getIt<AdminMetricsCubit>(), (cubit) => cubit.load()),
+        child: const AdminMetricsPage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.security,
+      builder: (context, state) => BlocProvider(
+        create: (_) =>
+            _started(getIt<SecurityCubit>(), (cubit) => cubit.load()),
+        child: const SecurityPage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.twoFactorEnrollment,
+      builder: (context, state) => BlocProvider(
+        create: (_) => getIt<TwoFactorEnrollmentCubit>(),
+        child: const TwoFactorEnrollmentPage(),
       ),
     ),
     GoRoute(

@@ -20,6 +20,10 @@ void main() {
       'rate_limited': l10n.errorRateLimited,
       'two_factor_setup_required': l10n.errorTwoFactorSetupRequired,
       'forbidden': l10n.errorForbidden,
+      'invalid_current_password': l10n.errorInvalidCurrentPassword,
+      'two_factor_already_enabled': l10n.errorTwoFactorAlreadyEnabled,
+      'two_factor_required': l10n.errorTwoFactorRequired,
+      'reauthentication_unavailable': l10n.errorReauthenticationUnavailable,
       ApiError.networkErrorCode: l10n.errorNetwork,
       'something_new': l10n.errorUnknown,
     };

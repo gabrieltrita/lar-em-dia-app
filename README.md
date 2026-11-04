@@ -13,6 +13,8 @@ Flutter app (web, Android and iOS) for **Lar em Dia**, a family budgeting and ca
 | Dependency injection | `get_it` + `injectable` |
 | Secure storage | `flutter_secure_storage` (refresh token in Keychain / Keystore; access token in memory only) |
 | Localization | `flutter_localizations` + `intl`, ARB files in `lib/l10n` (pt-BR) |
+| Charts | `fl_chart` |
+| QR codes | `qr_flutter` (2FA enrollment) |
 | Lint | `very_good_analysis` |
 | Tests | `flutter_test`, `mocktail`, `bloc_test` |
 
@@ -102,14 +104,24 @@ Amounts are integer cents end to end (`amount_cents` in the API, `int` in the ap
 
 The API email links point to the web routes above (`FRONTEND_URL` in the API). Deep links for the mobile apps come later.
 
+## Security
+
+| Route | Page |
+|---|---|
+| `/security` | Two-step verification status and remaining backup codes, with enable, disable and "new backup codes". Disabling and new codes ask for the current password and, when 2FA is on, a code (`DELETE /me/two_factor`, `POST /me/two_factor/backup_codes`). Disabling is hidden when 2FA is mandatory (admins) |
+| `/security/two-factor` | Enrollment: the current password (`POST /me/two_factor/setup`), then a QR code and the secret to copy, then the 6-digit code (`POST /me/two_factor/enable`), and finally the 10 backup codes, shown once, with a copy button |
+
+The shield icon on the home page opens `/security`. After enabling or disabling, the session user is updated so the rest of the app sees the new 2FA state without a new sign-in.
+
 ## Administration
 
 | Route | Page |
 |---|---|
 | `/admin/users` | Users list: exact email search (names are encrypted in the API, so they cannot be searched), All / Active / Deactivated filter, "load more" paging (25 per page), and badges for admin, deactivated, locked and 2FA |
+| `/admin/metrics` | Usage metrics from `GET /admin/metrics`: users (total, confirmed, active and new in 30 days, deactivated, with 2FA), engagement (with a balance, with entries, with 5 or more series, entries created in 30 days) and a bar chart of sign-ups in the last 12 weeks |
 | `/admin/users/:id` | User details (role, email confirmation, 2FA, lockout, deactivation, last sign-in, sign-in count, creation date) and the admin actions: unlock, reset 2FA, make or remove admin, deactivate or reactivate. Every action asks for confirmation; none is offered on the signed in admin's own account |
 
-Only admins see the "Administração" card on the home page, and the router sends anyone else from `/admin` back home (the role comes from `/me` and is re-checked by the API on every request). The API requires the admin to have 2FA; without it the list answers `two_factor_setup_required` and the app asks to enable it. 2FA enrollment is not in the app yet, so an admin enables it through the API's `/docs`. Deleting an account is irreversible and stays out of the app. The demo build has no administration.
+Only admins see the "Administração" card on the home page (with "Gerenciar usuários" and "Métricas de uso"), and the router sends anyone else from `/admin` back home (the role comes from `/me` and is re-checked by the API on every request). The API requires the admin to have 2FA; without it the list answers `two_factor_setup_required` and the admin enables it on the Security page. Deleting an account is irreversible and stays out of the app. The demo build has no administration.
 
 ## Demo build
 
@@ -120,7 +132,7 @@ flutter run -d chrome --dart-define=DEMO=true
 flutter build web --release --no-web-resources-cdn --dart-define=DEMO=true
 ```
 
-- `DemoServer` answers login, refresh, logout, `/me`, categories, balances and entries (CRUD, filters, paging, the API's validation codes), `POST /entry_series` (recurring and installments) and `GET /projection` (with accumulated savings, negative months and alerts) with the API's rules. Email flows answer success without sending anything.
+- `DemoServer` answers login, refresh, logout, `/me`, categories, balances and entries (CRUD, filters, paging, the API's validation codes), `POST /entry_series` (recurring and installments) and `GET /projection` (with accumulated savings, negative months and alerts) with the API's rules. Email flows answer success without sending anything. `/me/two_factor` keeps 2FA in memory: it checks the demo password, accepts any 6-digit code (a real TOTP check would need the secret on the device) and returns fixed backup codes.
 - `DemoSeed` creates the demo family relative to today: a balance on the first day of the month, a year of salary and fixed and variable expenses created as recurring series, the 13th salary in December and a trip that leaves one month negative. Entries due up to today are paid.
 - The login page shows a demo notice with the account filled in (`DemoSeed.email` / `DemoSeed.password`). Data lives in memory, so reloading the page starts over.
 - The demo uses hash URLs (`/#/projection`), so the web build opens from any address without server rewrites.

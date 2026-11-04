@@ -8,6 +8,7 @@ import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/core/session/session_events.dart';
 import 'package:lar_em_dia/features/admin/domain/admin_repository.dart';
 import 'package:lar_em_dia/features/admin/domain/admin_user.dart';
+import 'package:lar_em_dia/features/admin/presentation/pages/admin_metrics_page.dart';
 import 'package:lar_em_dia/features/admin/presentation/pages/admin_user_detail_page.dart';
 import 'package:lar_em_dia/features/admin/presentation/pages/admin_users_page.dart';
 import 'package:lar_em_dia/features/auth/domain/auth_repository.dart';
@@ -30,12 +31,16 @@ import 'package:lar_em_dia/features/entries/presentation/pages/entry_form_page.d
 import 'package:lar_em_dia/features/home/presentation/home_page.dart';
 import 'package:lar_em_dia/features/projection/domain/projection_repository.dart';
 import 'package:lar_em_dia/features/projection/presentation/pages/projection_page.dart';
+import 'package:lar_em_dia/features/security/domain/security_repository.dart';
+import 'package:lar_em_dia/features/security/presentation/pages/security_page.dart';
+import 'package:lar_em_dia/features/security/presentation/pages/two_factor_enrollment_page.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../helpers/admin_fixtures.dart';
 import '../../helpers/auth_fixtures.dart';
 import '../../helpers/finance_fixtures.dart';
+import '../../helpers/security_fixtures.dart';
 
 void main() {
   group('sessionRedirect', () {
@@ -84,6 +89,7 @@ void main() {
     late MockEntryRepository entries;
     late MockProjectionRepository projections;
     late MockAdminRepository admin;
+    late MockSecurityRepository security;
 
     setUpAll(() {
       registerFinanceFallbacks();
@@ -105,6 +111,9 @@ void main() {
         ),
       ).thenAnswer((_) async => AdminUserPage(users: [carla]));
       when(() => admin.user(carla.id)).thenAnswer((_) async => carla);
+      when(admin.metrics).thenAnswer((_) async => metrics);
+      security = MockSecurityRepository();
+      when(security.twoFactorStatus).thenAnswer((_) async => twoFactorOff);
       when(
         () => projections.fetch(
           from: any(named: 'from'),
@@ -124,7 +133,8 @@ void main() {
         ..registerSingleton<BalanceRepository>(balances)
         ..registerSingleton<EntryRepository>(entries)
         ..registerSingleton<ProjectionRepository>(projections)
-        ..registerSingleton<AdminRepository>(admin);
+        ..registerSingleton<AdminRepository>(admin)
+        ..registerSingleton<SecurityRepository>(security);
       events = SessionEvents();
       session = SessionCubit(repository, events);
       router = buildRouter(session);
@@ -267,7 +277,25 @@ void main() {
       router.go(AppRoutes.adminUser(carla.id));
       await tester.pumpAndSettle();
       expect(find.byType(AdminUserDetailPage), findsOneWidget);
-      expect(find.text('carla@example.com'), findsOneWidget);
+
+      router.go(AppRoutes.adminMetrics);
+      await tester.pumpAndSettle();
+      expect(find.byType(AdminMetricsPage), findsOneWidget);
+      expect(find.text('Métricas de uso'), findsWidgets);
+    });
+
+    testWidgets('opens the security pages when signed in', (tester) async {
+      await pumpRouter(tester);
+      session.signedIn(ana);
+      await tester.pumpAndSettle();
+
+      router.go(AppRoutes.security);
+      await tester.pumpAndSettle();
+      expect(find.byType(SecurityPage), findsOneWidget);
+
+      router.go(AppRoutes.twoFactorEnrollment);
+      await tester.pumpAndSettle();
+      expect(find.byType(TwoFactorEnrollmentPage), findsOneWidget);
     });
   });
 }

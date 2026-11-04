@@ -35,6 +35,11 @@ class HomePage extends StatelessWidget {
         title: Text(l10n.appTitle),
         actions: [
           IconButton(
+            tooltip: l10n.homeSecurity,
+            icon: const Icon(Icons.shield_outlined),
+            onPressed: () => unawaited(context.push<void>(AppRoutes.security)),
+          ),
+          IconButton(
             tooltip: l10n.logout,
             icon: const Icon(Icons.logout),
             onPressed: () => unawaited(context.read<SessionCubit>().logout()),
@@ -279,10 +284,19 @@ class _AdminCard extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: () =>
-                  unawaited(context.push<void>(AppRoutes.adminUsers)),
-              child: Text(l10n.adminManageUsers),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final (label, route) in [
+                  (l10n.adminManageUsers, AppRoutes.adminUsers),
+                  (l10n.adminMetrics, AppRoutes.adminMetrics),
+                ])
+                  OutlinedButton(
+                    onPressed: () => unawaited(context.push<void>(route)),
+                    child: Text(label),
+                  ),
+              ],
             ),
           ],
         ),
