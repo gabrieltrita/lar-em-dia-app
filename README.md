@@ -43,7 +43,7 @@ lib/
     forms/                    Submission state and SubmissionCubit, validators, error code -> pt-BR text
     money/                    Money (integer cents <-> R$ text) and MoneyInputFormatter
     state/load_state.dart     loading / loaded / failure state for screens that fetch data
-    widgets/                  shared form widgets, DateField, confirmDeletion
+    widgets/                  shared form widgets, DateField, confirmDeletion and confirmAction
     network/                  ApiClient ({ data, meta } envelope), ApiError (error.code), AuthInterceptor, TokenTransport
     routing/                  go_router routes (AppRoutes) and the session redirect
     session/session_events.dart   tells the app when the refresh token stopped working
@@ -101,6 +101,15 @@ Amounts are integer cents end to end (`amount_cents` in the API, `int` in the ap
 `SessionCubit` is the single source of truth for the session (`unknown`, `authenticated`, `unauthenticated`). It restores the session on start through `POST /auth/refresh`, and the router redirects on every change: unknown shows the splash, signed out users only reach the public pages, signed in users go home. When a refresh fails, `AuthInterceptor` clears the tokens and `SessionEvents` signs the user out.
 
 The API email links point to the web routes above (`FRONTEND_URL` in the API). Deep links for the mobile apps come later.
+
+## Administration
+
+| Route | Page |
+|---|---|
+| `/admin/users` | Users list: exact email search (names are encrypted in the API, so they cannot be searched), All / Active / Deactivated filter, "load more" paging (25 per page), and badges for admin, deactivated, locked and 2FA |
+| `/admin/users/:id` | User details (role, email confirmation, 2FA, lockout, deactivation, last sign-in, sign-in count, creation date) and the admin actions: unlock, reset 2FA, make or remove admin, deactivate or reactivate. Every action asks for confirmation; none is offered on the signed in admin's own account |
+
+Only admins see the "Administração" card on the home page, and the router sends anyone else from `/admin` back home (the role comes from `/me` and is re-checked by the API on every request). The API requires the admin to have 2FA; without it the list answers `two_factor_setup_required` and the app asks to enable it. 2FA enrollment is not in the app yet, so an admin enables it through the API's `/docs`. Deleting an account is irreversible and stays out of the app. The demo build has no administration.
 
 ## Demo build
 

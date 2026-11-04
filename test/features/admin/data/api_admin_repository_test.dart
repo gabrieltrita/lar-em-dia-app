@@ -1,0 +1,157 @@
+import 'package:dio/dio.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lar_em_dia/core/network/api_client.dart';
+import 'package:lar_em_dia/core/network/api_error.dart';
+import 'package:lar_em_dia/features/admin/data/api_admin_repository.dart';
+import 'package:lar_em_dia/features/admin/domain/admin_user.dart';
+import 'package:lar_em_dia/features/auth/domain/auth_user.dart';
+
+import '../../../helpers/admin_fixtures.dart';
+import '../../../helpers/fake_adapter.dart';
+
+void main() {
+  late FakeAdapter adapter;
+
+  final carlaJson = {
+    'id': 'user-2',
+    'email': 'carla@example.com',
+    'first_name': 'Carla',
+    'last_name': 'Lima',
+    'full_name': 'Carla Lima',
+    'role': 'user',
+    'email_confirmed': true,
+    'two_factor_enabled': false,
+    'locked': false,
+    'deactivated': false,
+    'deactivated_at': null,
+    'sign_in_count': 4,
+    'created_at': '2026-10-01T12:00:00Z',
+    'last_sign_in_at': '2026-11-03T13:30:00Z',
+  };
+
+  ApiAdminRepository build(FakeHandler handler) {
+    adapter = FakeAdapter(handler);
+    final dio = Dio(BaseOptions(baseUrl: 'http://api.test'))
+      ..httpClientAdapter = adapter;
+    return ApiAdminRepository(ApiClient(dio));
+  }
+
+  RequestOptions lastRequest() => adapter.requests.last;
+
+  test('lists a page of users with the filters', () async {
+    final repository = build(
+      (_) => FakeAdapter.json(200, {
+        'data': [carlaJson],
+        'meta': {'next': 3},
+      }),
+    );
+
+    final page = await repository.users(
+      page: 2,
+      email: 'carla@example.com',
+      status: AccountStatus.active,
+    );
+
+    expect(page, AdminUserPage(users: [carla], nextPage: 3));
+    expect(lastRequest().path, '/admin/users');
+    expect(lastRequest().queryParameters, {
+      'page': 2,
+      'limit': ApiAdminRepository.pageSize,
+      'email': 'carla@example.com',
+      'status': 'active',
+    });
+  });
+
+  test('omits empty filters and reads the last page', () async {
+    final repository = build(
+      (_) => FakeAdapter.json(200, {
+        'data': [
+          {
+            'id': 'user-9',
+            'email': 'new@example.com',
+            'full_name': 'New',
+            'role': 'owner',
+            'created_at': '2026-10-01T12:00:00Z',
+          },
+        ],
+        'meta': {'next': null},
+      }),
+    );
+
+    final page = await repository.users(page: 1, email: '');
+
+    expect(page.nextPage, isNull);
+    expect(page.users.single.role, UserRole.user);
+    expect(page.users.single.signInCount, 0);
+    expect(page.users.single.lastSignInAt, isNull);
+    expect(lastRequest().queryParameters, {
+      'page': 1,
+      'limit': ApiAdminRepository.pageSize,
+    });
+  });
+
+  test('reads one user', () async {
+    final repository = build((_) => FakeAdapter.json(200, {'data': carlaJson}));
+
+    expect(await repository.user('user-2'), carla);
+    expect(lastRequest().path, '/admin/users/user-2');
+  });
+
+  for (final (action, call) in [
+    ('unlock', (ApiAdminRepository r) => r.unlock('user-2')),
+    ('deactivate', (ApiAdminRepository r) => r.deactivate('user-2')),
+    ('reactivate', (ApiAdminRepository r) => r.reactivate('user-2')),
+  ]) {
+    test('posts the $action action', () async {
+      final repository = build(
+        (_) => FakeAdapter.json(200, {'data': carlaJson}),
+      );
+
+      expect(await call(repository), carla);
+      expect(lastRequest().method, 'POST');
+      expect(lastRequest().path, '/admin/users/user-2/$action');
+    });
+  }
+
+  test('resets the second factor', () async {
+    final repository = build((_) => FakeAdapter.json(204, null));
+
+    await repository.resetTwoFactor('user-2');
+
+    expect(lastRequest().method, 'DELETE');
+    expect(lastRequest().path, '/admin/users/user-2/two_factor');
+  });
+
+  test('changes the role', () async {
+    final repository = build(
+      (_) => FakeAdapter.json(200, {
+        'data': {...carlaJson, 'role': 'admin'},
+      }),
+    );
+
+    final user = await repository.changeRole('user-2', UserRole.admin);
+
+    expect(user.isAdmin, isTrue);
+    expect(lastRequest().method, 'PATCH');
+    expect(lastRequest().data, {'role': 'admin'});
+  });
+
+  test('surfaces the missing second factor of the admin', () async {
+    final repository = build(
+      (_) => FakeAdapter.json(403, {
+        'error': {'code': 'two_factor_setup_required', 'message': 'Enable 2FA'},
+      }),
+    );
+
+    await expectLater(
+      repository.users(page: 1),
+      throwsA(
+        isA<ApiError>().having(
+          (error) => error.code,
+          'code',
+          'two_factor_setup_required',
+        ),
+      ),
+    );
+  });
+}

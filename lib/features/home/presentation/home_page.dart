@@ -9,6 +9,7 @@ import 'package:lar_em_dia/core/money/money.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/core/state/load_state.dart';
 import 'package:lar_em_dia/core/widgets/form_widgets.dart';
+import 'package:lar_em_dia/features/auth/domain/auth_user.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/home/presentation/cubits/home_cubit.dart';
@@ -21,12 +22,13 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final firstName = context.select<SessionCubit, String?>(
+    final user = context.select<SessionCubit, AuthUser?>(
       (cubit) => switch (cubit.state) {
-        SessionAuthenticated(:final user) => user.firstName,
+        SessionAuthenticated(:final user) => user,
         _ => null,
       },
     );
+    final firstName = user?.firstName;
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.appTitle),
@@ -71,6 +73,7 @@ class HomePage extends StatelessWidget {
                   _EntriesCard(kind: kind, summary: summary),
                   const SizedBox(height: 16),
                 ],
+                if (user?.isAdmin ?? false) const _AdminCard(),
               ],
             ),
           ),
@@ -237,6 +240,35 @@ class _EntriesCard extends StatelessWidget {
                   child: Text(l10n.homeSeeEntries(kind.name)),
                 ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AdminCard extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.adminTitle,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: () =>
+                  unawaited(context.push<void>(AppRoutes.adminUsers)),
+              child: Text(l10n.adminManageUsers),
             ),
           ],
         ),

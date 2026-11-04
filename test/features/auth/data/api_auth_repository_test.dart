@@ -81,6 +81,36 @@ void main() {
     expect(storage.refreshToken, 'r2');
   });
 
+  test('login reads the role and falls back to user', () async {
+    for (final (role, expected) in [
+      ('admin', UserRole.admin),
+      ('owner', UserRole.user),
+    ]) {
+      final repository = build(
+        (_) => FakeAdapter.json(200, {
+          'data': {
+            'user': {...userJson, 'role': role},
+            'tokens': {'access_token': 'a2', 'refresh_token': 'r2'},
+          },
+        }),
+      );
+
+      final result = await repository.login(
+        email: 'ana@example.com',
+        password: 'Secret123',
+      );
+
+      expect(
+        result,
+        isA<LoginAuthenticated>().having(
+          (result) => result.user.role,
+          'role',
+          expected,
+        ),
+      );
+    }
+  });
+
   test('login returns the 2FA challenge without storing tokens', () async {
     final repository = build(
       (_) => FakeAdapter.json(200, {

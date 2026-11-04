@@ -31,13 +31,15 @@ Future<void> pumpPage(
         AppRoutes.expenses,
         AppRoutes.expensesForm,
         AppRoutes.projection,
+        AppRoutes.adminUsers,
+        AppRoutes.adminUser(':id'),
       ])
         GoRoute(
           path: path,
           builder: (context, state) => Scaffold(
             body: Column(
               children: [
-                Text(routeMarker(path, state.extra)),
+                Text(routeMarker(state.uri.path, state.extra)),
                 TextButton(
                   onPressed: () => context.pop(true),
                   child: const Text(savedAndBack),

@@ -12,6 +12,9 @@ abstract class AuthUserDto with _$AuthUserDto {
     required String firstName,
     @Default(false) bool twoFactorEnabled,
     String? lastName,
+    @JsonKey(unknownEnumValue: UserRole.user)
+    @Default(UserRole.user)
+    UserRole role,
   }) = _AuthUserDto;
 
   const new _();
@@ -24,5 +27,6 @@ abstract class AuthUserDto with _$AuthUserDto {
     firstName: firstName,
     lastName: lastName,
     twoFactorEnabled: twoFactorEnabled,
+    role: role,
   );
 }

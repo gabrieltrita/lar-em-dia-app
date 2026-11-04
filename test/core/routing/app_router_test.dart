@@ -6,6 +6,10 @@ import 'package:lar_em_dia/core/di/injection.dart';
 import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/core/session/session_events.dart';
+import 'package:lar_em_dia/features/admin/domain/admin_repository.dart';
+import 'package:lar_em_dia/features/admin/domain/admin_user.dart';
+import 'package:lar_em_dia/features/admin/presentation/pages/admin_user_detail_page.dart';
+import 'package:lar_em_dia/features/admin/presentation/pages/admin_users_page.dart';
 import 'package:lar_em_dia/features/auth/domain/auth_repository.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
 import 'package:lar_em_dia/features/auth/presentation/pages/check_email_page.dart';
@@ -29,6 +33,7 @@ import 'package:lar_em_dia/features/projection/presentation/pages/projection_pag
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../helpers/admin_fixtures.dart';
 import '../../helpers/auth_fixtures.dart';
 import '../../helpers/finance_fixtures.dart';
 
@@ -50,6 +55,18 @@ void main() {
       expect(sessionRedirect(signedIn, AppRoutes.home), isNull);
     });
 
+    test('keeps the administration to admins', () {
+      const admin = SessionState.authenticated(rafaelAdmin);
+      final detail = AppRoutes.adminUser('user-2');
+
+      expect(sessionRedirect(signedIn, AppRoutes.adminUsers), AppRoutes.home);
+      expect(sessionRedirect(signedIn, detail), AppRoutes.home);
+      expect(sessionRedirect(signedIn, AppRoutes.admin), AppRoutes.home);
+      expect(sessionRedirect(signedIn, '/administrative'), isNull);
+      expect(sessionRedirect(admin, AppRoutes.adminUsers), isNull);
+      expect(sessionRedirect(admin, detail), isNull);
+    });
+
     test('sends a signed out user to the login', () {
       expect(sessionRedirect(signedOut, AppRoutes.home), AppRoutes.login);
       expect(sessionRedirect(signedOut, AppRoutes.splash), AppRoutes.login);
@@ -66,6 +83,7 @@ void main() {
     late MockBalanceRepository balances;
     late MockEntryRepository entries;
     late MockProjectionRepository projections;
+    late MockAdminRepository admin;
 
     setUpAll(() {
       registerFinanceFallbacks();
@@ -78,6 +96,15 @@ void main() {
       balances = MockBalanceRepository();
       entries = MockEntryRepository();
       projections = MockProjectionRepository();
+      admin = MockAdminRepository();
+      when(
+        () => admin.users(
+          page: 1,
+          email: any(named: 'email'),
+          status: any(named: 'status'),
+        ),
+      ).thenAnswer((_) async => AdminUserPage(users: [carla]));
+      when(() => admin.user(carla.id)).thenAnswer((_) async => carla);
       when(
         () => projections.fetch(
           from: any(named: 'from'),
@@ -96,7 +123,8 @@ void main() {
         ..registerSingleton<AuthRepository>(repository)
         ..registerSingleton<BalanceRepository>(balances)
         ..registerSingleton<EntryRepository>(entries)
-        ..registerSingleton<ProjectionRepository>(projections);
+        ..registerSingleton<ProjectionRepository>(projections)
+        ..registerSingleton<AdminRepository>(admin);
       events = SessionEvents();
       session = SessionCubit(repository, events);
       router = buildRouter(session);
@@ -218,6 +246,28 @@ void main() {
       router.go(AppRoutes.expensesForm, extra: housing);
       await tester.pumpAndSettle();
       expect(find.text('Editar despesa'), findsOneWidget);
+    });
+
+    testWidgets('opens the administration only for admins', (tester) async {
+      await pumpRouter(tester);
+      session.signedIn(ana);
+      await tester.pumpAndSettle();
+
+      router.go(AppRoutes.adminUsers);
+      await tester.pumpAndSettle();
+      expect(find.byType(HomePage), findsOneWidget);
+
+      session.signedIn(rafaelAdmin);
+      await tester.pumpAndSettle();
+      router.go(AppRoutes.adminUsers);
+      await tester.pumpAndSettle();
+      expect(find.byType(AdminUsersPage), findsOneWidget);
+      expect(find.text('Carla Lima'), findsOneWidget);
+
+      router.go(AppRoutes.adminUser(carla.id));
+      await tester.pumpAndSettle();
+      expect(find.byType(AdminUserDetailPage), findsOneWidget);
+      expect(find.text('carla@example.com'), findsOneWidget);
     });
   });
 }

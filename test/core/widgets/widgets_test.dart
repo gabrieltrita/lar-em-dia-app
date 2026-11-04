@@ -89,6 +89,32 @@ void main() {
     });
   }
 
+  testWidgets('confirmAction shows its own confirm label', (tester) async {
+    bool? answer;
+    await pumpLocalized(
+      tester,
+      Builder(
+        builder: (context) => TextButton(
+          onPressed: () async => answer = await confirmAction(
+            context,
+            title: 'Desativar?',
+            message: 'Some',
+            confirmLabel: 'Desativar',
+          ),
+          child: const Text('open'),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    expect(find.text('Apagar'), findsNothing);
+    await tester.tap(find.text('Desativar'));
+    await tester.pumpAndSettle();
+
+    expect(answer, isTrue);
+  });
+
   testWidgets('confirmDeletion answers false when dismissed', (tester) async {
     bool? answer;
     await pumpLocalized(

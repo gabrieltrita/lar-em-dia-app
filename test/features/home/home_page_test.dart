@@ -14,6 +14,7 @@ import 'package:lar_em_dia/features/home/presentation/cubits/home_cubit.dart';
 import 'package:lar_em_dia/features/home/presentation/home_page.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../helpers/admin_fixtures.dart';
 import '../../helpers/auth_fixtures.dart';
 import '../../helpers/finance_fixtures.dart';
 import '../../helpers/pump_page.dart';
@@ -160,6 +161,19 @@ void main() {
         verify(balances.latest).called(2);
       });
     }
+
+    testWidgets('shows the administration only to admins', (tester) async {
+      await pump(tester);
+      expect(find.text('Administração'), findsNothing);
+
+      harness.session.signedIn(rafaelAdmin);
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.text('Gerenciar usuários'), 200);
+      await tester.tap(find.text('Gerenciar usuários'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(routeMarker(AppRoutes.adminUsers)), findsOneWidget);
+    });
 
     testWidgets('retries after a failure', (tester) async {
       when(balances.latest).thenThrow(const ApiError(code: 'network_error'));
