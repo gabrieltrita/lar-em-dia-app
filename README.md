@@ -70,18 +70,20 @@ tool/check_core_coverage.sh   fails below 100% line coverage in lib/core
 
 | Route | Page |
 |---|---|
-| `/` | Home: latest balance, the projected balance at the end of this month, and this month's income (received and to receive) and expenses (paid and to pay), with shortcuts |
+| `/` | Home: latest balance, the projected balance at the end of this month with the savings accumulated over the next 12 months, and this month's income (received and to receive) and expenses (paid and to pay), with shortcuts |
 | `/balances` | Balance history; tap to edit, trash icon to delete after confirmation |
 | `/balances/form` | Inform or edit a balance (`extra` carries the balance being edited); the amount may be negative and the date cannot be in the future |
 | `/income?month=YYYY-MM` | Income of a month with its total; arrows move between months, swipe left deletes after confirmation |
-| `/income/form` | New or edited income: category, description, amount, date and whether it was already received |
+| `/income/form` | New or edited income: category, description, amount, date and whether it was already received; a new one can repeat in the following or previous months (2 to 36, this one included) |
 | `/expenses?month=YYYY-MM` | Expenses of a month with the total and the fixed and variable subtotals; the All / Fixed / Variable chips filter the list and the total |
-| `/expenses/form` | New or edited expense: category, fixed or variable (preselected by the category's `default_nature`), description, amount, date and whether it was already paid |
-| `/projection` | Projected balance at the end of each of the next 12 months: a line chart (`fl_chart`) and a list with income, expenses (fixed and variable) and the closing balance; negative months in red. Without a balance it asks for one first |
+| `/expenses/form` | New or edited expense: category, fixed or variable (preselected by the category's `default_nature`), description, amount, date and whether it was already paid; a new one can repeat like income |
+| `/projection` | Projected balance at the end of each of the next 12 months: a line chart (`fl_chart`) and a list with income, expenses (fixed and variable) and the closing balance; negative months in red. A card shows the accumulated savings at the end of the period and each month lists its accumulated savings. Without a balance it asks for one first |
 
 Income and expenses share the same pages and cubits: `EntriesPage` and `EntryFormPage` take the `EntryKind`, `MonthEntriesCubit` receives it as an injectable `@factoryParam` (`getIt<MonthEntriesCubit>(param1: kind)`), and the texts that differ use ICU `select` messages on the kind in `app_pt.arb`.
 
-The projection comes from the API's `GET /projection` (`ProjectionRepository`); the app never recomputes balances. Chart values are converted to `double` only for drawing.
+A repeated entry is created with `POST /entry_series` (`EntryRepository.createSeries`), which generates one entry per month; entries of a series show a repeat icon and are edited or deleted one at a time.
+
+The projection comes from the API's `GET /projection` (`ProjectionRepository`), including `savings_cents`; the app never recomputes balances. Chart values are converted to `double` only for drawing.
 
 Amounts are integer cents end to end (`amount_cents` in the API, `int` in the app); `Money` formats and parses BRL text without `double`. A received income or paid expense is sent as `status: paid` with `paid_on` equal to its date. Category names come from the API in English and are shown in Portuguese by `key` (`categoryLabel`).
 
@@ -109,8 +111,8 @@ flutter run -d chrome --dart-define=DEMO=true
 flutter build web --release --no-web-resources-cdn --dart-define=DEMO=true
 ```
 
-- `DemoServer` answers login, refresh, logout, `/me`, categories, balances and entries (CRUD, filters, paging, the API's validation codes) and `GET /projection` with the API's rule. Email flows answer success without sending anything.
-- `DemoSeed` creates the demo family relative to today: a balance on the first day of the month, a year of salary and fixed and variable expenses, the 13th salary in December and a trip that leaves one month negative. Entries due up to today are paid.
+- `DemoServer` answers login, refresh, logout, `/me`, categories, balances and entries (CRUD, filters, paging, the API's validation codes), `POST /entry_series` and `GET /projection` (with accumulated savings) with the API's rules. Email flows answer success without sending anything.
+- `DemoSeed` creates the demo family relative to today: a balance on the first day of the month, a year of salary and fixed and variable expenses created as recurring series, the 13th salary in December and a trip that leaves one month negative. Entries due up to today are paid.
 - The login page shows a demo notice with the account filled in (`DemoSeed.email` / `DemoSeed.password`). Data lives in memory, so reloading the page starts over.
 - The demo uses hash URLs (`/#/projection`), so the web build opens from any address without server rewrites.
 

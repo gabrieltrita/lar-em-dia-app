@@ -90,23 +90,36 @@ abstract final class DemoSeed {
       'as_of': Dates.toIso(firstMonth),
     });
 
-    void add(String key, String description, int cents, DateTime dueOn) {
+    Row fields(String key, String description, int cents, DateTime dueOn) {
       final paid = !dueOn.isAfter(database.today);
-      database.createEntry({
+      return {
         'category_id': keys[key],
         'description': description,
         'amount_cents': cents,
         'due_on': Dates.toIso(dueOn),
         'status': paid ? 'paid' : 'pending',
         'paid_on': paid ? Dates.toIso(dueOn) : null,
+      };
+    }
+
+    for (final (key, description, cents, day) in _monthly) {
+      database.createSeries({
+        ...fields(
+          key,
+          description,
+          cents,
+          DateTime(firstMonth.year, firstMonth.month, day),
+        ),
+        'entries_count': months,
+        'direction': 'forward',
       });
     }
 
+    void add(String key, String description, int cents, DateTime dueOn) =>
+        database.createEntry(fields(key, description, cents, dueOn));
+
     for (var offset = 0; offset < months; offset++) {
       final month = Dates.addMonths(firstMonth, offset);
-      for (final (key, description, cents, day) in _monthly) {
-        add(key, description, cents, DateTime(month.year, month.month, day));
-      }
       if (month.month == 12) {
         add(
           'thirteenth_salary',

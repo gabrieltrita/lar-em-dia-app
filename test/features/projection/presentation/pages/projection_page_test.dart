@@ -33,7 +33,7 @@ void main() {
   tearDown(() => harness.dispose());
 
   Future<void> pump(WidgetTester tester) async {
-    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.physicalSize = const Size(1200, 3600);
     addTearDown(tester.view.resetPhysicalSize);
     await pumpPage(
       tester,
@@ -68,7 +68,8 @@ void main() {
     expect(
       find.text(
         'Entradas R\$ 6.500,00 · Saídas R\$ 2.800,00\n'
-        r'Fixas R$ 2.000,00 · Variáveis R$ 800,00',
+        'Fixas R\$ 2.000,00 · Variáveis R\$ 800,00\n'
+        r'Economia acumulada R$ 3.700,00',
       ),
       findsOneWidget,
     );
@@ -77,6 +78,29 @@ void main() {
     expect(tester.widget<Text>(find.text(r'-R$ 1.065,44')).style?.color, error);
     expect(
       tester.widget<Text>(find.text(r'R$ 4.934,56')).style?.color,
+      isNot(error),
+    );
+  });
+
+  testWidgets('shows the savings of the last month, in red when negative', (
+    tester,
+  ) async {
+    await pump(tester);
+
+    expect(
+      find.text('Economia acumulada até dezembro de 2026'),
+      findsOneWidget,
+    );
+    final context = tester.element(find.byType(ProjectionPage));
+    final error = Theme.of(context).colorScheme.error;
+    expect(tester.widget<Text>(find.text(r'-R$ 2.300,00')).style?.color, error);
+
+    answer(() => projection.copyWith(months: [novemberProjection]));
+    await tester.drag(find.byType(ListView), const Offset(0, 300));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.widget<Text>(find.text(r'R$ 3.700,00')).style?.color,
       isNot(error),
     );
   });

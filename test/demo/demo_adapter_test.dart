@@ -166,6 +166,27 @@ void main() {
       expect(call('DELETE', '/entries/$id').status, 404);
     });
 
+    test('creates recurring series with validation errors', () {
+      final category = (data(call('GET', '/categories'))! as List).first as Map;
+      final created = call(
+        'POST',
+        '/entry_series',
+        body: {
+          'category_id': category['id'],
+          'description': 'Bonus',
+          'amount_cents': 100,
+          'due_on': '2026-11-10',
+          'entries_count': 2,
+          'direction': 'forward',
+        },
+      );
+      expect(created.status, 201);
+      expect((data(created)! as Map)['entries'], hasLength(2));
+
+      final invalid = call('POST', '/entry_series', body: {});
+      expect(invalid.status, 422);
+    });
+
     test('rejects malformed dates and unknown routes', () {
       final response = call('GET', '/entries', query: {'from': '11/2026'});
       expect(response.status, 400);

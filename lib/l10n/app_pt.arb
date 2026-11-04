@@ -126,6 +126,17 @@
     }
   },
   "homeSeeProjection": "Ver projeção",
+  "homeProjectionSavings": "Economia acumulada até {month}: {amount}",
+  "@homeProjectionSavings": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "projectionTitle": "Projeção",
   "projectionNoBalance": "Informe seu saldo para ver a projeção dos próximos meses.",
   "projectionAnchor": "A partir do saldo de {amount} em {date}",
@@ -147,6 +158,22 @@
         "type": "String"
       },
       "expense": {
+        "type": "String"
+      }
+    }
+  },
+  "projectionSavingsTitle": "Economia acumulada até {month}",
+  "@projectionSavingsTitle": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "projectionMonthSavings": "Economia acumulada {amount}",
+  "@projectionMonthSavings": {
+    "placeholders": {
+      "amount": {
         "type": "String"
       }
     }
@@ -259,6 +286,20 @@
   "entryNatureLabel": "Tipo de despesa",
   "entryNatureFixed": "Fixa",
   "entryNatureVariable": "Variável",
+  "entryRepeatLabel": "Repetir em outros meses",
+  "entryRepeatCountLabel": "Quantidade de meses, contando este",
+  "entryRepeatDirectionLabel": "Repetir nos",
+  "entryRepeatForward": "Próximos meses",
+  "entryRepeatBackward": "Meses anteriores",
+  "entryRepeatMonths": "{count} meses",
+  "@entryRepeatMonths": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "entryRecurring": "Lançamento repetido",
   "balancesTitle": "Saldos",
   "balancesEmpty": "Nenhum saldo informado ainda.",
   "balanceFormNewTitle": "Informar saldo",

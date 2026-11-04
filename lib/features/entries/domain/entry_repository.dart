@@ -8,6 +8,8 @@ abstract interface class EntryRepository {
 
   Future<Entry> create(EntryDraft draft);
 
+  Future<List<Entry>> createSeries(EntryDraft draft, Recurrence recurrence);
+
   Future<Entry> update(String id, EntryDraft draft);
 
   Future<void> delete(String id);

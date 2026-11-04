@@ -18,11 +18,14 @@ abstract class ProjectionMonth with _$ProjectionMonth {
     required int fixedExpenseCents,
     required int variableExpenseCents,
     required int closingCents,
+    required int savingsCents,
   }) = _ProjectionMonth;
 
   const new _();
 
   bool get isNegative => closingCents < 0;
+
+  bool get isSaving => savingsCents >= 0;
 }
 
 @freezed

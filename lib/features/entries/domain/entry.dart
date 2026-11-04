@@ -8,6 +8,18 @@ enum EntryStatus { pending, paid }
 
 enum EntryNature { fixed, variable }
 
+enum RecurrenceDirection { forward, backward }
+
+@freezed
+abstract class Recurrence with _$Recurrence {
+  const factory({required int count, required RecurrenceDirection direction}) =
+      _Recurrence;
+
+  static const minCount = 2;
+  static const maxCount = 36;
+  static const defaultCount = 12;
+}
+
 @freezed
 abstract class EntryDraft with _$EntryDraft {
   const factory({
@@ -32,11 +44,15 @@ abstract class Entry with _$Entry {
     required EntryStatus status,
     EntryNature? nature,
     DateTime? paidOn,
+    String? seriesId,
+    int? seriesPosition,
   }) = _Entry;
 
   const new _();
 
   bool get isPaid => status == EntryStatus.paid;
+
+  bool get isRecurring => seriesId != null;
 
   EntryDraft toDraft() => EntryDraft(
     categoryId: categoryId,

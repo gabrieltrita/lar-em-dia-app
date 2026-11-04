@@ -98,6 +98,52 @@ void main() {
     });
   });
 
+  test('creates a recurring series and reads its entries', () async {
+    final repository = build(
+      (_) => FakeAdapter.json(201, {
+        'data': {
+          'id': 'series-1',
+          'kind': 'recurring',
+          'entries_count': 2,
+          'entries': [
+            {
+              ...entryJson('entry-1', paidOn: '2026-11-05'),
+              'series_id': 'series-1',
+              'series_position': 1,
+            },
+            {
+              ...entryJson('entry-2'),
+              'due_on': '2026-12-05',
+              'series_id': 'series-1',
+              'series_position': 2,
+            },
+          ],
+        },
+      }),
+    );
+
+    final created = await repository.createSeries(
+      salary.toDraft(),
+      const Recurrence(count: 2, direction: RecurrenceDirection.backward),
+    );
+
+    expect(created.map((entry) => entry.seriesPosition), [1, 2]);
+    expect(created.last.seriesId, 'series-1');
+    expect(created.last.isRecurring, isTrue);
+    expect(adapter.requests.single.path, '/entry_series');
+    expect(adapter.requests.single.data, {
+      'category_id': 'cat-salary',
+      'description': 'Salário ACME',
+      'amount_cents': 500000,
+      'due_on': '2026-11-05',
+      'status': 'paid',
+      'nature': null,
+      'paid_on': '2026-11-05',
+      'entries_count': 2,
+      'direction': 'backward',
+    });
+  });
+
   test('sends and reads the nature of an expense', () async {
     final repository = build(
       (_) => FakeAdapter.json(201, {

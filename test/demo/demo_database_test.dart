@@ -187,6 +187,94 @@ void main() {
     });
   });
 
+  group('series', () {
+    Row series(
+      String dueOn,
+      int count,
+      String direction, [
+      Row extra = const {},
+    ]) => database.createSeries({
+      'category_id': salary,
+      'description': 'Salary',
+      'amount_cents': 100,
+      'due_on': dueOn,
+      'entries_count': count,
+      'direction': direction,
+      ...extra,
+    });
+
+    List<Object?> fieldOf(Row created, String field) => [
+      for (final row in created['entries']! as List<Row>) row[field],
+    ];
+
+    test('create one entry per month in position order', () {
+      final created = series('2026-11-05', 3, 'forward');
+
+      expect(created, containsPair('kind', 'recurring'));
+      expect(created, containsPair('entries_count', 3));
+      expect(fieldOf(created, 'due_on'), [
+        '2026-11-05',
+        '2026-12-05',
+        '2027-01-05',
+      ]);
+      expect(fieldOf(created, 'series_position'), [1, 2, 3]);
+      expect(fieldOf(created, 'series_id').toSet(), {created['id']});
+      expect(database.series, hasLength(1));
+      expect(database.entries, hasLength(3));
+    });
+
+    test('go backwards and keep the day at the end of short months', () {
+      expect(fieldOf(series('2026-03-31', 3, 'backward'), 'due_on'), [
+        '2026-01-31',
+        '2026-02-28',
+        '2026-03-31',
+      ]);
+    });
+
+    test('pay the copies due up to today and leave the later ones pending', () {
+      final created = series('2026-11-05', 3, 'forward', {
+        'status': 'paid',
+        'paid_on': '2026-11-06',
+      });
+
+      expect(fieldOf(created, 'status'), ['paid', 'paid', 'pending']);
+      expect(fieldOf(created, 'paid_on'), ['2026-11-06', '2026-12-05', null]);
+      expect(fieldOf(series('2026-12-05', 2, 'backward'), 'status'), [
+        'pending',
+        'pending',
+      ]);
+    });
+
+    test('validate the count, the direction and the entry together', () {
+      expect(
+        errorsOf(() => series('2026-11-05', 1, 'up', {'amount_cents': 0})),
+        {
+          'entries_count': ['greater_than_or_equal_to'],
+          'direction': ['inclusion'],
+          'amount_cents': ['greater_than'],
+        },
+      );
+      expect(errorsOf(() => series('2026-11-05', 37, 'forward')), {
+        'entries_count': ['less_than_or_equal_to'],
+      });
+      expect(
+        errorsOf(
+          () => database.createSeries({
+            'category_id': salary,
+            'description': 'Salary',
+            'amount_cents': 100,
+            'due_on': '2026-11-05',
+            'direction': 'forward',
+          }),
+        ),
+        {
+          'entries_count': ['not_a_number'],
+        },
+      );
+      expect(database.entries, isEmpty);
+    });
+  });
+
   group('projection', () {
     setUp(() {
       entry(salary, 20000, '2026-10-15');
@@ -229,6 +317,8 @@ void main() {
         months: 2,
       );
 
+      expect(november, containsPair('savings_cents', 20000));
+      expect(december, containsPair('savings_cents', 10000));
       expect(november, containsPair('fixed_expense_cents', 30000));
       expect(november, containsPair('income_cents', 50000));
       expect(december, containsPair('variable_expense_cents', 10000));

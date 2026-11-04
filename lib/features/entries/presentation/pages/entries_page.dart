@@ -257,6 +257,9 @@ class _EntryTile extends StatelessWidget {
         child: const Icon(Icons.delete_outline),
       ),
       child: ListTile(
+        leading: entry.isRecurring
+            ? Icon(Icons.repeat, semanticLabel: l10n.entryRecurring)
+            : const SizedBox(width: 24),
         title: Text(entry.description),
         subtitle: Text(
           [

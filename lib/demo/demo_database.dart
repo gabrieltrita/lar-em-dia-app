@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:lar_em_dia/core/dates/dates.dart';
 
 typedef Row = Map<String, Object?>;
@@ -20,7 +22,11 @@ class DemoDatabase {
   final List<Row> categories = [];
   final List<Row> balances = [];
   final List<Row> entries = [];
+  final List<Row> series = [];
   int _sequence = 0;
+
+  static const minSeriesCount = 2;
+  static const maxSeriesCount = 36;
 
   String nextId(String prefix) => '$prefix-${++_sequence}';
 
@@ -91,6 +97,70 @@ class DemoDatabase {
     return entry;
   }
 
+  Row createSeries(Row input) {
+    final count = input['entries_count'];
+    final direction = input['direction'];
+    final errors = <String, List<String>>{
+      if (count is! int)
+        'entries_count': ['not_a_number']
+      else if (count < minSeriesCount)
+        'entries_count': ['greater_than_or_equal_to']
+      else if (count > maxSeriesCount)
+        'entries_count': ['less_than_or_equal_to'],
+      if (direction != 'forward' && direction != 'backward')
+        'direction': ['inclusion'],
+    };
+    final Row base;
+    try {
+      base = _entryFields(input);
+    } on DemoValidationError catch (error) {
+      throw DemoValidationError({...errors, ...error.details});
+    }
+    _raiseIfAny(errors);
+    final total = count! as int;
+    final row = {
+      'id': nextId('series'),
+      'kind': 'recurring',
+      'entries_count': total,
+    };
+    series.add(row);
+    final baseDueOn = _date(base, 'due_on');
+    final step = direction == 'forward' ? 1 : -1;
+    final dueDates = [
+      for (var offset = 0; offset < total; offset++)
+        _shift(baseDueOn, offset * step),
+    ]..sort();
+    final created = [
+      for (final (index, dueOn) in dueDates.indexed)
+        _seriesEntry(base, dueOn, row['id']! as String, index + 1),
+    ];
+    entries.addAll(created);
+    return {...row, 'entries': created};
+  }
+
+  Row _seriesEntry(Row base, DateTime dueOn, String seriesId, int position) {
+    final isBase = dueOn == _date(base, 'due_on');
+    final paid = base['status'] == 'paid' && !dueOn.isAfter(today);
+    return {
+      ...base,
+      'id': nextId('entry'),
+      'due_on': Dates.toIso(dueOn),
+      if (!isBase) 'status': paid ? 'paid' : 'pending',
+      if (!isBase) 'paid_on': paid ? Dates.toIso(dueOn) : null,
+      'series_id': seriesId,
+      'series_position': position,
+    };
+  }
+
+  static DateTime _shift(DateTime date, int months) {
+    final month = Dates.addMonths(Dates.firstOfMonth(date), months);
+    return DateTime(
+      month.year,
+      month.month,
+      min(date.day, Dates.lastOfMonth(month).day),
+    );
+  }
+
   Row updateEntry(String id, Row input) {
     final entry = findEntry(id);
     final merged = {...entry, ...input};
@@ -108,17 +178,18 @@ class DemoDatabase {
 
   List<Row> projection({required DateTime from, required int months}) {
     final first = Dates.firstOfMonth(from);
-    var opening = _openingBalance(first);
+    final start = _openingBalance(first);
+    var opening = start;
     final rows = <Row>[];
     for (var offset = 0; offset < months; offset++) {
-      final row = _projectMonth(Dates.addMonths(first, offset), opening);
+      final row = _projectMonth(Dates.addMonths(first, offset), opening, start);
       rows.add(row);
       opening = row['closing_cents']! as int;
     }
     return rows;
   }
 
-  Row _projectMonth(DateTime month, int opening) {
+  Row _projectMonth(DateTime month, int opening, int start) {
     final rows = filteredEntries(from: month, to: Dates.lastOfMonth(month));
     int sum(bool Function(Row entry) test) =>
         rows.where(test).fold(0, (total, entry) => total + _cents(entry));
@@ -133,6 +204,7 @@ class DemoDatabase {
       'fixed_expense_cents': fixed,
       'variable_expense_cents': variable,
       'closing_cents': opening + income - fixed - variable,
+      'savings_cents': opening + income - fixed - variable - start,
     };
   }
 

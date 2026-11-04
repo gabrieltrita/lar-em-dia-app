@@ -11,6 +11,7 @@ class ApiEntryRepository implements EntryRepository {
   new(this._client);
 
   static const path = '/entries';
+  static const seriesPath = '/entry_series';
   static const pageSize = 100;
 
   final ApiClient _client;
@@ -55,6 +56,23 @@ class ApiEntryRepository implements EntryRepository {
       path,
       decode: _decode,
       body: _body(draft),
+    );
+    return response.data;
+  }
+
+  @override
+  Future<List<Entry>> createSeries(
+    EntryDraft draft,
+    Recurrence recurrence,
+  ) async {
+    final response = await _client.post<List<Entry>>(
+      seriesPath,
+      decode: (data) => _decodeList((data! as Json)['entries']),
+      body: {
+        ..._body(draft),
+        'entries_count': recurrence.count,
+        'direction': recurrence.direction.name,
+      },
     );
     return response.data;
   }

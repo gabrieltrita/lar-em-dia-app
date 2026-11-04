@@ -29,6 +29,7 @@ abstract class ProjectionMonthDto with _$ProjectionMonthDto {
     required int fixedExpenseCents,
     required int variableExpenseCents,
     required int closingCents,
+    required int savingsCents,
   }) = _ProjectionMonthDto;
 
   const new _();
@@ -44,6 +45,7 @@ abstract class ProjectionMonthDto with _$ProjectionMonthDto {
     fixedExpenseCents: fixedExpenseCents,
     variableExpenseCents: variableExpenseCents,
     closingCents: closingCents,
+    savingsCents: savingsCents,
   );
 }
 

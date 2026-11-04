@@ -41,6 +41,8 @@ abstract class EntryDto with _$EntryDto {
     required EntryStatus status,
     EntryNature? nature,
     String? paidOn,
+    String? seriesId,
+    int? seriesPosition,
   }) = _EntryDto;
 
   const new _();
@@ -57,5 +59,7 @@ abstract class EntryDto with _$EntryDto {
     status: status,
     nature: nature,
     paidOn: paidOn == null ? null : Dates.parseIso(paidOn!),
+    seriesId: seriesId,
+    seriesPosition: seriesPosition,
   );
 }

@@ -47,8 +47,13 @@ class _EntryFormPageState extends State<EntryFormPage> {
   late DateTime _dueOn =
       widget.existing?.dueOn ?? Dates.dateOnly(widget.today ?? DateTime.now());
   late bool _settled = widget.existing?.isPaid ?? false;
+  bool _repeat = false;
+  int _repeatCount = Recurrence.defaultCount;
+  RecurrenceDirection _repeatDirection = RecurrenceDirection.forward;
 
   bool get _isExpense => widget.kind == EntryKind.expense;
+
+  bool get _isNew => widget.existing == null;
 
   @override
   void dispose() {
@@ -72,6 +77,9 @@ class _EntryFormPageState extends State<EntryFormPage> {
           nature: _isExpense ? _nature : null,
         ),
         existing: widget.existing,
+        recurrence: _repeat
+            ? Recurrence(count: _repeatCount, direction: _repeatDirection)
+            : null,
       ),
     );
   }
@@ -83,6 +91,8 @@ class _EntryFormPageState extends State<EntryFormPage> {
       'description': l10n.entryDescriptionLabel,
       'amount_cents': l10n.amountLabel,
       'due_on': l10n.entryDueOnLabel,
+      'entries_count': l10n.entryRepeatCountLabel,
+      'direction': l10n.entryRepeatDirectionLabel,
     };
     return [
       error.localized(l10n),
@@ -139,6 +149,61 @@ class _EntryFormPageState extends State<EntryFormPage> {
     );
   }
 
+  List<Widget> _repeatFields(AppLocalizations l10n) {
+    return [
+      SwitchListTile(
+        key: const Key('entry_repeat'),
+        title: Text(l10n.entryRepeatLabel),
+        value: _repeat,
+        contentPadding: EdgeInsets.zero,
+        onChanged: (value) => setState(() => _repeat = value),
+      ),
+      if (_repeat) ...[
+        const SizedBox(height: 8),
+        DropdownButtonFormField<int>(
+          key: const Key('entry_repeat_count'),
+          initialValue: _repeatCount,
+          decoration: InputDecoration(labelText: l10n.entryRepeatCountLabel),
+          items: [
+            for (
+              var count = Recurrence.minCount;
+              count <= Recurrence.maxCount;
+              count++
+            )
+              DropdownMenuItem(
+                value: count,
+                child: Text(l10n.entryRepeatMonths(count)),
+              ),
+          ],
+          onChanged: (value) => setState(() => _repeatCount = value!),
+        ),
+        const SizedBox(height: 16),
+        InputDecorator(
+          decoration: InputDecoration(
+            labelText: l10n.entryRepeatDirectionLabel,
+            border: InputBorder.none,
+          ),
+          child: SegmentedButton<RecurrenceDirection>(
+            key: const Key('entry_repeat_direction'),
+            segments: [
+              ButtonSegment(
+                value: RecurrenceDirection.forward,
+                label: Text(l10n.entryRepeatForward),
+              ),
+              ButtonSegment(
+                value: RecurrenceDirection.backward,
+                label: Text(l10n.entryRepeatBackward),
+              ),
+            ],
+            selected: {_repeatDirection},
+            onSelectionChanged: (selection) =>
+                setState(() => _repeatDirection = selection.single),
+          ),
+        ),
+      ],
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -152,7 +217,7 @@ class _EntryFormPageState extends State<EntryFormPage> {
       builder: (context, state) => Scaffold(
         appBar: AppBar(
           title: Text(
-            widget.existing == null
+            _isNew
                 ? l10n.entryFormNewTitle(widget.kind.name)
                 : l10n.entryFormEditTitle(widget.kind.name),
           ),
@@ -215,6 +280,7 @@ class _EntryFormPageState extends State<EntryFormPage> {
                     contentPadding: EdgeInsets.zero,
                     onChanged: (value) => setState(() => _settled = value),
                   ),
+                  if (_isNew) ..._repeatFields(l10n),
                   if (state case SubmissionFailure(:final error)) ...[
                     const SizedBox(height: 16),
                     ErrorBanner(_failureMessages(l10n, error)),
