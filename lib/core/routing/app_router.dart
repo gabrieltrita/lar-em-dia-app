@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:lar_em_dia/core/dates/dates.dart';
 import 'package:lar_em_dia/core/di/injection.dart';
 import 'package:lar_em_dia/core/routing/stream_listenable.dart';
+import 'package:lar_em_dia/features/admin/presentation/cubits/admin_cubits.dart';
+import 'package:lar_em_dia/features/admin/presentation/pages/admin_user_detail_page.dart';
+import 'package:lar_em_dia/features/admin/presentation/pages/admin_users_page.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/auth_cubits.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
 import 'package:lar_em_dia/features/auth/presentation/pages/check_email_page.dart';
@@ -45,6 +48,10 @@ abstract final class AppRoutes {
   static const expenses = '/expenses';
   static const expensesForm = '/expenses/form';
   static const projection = '/projection';
+  static const admin = '/admin';
+  static const adminUsers = '$admin/users';
+
+  static String adminUser(String id) => '$adminUsers/$id';
 
   static String entries(EntryKind kind) => switch (kind) {
     EntryKind.income => income,
@@ -72,10 +79,16 @@ String? sessionRedirect(SessionState session, String location) {
   final isSplash = location == AppRoutes.splash;
   return switch (session) {
     SessionUnknown() => isPublic || isSplash ? null : AppRoutes.splash,
-    SessionAuthenticated() => isPublic || isSplash ? AppRoutes.home : null,
+    SessionAuthenticated(:final user) =>
+      isPublic || isSplash || (_isAdminArea(location) && !user.isAdmin)
+          ? AppRoutes.home
+          : null,
     SessionUnauthenticated() => isPublic ? null : AppRoutes.login,
   };
 }
+
+bool _isAdminArea(String location) =>
+    location == AppRoutes.admin || location.startsWith('${AppRoutes.admin}/');
 
 C _started<C>(C cubit, Future<void> Function(C cubit) start) {
   unawaited(start(cubit));
@@ -145,6 +158,26 @@ GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
             _started(getIt<ProjectionCubit>(), (cubit) => cubit.load()),
         child: const ProjectionPage(),
       ),
+    ),
+    GoRoute(
+      path: AppRoutes.adminUsers,
+      builder: (context, state) => BlocProvider(
+        create: (_) =>
+            _started(getIt<AdminUsersCubit>(), (cubit) => cubit.load()),
+        child: const AdminUsersPage(),
+      ),
+      routes: [
+        GoRoute(
+          path: ':id',
+          builder: (context, state) => BlocProvider(
+            create: (_) => _started(
+              getIt<AdminUserCubit>(param1: state.pathParameters['id']),
+              (cubit) => cubit.load(),
+            ),
+            child: const AdminUserDetailPage(),
+          ),
+        ),
+      ],
     ),
     GoRoute(
       path: AppRoutes.splash,

@@ -12,6 +12,8 @@ extension ApiErrorMessages on ApiError {
     'invalid_reset_token' => l10n.errorInvalidResetToken,
     'validation_failed' => l10n.errorValidationFailed,
     'rate_limited' => l10n.errorRateLimited,
+    'two_factor_setup_required' => l10n.errorTwoFactorSetupRequired,
+    'forbidden' => l10n.errorForbidden,
     ApiError.networkErrorCode => l10n.errorNetwork,
     _ => l10n.errorUnknown,
   };
