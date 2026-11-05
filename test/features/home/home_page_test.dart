@@ -214,13 +214,13 @@ void main() {
       expect(find.text(routeMarker(AppRoutes.adminMetrics)), findsOneWidget);
     });
 
-    testWidgets('opens the security page', (tester) async {
+    testWidgets('opens the account page', (tester) async {
       await pump(tester);
 
-      await tester.tap(find.byTooltip('Segurança'));
+      await tester.tap(find.byTooltip('Conta'));
       await tester.pumpAndSettle();
 
-      expect(find.text(routeMarker(AppRoutes.security)), findsOneWidget);
+      expect(find.text(routeMarker(AppRoutes.account)), findsOneWidget);
     });
 
     testWidgets('retries after a failure', (tester) async {

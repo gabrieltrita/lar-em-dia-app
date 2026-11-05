@@ -52,6 +52,21 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  testWidgets('links to the due-date alerts', (tester) async {
+    when(() => repository.twoFactorStatus())
+        .thenAnswer((_) async => twoFactorOff);
+    await pump(tester);
+
+    expect(find.text('Conta'), findsOneWidget);
+    await tester.tap(find.text('Alertas de vencimento'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(routeMarker(AppRoutes.notificationSettings)),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('offers to enable two-factor when it is off', (tester) async {
     when(() => repository.twoFactorStatus())
         .thenAnswer((_) async => twoFactorOff);

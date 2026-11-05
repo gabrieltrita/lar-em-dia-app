@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:lar_em_dia/core/dates/dates.dart';
 import 'package:lar_em_dia/core/di/injection.dart';
 import 'package:lar_em_dia/core/routing/stream_listenable.dart';
+import 'package:lar_em_dia/features/account/presentation/cubits/account_cubits.dart';
+import 'package:lar_em_dia/features/account/presentation/pages/notification_settings_page.dart';
+import 'package:lar_em_dia/features/account/presentation/pages/unsubscribe_page.dart';
 import 'package:lar_em_dia/features/admin/presentation/cubits/admin_cubits.dart';
 import 'package:lar_em_dia/features/admin/presentation/pages/admin_metrics_page.dart';
 import 'package:lar_em_dia/features/admin/presentation/pages/admin_user_detail_page.dart';
@@ -58,8 +61,10 @@ abstract final class AppRoutes {
   static const admin = '/admin';
   static const adminUsers = '$admin/users';
   static const adminMetrics = '$admin/metrics';
-  static const security = '/security';
-  static const twoFactorEnrollment = '/security/two-factor';
+  static const account = '/account';
+  static const twoFactorEnrollment = '$account/two-factor';
+  static const notificationSettings = '$account/notifications';
+  static const unsubscribe = '/unsubscribe';
 
   static String adminUser(String id) => '$adminUsers/$id';
 
@@ -87,6 +92,9 @@ abstract final class AppRoutes {
 }
 
 String? sessionRedirect(SessionState session, String location) {
+  if (location == AppRoutes.unsubscribe) {
+    return null;
+  }
   final isPublic = AppRoutes.public.contains(location);
   final isSplash = location == AppRoutes.splash;
   return switch (session) {
@@ -203,11 +211,31 @@ GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
       ),
     ),
     GoRoute(
-      path: AppRoutes.security,
+      path: AppRoutes.account,
       builder: (context, state) => BlocProvider(
         create: (_) =>
             _started(getIt<SecurityCubit>(), (cubit) => cubit.load()),
         child: const SecurityPage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.notificationSettings,
+      builder: (context, state) => BlocProvider(
+        create: (_) => _started(
+          getIt<NotificationSettingsCubit>(),
+          (cubit) => cubit.load(),
+        ),
+        child: const NotificationSettingsPage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.unsubscribe,
+      builder: (context, state) => BlocProvider(
+        create: (_) => _started(
+          getIt<UnsubscribeCubit>(),
+          (cubit) => cubit.unsubscribe(state.uri.queryParameters['token']),
+        ),
+        child: const UnsubscribePage(),
       ),
     ),
     GoRoute(

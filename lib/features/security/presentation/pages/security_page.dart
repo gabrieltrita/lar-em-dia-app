@@ -32,7 +32,11 @@ class SecurityPage extends StatelessWidget {
           ),
           Loaded(value: final status) => ListView(
             padding: const EdgeInsets.all(16),
-            children: [_TwoFactorCard(status: status)],
+            children: [
+              _TwoFactorCard(status: status),
+              const SizedBox(height: 16),
+              const _NotificationsCard(),
+            ],
           ),
         },
       ),
@@ -159,6 +163,24 @@ class _TwoFactorCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _NotificationsCard extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.notifications_outlined),
+        title: Text(l10n.notificationsTitle),
+        subtitle: Text(l10n.notificationsHint),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => unawaited(context.push(AppRoutes.notificationSettings)),
       ),
     );
   }

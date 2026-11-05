@@ -34,8 +34,9 @@ Future<void> pumpPage(
         AppRoutes.simulation,
         AppRoutes.adminUsers,
         AppRoutes.adminMetrics,
-        AppRoutes.security,
+        AppRoutes.account,
         AppRoutes.twoFactorEnrollment,
+        AppRoutes.notificationSettings,
         AppRoutes.adminUser(':id'),
       ])
         GoRoute(

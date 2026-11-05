@@ -36,8 +36,8 @@ class HomePage extends StatelessWidget {
         actions: [
           IconButton(
             tooltip: l10n.homeSecurity,
-            icon: const Icon(Icons.shield_outlined),
-            onPressed: () => unawaited(context.push<void>(AppRoutes.security)),
+            icon: const Icon(Icons.account_circle_outlined),
+            onPressed: () => unawaited(context.push<void>(AppRoutes.account)),
           ),
           IconButton(
             tooltip: l10n.logout,

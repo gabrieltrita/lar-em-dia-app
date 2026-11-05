@@ -467,7 +467,7 @@
   "errorTwoFactorAlreadyEnabled": "A verificação em duas etapas já está ativa.",
   "errorTwoFactorRequired": "Administradores não podem desativar a verificação em duas etapas.",
   "errorReauthenticationUnavailable": "Confirme sua identidade com a senha da conta.",
-  "securityTitle": "Segurança",
+  "securityTitle": "Conta",
   "securityTwoFactorTitle": "Verificação em duas etapas",
   "securityTwoFactorOn": "Ativa. Você tem {count} códigos de recuperação.",
   "@securityTwoFactorOn": {
@@ -497,7 +497,7 @@
   "backupCodesCopy": "Copiar códigos",
   "backupCodesDone": "Concluir",
   "copied": "Copiado.",
-  "homeSecurity": "Segurança",
+  "homeSecurity": "Conta",
   "adminMetrics": "Métricas de uso",
   "adminMetricsUsers": "Contas",
   "adminMetricsEngagement": "Uso",
@@ -583,5 +583,22 @@
   "simulationLegendBaseline": "Atual",
   "simulationLegendSimulated": "Simulado",
   "simulationCommit": "Efetivar",
-  "simulationDiscard": "Descartar"
+  "simulationDiscard": "Descartar",
+  "errorInvalidUnsubscribeToken": "Este link de descadastro é inválido ou expirou. Desligue os alertas em Conta, no app.",
+  "notificationsTitle": "Alertas de vencimento",
+  "notificationsHint": "Email com as contas a pagar que vencem em breve.",
+  "notificationsEmailLabel": "Receber alertas por email",
+  "notificationsEmailHint": "Às 8h, quando houver contas a pagar vencendo.",
+  "notificationsDaysLabel": "Quando avisar",
+  "notificationsDaysBefore": "{days, plural, =0{No dia do vencimento} =1{1 dia antes} other{{days} dias antes}}",
+  "@notificationsDaysBefore": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationsWebHint": "No celular, o app também avisa com uma notificação no dia escolhido.",
+  "unsubscribeDone": "Pronto. Você não vai mais receber alertas de vencimento por email.",
+  "unsubscribeOpenApp": "Abrir o app"
 }
