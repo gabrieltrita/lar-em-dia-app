@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:injectable/injectable.dart';
@@ -15,6 +16,10 @@ import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart'
 abstract class RegisterModule {
   @lazySingleton
   FlutterSecureStorage get secureStorage => const FlutterSecureStorage();
+
+  @lazySingleton
+  FlutterLocalNotificationsPlugin get notifications =>
+      FlutterLocalNotificationsPlugin();
 
   @lazySingleton
   TokenTransport get tokenTransport => TokenTransport.platform;

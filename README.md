@@ -16,6 +16,7 @@ Flutter app (web, Android and iOS) for **Lar em Dia**, a family budgeting and ca
 | Charts | `fl_chart` |
 | QR codes | `qr_flutter` (2FA enrollment) |
 | Device time zone | `flutter_timezone` |
+| Local notifications | `flutter_local_notifications` + `timezone` (due-date reminders on Android and iOS) |
 | Lint | `very_good_analysis` |
 | Tests | `flutter_test`, `mocktail`, `bloc_test` |
 
@@ -119,6 +120,10 @@ The API email links point to the web routes above (`FRONTEND_URL` in the API). D
 The person icon on the home page opens `/account`, which also links to the alerts. After enabling or disabling 2FA, the session user is updated so the rest of the app sees the new 2FA state without a new sign-in.
 
 `TimeZoneSync` (started in `main.dart`) reads the device time zone with `flutter_timezone` whenever a user signs in or the session is restored, compares it with `time_zone` from `GET /me` and sends `PATCH /me` when they differ, so the API emails the alerts at 8h local time. Failures are ignored and retried on the next sign-in.
+
+`DueRemindersSync` (started in `main.dart` only on Android and iOS, never on the web or in the demo) schedules local notifications for the bills of the next 30 days whenever a user signs in or the session is restored. It reads the same preferences as the email (`/me/notification_settings`), loads the expenses of this month and the next one, and keeps the pending ones due between today and 30 days ahead (`DueReminders.plan`). Each gets a reminder at 9h on the alert day (the due date minus the chosen days), alerts already in the past are skipped, and at most 60 are kept because iOS caps pending notifications at 64. `LocalNotificationsScheduler` cancels the previous reminders, asks for the notification permission (Android 13+ and iOS) and schedules each one in the device time zone with an inexact alarm, so no exact-alarm permission is needed. Signing out cancels them. With the alerts off nothing is scheduled. Reminders are recomputed only when the app opens, so a bill paid or added later updates them on the next launch.
+
+Native setup: `AndroidManifest.xml` declares `RECEIVE_BOOT_COMPLETED` and the plugin's scheduled and boot receivers (reminders survive a reboot), `android/app/build.gradle.kts` enables core library desugaring, and `AppDelegate.swift` sets the `UNUserNotificationCenter` delegate so iOS also shows a reminder while the app is open.
 
 ## Administration
 
