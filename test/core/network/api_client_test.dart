@@ -92,7 +92,8 @@ void main() {
       });
     });
 
-    await client.delete('/ok');
+    await client.delete('/ok', body: {'code': '123456'});
+    expect(adapter.requests.single.data, {'code': '123456'});
 
     await expectLater(
       client.delete('/denied'),

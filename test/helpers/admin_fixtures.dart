@@ -1,3 +1,4 @@
+import 'package:lar_em_dia/features/admin/domain/admin_metrics.dart';
 import 'package:lar_em_dia/features/admin/domain/admin_repository.dart';
 import 'package:lar_em_dia/features/admin/domain/admin_user.dart';
 import 'package:lar_em_dia/features/auth/domain/auth_user.dart';
@@ -51,6 +52,24 @@ final rafaelRecord = AdminUser(
   deactivated: false,
   signInCount: 9,
   createdAt: DateTime.utc(2026, 9, 1, 12),
+);
+
+const metrics = AdminMetrics(
+  users: UserMetrics(
+    total: 42,
+    confirmed: 40,
+    active30d: 31,
+    new30d: 7,
+    deactivated: 2,
+    withTwoFactor: 5,
+  ),
+  engagement: EngagementMetrics(
+    withBalance: 30,
+    withEntries: 28,
+    withFiveSeries: 19,
+    entriesCreated30d: 512,
+  ),
+  signupsByWeek: [],
 );
 
 void registerAdminFallbacks() {

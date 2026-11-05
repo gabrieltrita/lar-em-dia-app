@@ -1,6 +1,8 @@
 import 'package:injectable/injectable.dart';
 import 'package:lar_em_dia/core/network/api_client.dart';
+import 'package:lar_em_dia/features/admin/data/admin_metrics_dto.dart';
 import 'package:lar_em_dia/features/admin/data/admin_user_dto.dart';
+import 'package:lar_em_dia/features/admin/domain/admin_metrics.dart';
 import 'package:lar_em_dia/features/admin/domain/admin_repository.dart';
 import 'package:lar_em_dia/features/admin/domain/admin_user.dart';
 import 'package:lar_em_dia/features/auth/domain/auth_user.dart';
@@ -60,6 +62,12 @@ class ApiAdminRepository implements AdminRepository {
         decode: _decode,
         body: {'role': role.name},
       )).data;
+
+  @override
+  Future<AdminMetrics> metrics() async => (await _client.get(
+    '/admin/metrics',
+    decode: (data) => AdminMetricsDto.fromJson(data! as Json).toDomain(),
+  )).data;
 
   Future<AdminUser> _action(String id, String action) async =>
       (await _client.post('$path/$id/$action', decode: _decode)).data;

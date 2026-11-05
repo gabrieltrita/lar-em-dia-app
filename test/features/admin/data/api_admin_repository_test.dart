@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lar_em_dia/core/network/api_client.dart';
 import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/features/admin/data/api_admin_repository.dart';
+import 'package:lar_em_dia/features/admin/domain/admin_metrics.dart';
 import 'package:lar_em_dia/features/admin/domain/admin_user.dart';
 import 'package:lar_em_dia/features/auth/domain/auth_user.dart';
 
@@ -153,5 +154,58 @@ void main() {
         ),
       ),
     );
+  });
+
+  test('reads the aggregated metrics', () async {
+    final repository = build(
+      (_) => FakeAdapter.json(200, {
+        'data': {
+          'users': {
+            'total': 42,
+            'confirmed': 40,
+            'active_30d': 31,
+            'new_30d': 7,
+            'deactivated': 2,
+            'with_two_factor': 5,
+          },
+          'engagement': {
+            'with_balance': 30,
+            'with_entries': 28,
+            'with_5_series': 19,
+            'entries_created_30d': 512,
+          },
+          'signups_by_week': [
+            {'week': '2026-11-02', 'count': 3},
+          ],
+        },
+      }),
+    );
+
+    final result = await repository.metrics();
+
+    expect(
+      result,
+      metrics.copyWith(
+        signupsByWeek: [WeeklySignups(week: DateTime(2026, 11, 2), count: 3)],
+      ),
+    );
+    expect(lastRequest().path, '/admin/metrics');
+  });
+
+  test('reads metrics with missing counts as zero', () async {
+    final repository = build(
+      (_) => FakeAdapter.json(200, {
+        'data': {
+          'users': <String, Object?>{},
+          'engagement': <String, Object?>{},
+        },
+      }),
+    );
+
+    final result = await repository.metrics();
+
+    expect(result.users.total, 0);
+    expect(result.engagement.withFiveSeries, 0);
+    expect(result.signupsByWeek, isEmpty);
   });
 }

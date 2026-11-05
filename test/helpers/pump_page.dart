@@ -32,6 +32,9 @@ Future<void> pumpPage(
         AppRoutes.expensesForm,
         AppRoutes.projection,
         AppRoutes.adminUsers,
+        AppRoutes.adminMetrics,
+        AppRoutes.security,
+        AppRoutes.twoFactorEnrollment,
         AppRoutes.adminUser(':id'),
       ])
         GoRoute(

@@ -3,6 +3,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:injectable/injectable.dart';
 import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/core/state/load_state.dart';
+import 'package:lar_em_dia/features/admin/domain/admin_metrics.dart';
 import 'package:lar_em_dia/features/admin/domain/admin_repository.dart';
 import 'package:lar_em_dia/features/admin/domain/admin_user.dart';
 import 'package:lar_em_dia/features/auth/domain/auth_user.dart';
@@ -124,6 +125,22 @@ class AdminUserCubit extends Cubit<LoadState<AdminUser>> {
       return null;
     } on ApiError catch (error) {
       return error;
+    }
+  }
+}
+
+@injectable
+class AdminMetricsCubit extends Cubit<LoadState<AdminMetrics>> {
+  new(this._repository) : super(const LoadState<AdminMetrics>.loading());
+
+  final AdminRepository _repository;
+
+  Future<void> load() async {
+    emit(const LoadState<AdminMetrics>.loading());
+    try {
+      emit(LoadState.loaded(await _repository.metrics()));
+    } on ApiError catch (error) {
+      emit(LoadState.failure(error));
     }
   }
 }

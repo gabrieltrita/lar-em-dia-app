@@ -35,9 +35,9 @@ class ApiClient {
     Object? body,
   }) => _send(() => _dio.patch<Json>(path, data: body), decode);
 
-  Future<void> delete(String path) async {
+  Future<void> delete(String path, {Object? body}) async {
     try {
-      await _dio.delete<void>(path);
+      await _dio.delete<void>(path, data: body);
     } on DioException catch (exception) {
       throw ApiError.fromDioException(exception);
     }

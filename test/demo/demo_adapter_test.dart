@@ -237,6 +237,91 @@ void main() {
     });
   });
 
+  group('two-factor', () {
+    setUp(signIn);
+
+    const password = {'current_password': DemoSeed.password};
+    const passwordAndCode = {
+      'current_password': DemoSeed.password,
+      'code': '123456',
+    };
+
+    Map<Object?, Object?> status() =>
+        data(call('GET', '/me/two_factor'))! as Map;
+
+    bool meTwoFactor() =>
+        (data(call('GET', '/me'))! as Map)['two_factor_enabled']! as bool;
+
+    test('enrolls with the password and any six digit code', () {
+      expect(status(), {
+        'enabled': false,
+        'required': false,
+        'backup_codes_remaining': 0,
+      });
+      expect(
+        errorCode(call('POST', '/me/two_factor/enable', body: {'code': '1'})),
+        'invalid_two_factor_code',
+      );
+      expect(
+        errorCode(
+          call(
+            'POST',
+            '/me/two_factor/setup',
+            body: {'current_password': 'nope'},
+          ),
+        ),
+        'invalid_current_password',
+      );
+
+      final setup = data(call('POST', '/me/two_factor/setup', body: password));
+      expect(setup, containsPair('secret', DemoServer.twoFactorSecret));
+      expect(
+        (setup! as Map)['provisioning_uri'],
+        startsWith('otpauth://totp/'),
+      );
+      expect(
+        call('POST', '/me/two_factor/enable', body: {'code': 'abcdef'}).status,
+        422,
+      );
+      final enabled = call(
+        'POST',
+        '/me/two_factor/enable',
+        body: {'code': '123456'},
+      );
+      expect((data(enabled)! as Map)['backup_codes'], hasLength(10));
+      expect(status()['enabled'], isTrue);
+      expect(status()['backup_codes_remaining'], 10);
+      expect(meTwoFactor(), isTrue);
+      expect(
+        errorCode(call('POST', '/me/two_factor/setup', body: password)),
+        'two_factor_already_enabled',
+      );
+    });
+
+    test('asks for a code once enabled, then disables', () {
+      call('POST', '/me/two_factor/setup', body: password);
+      call('POST', '/me/two_factor/enable', body: {'code': '123456'});
+
+      expect(
+        errorCode(call('POST', '/me/two_factor/backup_codes', body: password)),
+        'invalid_two_factor_code',
+      );
+      final codes = call(
+        'POST',
+        '/me/two_factor/backup_codes',
+        body: passwordAndCode,
+      );
+      expect((data(codes)! as Map)['backup_codes'], contains('demo-0001'));
+
+      expect(
+        call('DELETE', '/me/two_factor', body: passwordAndCode).status,
+        204,
+      );
+      expect(meTwoFactor(), isFalse);
+      expect(call('PUT', '/me/two_factor').status, 404);
+    });
+  });
+
   group('DemoAdapter', () {
     Dio dio() =>
         Dio(BaseOptions(baseUrl: 'http://demo.test/api/v1'))
