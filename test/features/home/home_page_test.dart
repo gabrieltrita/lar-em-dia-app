@@ -212,6 +212,13 @@ void main() {
       await tester.tap(find.text('Métricas de uso'));
       await tester.pumpAndSettle();
       expect(find.text(routeMarker(AppRoutes.adminMetrics)), findsOneWidget);
+      await tester.tap(find.text(closedAndBack));
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(find.text('Categorias'), 200);
+      await tester.tap(find.text('Categorias'));
+      await tester.pumpAndSettle();
+      expect(find.text(routeMarker(AppRoutes.adminCategories)), findsOneWidget);
     });
 
     testWidgets('opens the account page', (tester) async {

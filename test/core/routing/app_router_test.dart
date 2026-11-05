@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,6 +13,8 @@ import 'package:lar_em_dia/features/account/presentation/pages/notification_sett
 import 'package:lar_em_dia/features/account/presentation/pages/unsubscribe_page.dart';
 import 'package:lar_em_dia/features/admin/domain/admin_repository.dart';
 import 'package:lar_em_dia/features/admin/domain/admin_user.dart';
+import 'package:lar_em_dia/features/admin/presentation/pages/admin_categories_page.dart';
+import 'package:lar_em_dia/features/admin/presentation/pages/admin_category_form_page.dart';
 import 'package:lar_em_dia/features/admin/presentation/pages/admin_metrics_page.dart';
 import 'package:lar_em_dia/features/admin/presentation/pages/admin_user_detail_page.dart';
 import 'package:lar_em_dia/features/admin/presentation/pages/admin_users_page.dart';
@@ -124,6 +128,7 @@ void main() {
       ).thenAnswer((_) async => AdminUserPage(users: [carla]));
       when(() => admin.user(carla.id)).thenAnswer((_) async => carla);
       when(admin.metrics).thenAnswer((_) async => metrics);
+      when(admin.categories).thenAnswer((_) async => [adminPets]);
       security = MockSecurityRepository();
       account = MockAccountRepository();
       when(account.notificationSettings).thenAnswer((_) async => alertsOn);
@@ -301,6 +306,16 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(AdminMetricsPage), findsOneWidget);
       expect(find.text('Métricas de uso'), findsWidgets);
+
+      router.go(AppRoutes.adminCategories);
+      await tester.pumpAndSettle();
+      expect(find.byType(AdminCategoriesPage), findsOneWidget);
+      expect(find.text('Pets'), findsOneWidget);
+
+      unawaited(router.push(AppRoutes.adminCategoryForm, extra: adminPets));
+      await tester.pumpAndSettle();
+      expect(find.byType(AdminCategoryFormPage), findsOneWidget);
+      expect(find.text('Editar categoria'), findsOneWidget);
     });
 
     testWidgets('opens the security pages when signed in', (tester) async {

@@ -1,8 +1,10 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:injectable/injectable.dart';
+import 'package:lar_em_dia/core/forms/submission.dart';
 import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/core/state/load_state.dart';
+import 'package:lar_em_dia/features/admin/domain/admin_category.dart';
 import 'package:lar_em_dia/features/admin/domain/admin_metrics.dart';
 import 'package:lar_em_dia/features/admin/domain/admin_repository.dart';
 import 'package:lar_em_dia/features/admin/domain/admin_user.dart';
@@ -143,4 +145,33 @@ class AdminMetricsCubit extends Cubit<LoadState<AdminMetrics>> {
       emit(LoadState.failure(error));
     }
   }
+}
+
+@injectable
+class AdminCategoriesCubit extends Cubit<LoadState<List<AdminCategory>>> {
+  new(this._repository) : super(const LoadState<List<AdminCategory>>.loading());
+
+  final AdminRepository _repository;
+
+  Future<void> load() async {
+    emit(const LoadState<List<AdminCategory>>.loading());
+    try {
+      emit(LoadState.loaded(await _repository.categories()));
+    } on ApiError catch (error) {
+      emit(LoadState.failure(error));
+    }
+  }
+}
+
+@injectable
+class AdminCategoryFormCubit extends SubmissionCubit<AdminCategory> {
+  new(this._repository);
+
+  final AdminRepository _repository;
+
+  Future<void> save(CategoryDraft draft, {AdminCategory? existing}) => run(
+    () => existing == null
+        ? _repository.createCategory(draft)
+        : _repository.updateCategory(existing.id, draft),
+  );
 }

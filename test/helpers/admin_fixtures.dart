@@ -1,7 +1,9 @@
+import 'package:lar_em_dia/features/admin/domain/admin_category.dart';
 import 'package:lar_em_dia/features/admin/domain/admin_metrics.dart';
 import 'package:lar_em_dia/features/admin/domain/admin_repository.dart';
 import 'package:lar_em_dia/features/admin/domain/admin_user.dart';
 import 'package:lar_em_dia/features/auth/domain/auth_user.dart';
+import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockAdminRepository extends Mock implements AdminRepository;
@@ -72,6 +74,26 @@ const metrics = AdminMetrics(
   signupsByWeek: [],
 );
 
+const adminSalary = AdminCategory(
+  id: 'cat-1',
+  kind: EntryKind.income,
+  key: 'salary',
+  name: 'Salary',
+  position: 0,
+  active: true,
+);
+
+const adminPets = AdminCategory(
+  id: 'cat-2',
+  kind: EntryKind.expense,
+  key: 'pets',
+  name: 'Pets',
+  position: 16,
+  active: false,
+  defaultNature: EntryNature.variable,
+);
+
 void registerAdminFallbacks() {
   registerFallbackValue(UserRole.user);
+  registerFallbackValue(adminSalary.toDraft());
 }
