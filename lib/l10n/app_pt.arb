@@ -600,5 +600,41 @@
   },
   "notificationsWebHint": "No celular, o app também avisa com uma notificação no dia escolhido.",
   "unsubscribeDone": "Pronto. Você não vai mais receber alertas de vencimento por email.",
-  "unsubscribeOpenApp": "Abrir o app"
+  "unsubscribeOpenApp": "Abrir o app",
+  "validationImmutable": "Não pode ser alterado",
+  "adminCategories": "Categorias",
+  "adminCategoriesTitle": "Categorias",
+  "adminCategoriesEmpty": "Nenhuma categoria cadastrada.",
+  "adminCategoryInactive": "Inativa",
+  "adminCategorySubtitle": "{key} · posição {position}",
+  "@adminCategorySubtitle": {
+    "placeholders": {
+      "key": {
+        "type": "String"
+      },
+      "position": {
+        "type": "int"
+      }
+    }
+  },
+  "adminCategoryNewTitle": "Nova categoria",
+  "adminCategoryEditTitle": "Editar categoria",
+  "adminCategoryKind": "Tipo",
+  "adminCategoryKindName": "{kind, select, income{Receita} other{Despesa}}",
+  "@adminCategoryKindName": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "adminCategoryKey": "Chave",
+  "adminCategoryKeyHelper": "Identifica a categoria e não pode ser alterada depois",
+  "adminCategoryKeyInvalid": "Use letras minúsculas, números e _, começando por uma letra",
+  "adminCategoryName": "Nome",
+  "adminCategoryNameHelper": "Em inglês; o app mostra a tradução das categorias padrão",
+  "adminCategoryPosition": "Posição na lista",
+  "adminCategoryPositionInvalid": "Informe um número inteiro a partir de 0",
+  "adminCategoryActive": "Ativa",
+  "adminCategoryActiveHelper": "Categorias inativas não aparecem em novos lançamentos"
 }

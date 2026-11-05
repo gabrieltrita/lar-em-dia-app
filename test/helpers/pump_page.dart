@@ -34,6 +34,8 @@ Future<void> pumpPage(
         AppRoutes.simulation,
         AppRoutes.adminUsers,
         AppRoutes.adminMetrics,
+        AppRoutes.adminCategories,
+        AppRoutes.adminCategoryForm,
         AppRoutes.account,
         AppRoutes.twoFactorEnrollment,
         AppRoutes.notificationSettings,

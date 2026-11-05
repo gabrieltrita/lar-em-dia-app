@@ -1,7 +1,9 @@
 import 'package:injectable/injectable.dart';
 import 'package:lar_em_dia/core/network/api_client.dart';
+import 'package:lar_em_dia/features/admin/data/admin_category_dto.dart';
 import 'package:lar_em_dia/features/admin/data/admin_metrics_dto.dart';
 import 'package:lar_em_dia/features/admin/data/admin_user_dto.dart';
+import 'package:lar_em_dia/features/admin/domain/admin_category.dart';
 import 'package:lar_em_dia/features/admin/domain/admin_metrics.dart';
 import 'package:lar_em_dia/features/admin/domain/admin_repository.dart';
 import 'package:lar_em_dia/features/admin/domain/admin_user.dart';
@@ -13,6 +15,7 @@ class ApiAdminRepository implements AdminRepository {
 
   static const path = '/admin/users';
   static const pageSize = 25;
+  static const categoriesPath = '/admin/categories';
 
   final ApiClient _client;
 
@@ -74,4 +77,40 @@ class ApiAdminRepository implements AdminRepository {
 
   static AdminUser _decode(Object? data) =>
       AdminUserDto.fromJson(data! as Json).toDomain();
+
+  @override
+  Future<List<AdminCategory>> categories() async => (await _client.get(
+    categoriesPath,
+    decode: (data) => (data! as List<dynamic>).map(_category).toList(),
+  )).data;
+
+  @override
+  Future<AdminCategory> createCategory(CategoryDraft draft) async =>
+      (await _client.post(
+        categoriesPath,
+        decode: _category,
+        body: {
+          'kind': draft.kind.name,
+          'key': draft.key,
+          ..._categoryBody(draft),
+        },
+      )).data;
+
+  @override
+  Future<AdminCategory> updateCategory(String id, CategoryDraft draft) async =>
+      (await _client.patch(
+        '$categoriesPath/$id',
+        decode: _category,
+        body: _categoryBody(draft),
+      )).data;
+
+  static Json _categoryBody(CategoryDraft draft) => {
+    'name': draft.name,
+    'position': draft.position,
+    'default_nature': draft.defaultNature?.name,
+    'active': draft.active,
+  };
+
+  static AdminCategory _category(Object? data) =>
+      AdminCategoryDto.fromJson(data! as Json).toDomain();
 }

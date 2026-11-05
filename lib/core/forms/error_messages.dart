@@ -38,6 +38,7 @@ extension ApiErrorMessages on ApiError {
       'taken' => l10n.validationTaken,
       'in_future' => l10n.validationInFuture,
       'inactive' => l10n.validationInactive,
+      'immutable' => l10n.validationImmutable,
       'greater_than' || 'not_an_integer' => l10n.validationAmountRequired,
       _ => l10n.validationInvalid,
     };

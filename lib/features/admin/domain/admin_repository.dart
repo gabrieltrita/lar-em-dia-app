@@ -1,3 +1,4 @@
+import 'package:lar_em_dia/features/admin/domain/admin_category.dart';
 import 'package:lar_em_dia/features/admin/domain/admin_metrics.dart';
 import 'package:lar_em_dia/features/admin/domain/admin_user.dart';
 import 'package:lar_em_dia/features/auth/domain/auth_user.dart';
@@ -22,4 +23,10 @@ abstract interface class AdminRepository {
   Future<AdminUser> changeRole(String id, UserRole role);
 
   Future<AdminMetrics> metrics();
+
+  Future<List<AdminCategory>> categories();
+
+  Future<AdminCategory> createCategory(CategoryDraft draft);
+
+  Future<AdminCategory> updateCategory(String id, CategoryDraft draft);
 }

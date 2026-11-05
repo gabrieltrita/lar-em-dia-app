@@ -291,6 +291,7 @@ class _AdminCard extends StatelessWidget {
                 for (final (label, route) in [
                   (l10n.adminManageUsers, AppRoutes.adminUsers),
                   (l10n.adminMetrics, AppRoutes.adminMetrics),
+                  (l10n.adminCategories, AppRoutes.adminCategories),
                 ])
                   OutlinedButton(
                     onPressed: () => unawaited(context.push<void>(route)),

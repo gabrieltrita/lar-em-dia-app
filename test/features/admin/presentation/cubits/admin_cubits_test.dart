@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lar_em_dia/core/forms/submission.dart';
 import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/core/state/load_state.dart';
+import 'package:lar_em_dia/features/admin/domain/admin_category.dart';
 import 'package:lar_em_dia/features/admin/domain/admin_metrics.dart';
 import 'package:lar_em_dia/features/admin/domain/admin_user.dart';
 import 'package:lar_em_dia/features/admin/presentation/cubits/admin_cubits.dart';
@@ -183,6 +185,64 @@ void main() {
         LoadState<AdminMetrics>.loading(),
         LoadState<AdminMetrics>.failure(failure),
       ],
+    );
+  });
+
+  group('AdminCategoriesCubit', () {
+    blocTest<AdminCategoriesCubit, LoadState<List<AdminCategory>>>(
+      'loads the categories',
+      setUp: () =>
+          when(repository.categories)
+              .thenAnswer((_) async => [adminSalary, adminPets]),
+      build: () => AdminCategoriesCubit(repository),
+      act: (cubit) => cubit.load(),
+      expect: () => const [
+        LoadState<List<AdminCategory>>.loading(),
+        LoadState.loaded([adminSalary, adminPets]),
+      ],
+    );
+
+    blocTest<AdminCategoriesCubit, LoadState<List<AdminCategory>>>(
+      'reports a failed load',
+      setUp: () => when(repository.categories).thenThrow(failure),
+      build: () => AdminCategoriesCubit(repository),
+      act: (cubit) => cubit.load(),
+      expect: () => const [
+        LoadState<List<AdminCategory>>.loading(),
+        LoadState<List<AdminCategory>>.failure(failure),
+      ],
+    );
+  });
+
+  group('AdminCategoryFormCubit', () {
+    final draft = adminPets.toDraft();
+
+    blocTest<AdminCategoryFormCubit, Submission<AdminCategory>>(
+      'creates a new category',
+      setUp: () =>
+          when(() => repository.createCategory(draft))
+              .thenAnswer((_) async => adminPets),
+      build: () => AdminCategoryFormCubit(repository),
+      act: (cubit) => cubit.save(draft),
+      expect: () => const [
+        Submission<AdminCategory>.inProgress(),
+        Submission.success(adminPets),
+      ],
+      verify: (_) => verifyNever(() => repository.updateCategory(any(), any())),
+    );
+
+    blocTest<AdminCategoryFormCubit, Submission<AdminCategory>>(
+      'updates an existing category',
+      setUp: () =>
+          when(() => repository.updateCategory('cat-2', draft))
+              .thenAnswer((_) async => adminPets),
+      build: () => AdminCategoryFormCubit(repository),
+      act: (cubit) => cubit.save(draft, existing: adminPets),
+      expect: () => const [
+        Submission<AdminCategory>.inProgress(),
+        Submission.success(adminPets),
+      ],
+      verify: (_) => verifyNever(() => repository.createCategory(any())),
     );
   });
 

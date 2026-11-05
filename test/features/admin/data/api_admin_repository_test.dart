@@ -208,4 +208,78 @@ void main() {
     expect(result.engagement.withFiveSeries, 0);
     expect(result.signupsByWeek, isEmpty);
   });
+
+  group('categories', () {
+    final petsJson = {
+      'id': 'cat-2',
+      'kind': 'expense',
+      'key': 'pets',
+      'name': 'Pets',
+      'position': 16,
+      'default_nature': 'variable',
+      'active': false,
+      'created_at': '2026-10-01T12:00:00Z',
+      'updated_at': '2026-10-02T12:00:00Z',
+    };
+
+    test('lists every category with defaults for missing fields', () async {
+      final repository = build(
+        (_) => FakeAdapter.json(200, {
+          'data': [
+            {
+              'id': 'cat-1',
+              'kind': 'income',
+              'key': 'salary',
+              'name': 'Salary',
+              'default_nature': null,
+            },
+            petsJson,
+          ],
+        }),
+      );
+
+      final result = await repository.categories();
+
+      expect(result, [adminSalary, adminPets]);
+      expect(lastRequest().path, ApiAdminRepository.categoriesPath);
+      expect(lastRequest().method, 'GET');
+    });
+
+    test('creates a category with its kind and key', () async {
+      final repository = build(
+        (_) => FakeAdapter.json(201, {'data': petsJson}),
+      );
+
+      final result = await repository.createCategory(adminPets.toDraft());
+
+      expect(result, adminPets);
+      expect(lastRequest().method, 'POST');
+      expect(lastRequest().path, '/admin/categories');
+      expect(lastRequest().data, {
+        'kind': 'expense',
+        'key': 'pets',
+        'name': 'Pets',
+        'position': 16,
+        'default_nature': 'variable',
+        'active': false,
+      });
+    });
+
+    test('updates a category without its kind and key', () async {
+      final repository = build(
+        (_) => FakeAdapter.json(200, {'data': petsJson}),
+      );
+
+      await repository.updateCategory('cat-1', adminSalary.toDraft());
+
+      expect(lastRequest().method, 'PATCH');
+      expect(lastRequest().path, '/admin/categories/cat-1');
+      expect(lastRequest().data, {
+        'name': 'Salary',
+        'position': 0,
+        'default_nature': null,
+        'active': true,
+      });
+    });
+  });
 }

@@ -126,9 +126,10 @@ The person icon on the home page opens `/account`, which also links to the alert
 |---|---|
 | `/admin/users` | Users list: exact email search (names are encrypted in the API, so they cannot be searched), All / Active / Deactivated filter, "load more" paging (25 per page), and badges for admin, deactivated, locked and 2FA |
 | `/admin/metrics` | Usage metrics from `GET /admin/metrics`: users (total, confirmed, active and new in 30 days, deactivated, with 2FA), engagement (with a balance, with entries, with 5 or more series, entries created in 30 days) and a bar chart of sign-ups in the last 12 weeks |
+| `/admin/categories` | Income and expense categories with their key, position and inactive mark (`GET /admin/categories`). Tapping one or the add button opens `/admin/categories/form`: kind and key only for a new category (the API keeps both immutable), name, position, default nature for expenses and active. An inactive category stays on its entries but is no longer offered for new ones |
 | `/admin/users/:id` | User details (role, email confirmation, 2FA, lockout, deactivation, last sign-in, sign-in count, creation date) and the admin actions: unlock, reset 2FA, make or remove admin, deactivate or reactivate. Every action asks for confirmation; none is offered on the signed in admin's own account |
 
-Only admins see the "Administração" card on the home page (with "Gerenciar usuários" and "Métricas de uso"), and the router sends anyone else from `/admin` back home (the role comes from `/me` and is re-checked by the API on every request). The API requires the admin to have 2FA; without it the list answers `two_factor_setup_required` and the admin enables it on the Security page. Deleting an account is irreversible and stays out of the app. The demo build has no administration.
+Only admins see the "Administração" card on the home page (with "Gerenciar usuários", "Métricas de uso" and "Categorias"), and the router sends anyone else from `/admin` back home (the role comes from `/me` and is re-checked by the API on every request). The API requires the admin to have 2FA; without it the list answers `two_factor_setup_required` and the admin enables it on the Security page. Deleting an account is irreversible and stays out of the app. The demo build has no administration.
 
 ## Demo build
 

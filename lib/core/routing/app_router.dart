@@ -8,7 +8,10 @@ import 'package:lar_em_dia/core/routing/stream_listenable.dart';
 import 'package:lar_em_dia/features/account/presentation/cubits/account_cubits.dart';
 import 'package:lar_em_dia/features/account/presentation/pages/notification_settings_page.dart';
 import 'package:lar_em_dia/features/account/presentation/pages/unsubscribe_page.dart';
+import 'package:lar_em_dia/features/admin/domain/admin_category.dart';
 import 'package:lar_em_dia/features/admin/presentation/cubits/admin_cubits.dart';
+import 'package:lar_em_dia/features/admin/presentation/pages/admin_categories_page.dart';
+import 'package:lar_em_dia/features/admin/presentation/pages/admin_category_form_page.dart';
 import 'package:lar_em_dia/features/admin/presentation/pages/admin_metrics_page.dart';
 import 'package:lar_em_dia/features/admin/presentation/pages/admin_user_detail_page.dart';
 import 'package:lar_em_dia/features/admin/presentation/pages/admin_users_page.dart';
@@ -61,6 +64,8 @@ abstract final class AppRoutes {
   static const admin = '/admin';
   static const adminUsers = '$admin/users';
   static const adminMetrics = '$admin/metrics';
+  static const adminCategories = '$admin/categories';
+  static const adminCategoryForm = '$adminCategories/form';
   static const account = '/account';
   static const twoFactorEnrollment = '$account/two-factor';
   static const notificationSettings = '$account/notifications';
@@ -208,6 +213,21 @@ GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
         create: (_) =>
             _started(getIt<AdminMetricsCubit>(), (cubit) => cubit.load()),
         child: const AdminMetricsPage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.adminCategories,
+      builder: (context, state) => BlocProvider(
+        create: (_) =>
+            _started(getIt<AdminCategoriesCubit>(), (cubit) => cubit.load()),
+        child: const AdminCategoriesPage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.adminCategoryForm,
+      builder: (context, state) => BlocProvider(
+        create: (_) => getIt<AdminCategoryFormCubit>(),
+        child: AdminCategoryFormPage(existing: state.extra as AdminCategory?),
       ),
     ),
     GoRoute(
