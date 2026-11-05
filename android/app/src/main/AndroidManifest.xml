@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <application
-        android:label="lar_em_dia"
+        android:label="Lar em Dia"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
