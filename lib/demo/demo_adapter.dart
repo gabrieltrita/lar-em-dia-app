@@ -34,6 +34,9 @@ class DemoServer {
   final DemoDatabase database;
   bool signedIn = false;
   bool twoFactorEnabled = false;
+  String timeZone = 'America/Sao_Paulo';
+  bool dueAlertsEnabled = true;
+  int dueAlertDaysBefore = 1;
   bool _twoFactorPending = false;
 
   DemoResponse handle(
@@ -47,12 +50,19 @@ class DemoServer {
     if (segments.firstOrNull == 'auth') {
       return _auth(method, segments.skip(1).join('/'), body);
     }
+    if (method == 'POST' &&
+        path.endsWith('/me/notification_settings/unsubscribe')) {
+      return _error(401, 'invalid_unsubscribe_token', 'No emails in the demo');
+    }
     if (!signedIn || authorization != 'Bearer $accessToken') {
       return _error(401, 'missing_token', 'Missing or invalid token');
     }
     try {
       return switch ((method, segments)) {
         ('GET', ['me']) => _data(_user()),
+        ('PATCH', ['me']) => _updateMe(body),
+        ('GET', ['me', 'notification_settings']) => _data(_settings()),
+        ('PATCH', ['me', 'notification_settings']) => _updateSettings(body),
         (_, ['me', 'two_factor', ...final action]) => _twoFactor(
           method,
           action.join('/'),
@@ -125,10 +135,39 @@ class DemoServer {
     }
   }
 
-  Map<String, Object?> _user() => {
+  Map<String, Object?> _sessionUser() => {
     ...DemoSeed.user,
     'two_factor_enabled': twoFactorEnabled,
   };
+
+  Map<String, Object?> _user() => {..._sessionUser(), 'time_zone': timeZone};
+
+  DemoResponse _updateMe(Map<String, Object?> body) {
+    if (body['time_zone'] case final String zone) {
+      timeZone = zone;
+    }
+    return _data(_user());
+  }
+
+  Map<String, Object?> _settings() => {
+    'due_alerts_enabled': dueAlertsEnabled,
+    'due_alert_days_before': dueAlertDaysBefore,
+  };
+
+  DemoResponse _updateSettings(Map<String, Object?> body) {
+    final days = body['due_alert_days_before'] ?? dueAlertDaysBefore;
+    final enabled = body['due_alerts_enabled'] ?? dueAlertsEnabled;
+    if (days is! int || days < 0 || days > 7 || enabled is! bool) {
+      throw DemoValidationError({
+        if (days is! int || days < 0 || days > 7)
+          'due_alert_days_before': ['inclusion'],
+        if (enabled is! bool) 'due_alerts_enabled': ['inclusion'],
+      });
+    }
+    dueAlertDaysBefore = days;
+    dueAlertsEnabled = enabled;
+    return _data(_settings());
+  }
 
   DemoResponse _twoFactor(
     String method,
@@ -198,7 +237,7 @@ class DemoServer {
   });
 
   DemoResponse _session() => _data({
-    'user': _user(),
+    'user': _sessionUser(),
     'tokens': {
       'access_token': accessToken,
       'refresh_token': refreshToken,

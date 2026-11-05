@@ -15,6 +15,7 @@ Flutter app (web, Android and iOS) for **Lar em Dia**, a family budgeting and ca
 | Localization | `flutter_localizations` + `intl`, ARB files in `lib/l10n` (pt-BR) |
 | Charts | `fl_chart` |
 | QR codes | `qr_flutter` (2FA enrollment) |
+| Device time zone | `flutter_timezone` |
 | Lint | `very_good_analysis` |
 | Tests | `flutter_test`, `mocktail`, `bloc_test` |
 
@@ -105,14 +106,19 @@ Amounts are integer cents end to end (`amount_cents` in the API, `int` in the ap
 
 The API email links point to the web routes above (`FRONTEND_URL` in the API). Deep links for the mobile apps come later.
 
-## Security
+## Account
 
 | Route | Page |
 |---|---|
-| `/security` | Two-step verification status and remaining backup codes, with enable, disable and "new backup codes". Disabling and new codes ask for the current password and, when 2FA is on, a code (`DELETE /me/two_factor`, `POST /me/two_factor/backup_codes`). Disabling is hidden when 2FA is mandatory (admins) |
-| `/security/two-factor` | Enrollment: the current password (`POST /me/two_factor/setup`), then a QR code and the secret to copy, then the 6-digit code (`POST /me/two_factor/enable`), and finally the 10 backup codes, shown once, with a copy button |
+| `/account` | "Conta": two-step verification status and remaining backup codes, with enable, disable and "new backup codes". Disabling and new codes ask for the current password and, when 2FA is on, a code (`DELETE /me/two_factor`, `POST /me/two_factor/backup_codes`). Disabling is hidden when 2FA is mandatory (admins) |
+| `/account/two-factor` | Enrollment: the current password (`POST /me/two_factor/setup`), then a QR code and the secret to copy, then the 6-digit code (`POST /me/two_factor/enable`), and finally the 10 backup codes, shown once, with a copy button |
 
-The shield icon on the home page opens `/security`. After enabling or disabling, the session user is updated so the rest of the app sees the new 2FA state without a new sign-in.
+| `/account/notifications` | Due-date email alerts (`GET/PATCH /me/notification_settings`): on or off, and when to warn, from the due date itself to 7 days before. Changes save right away |
+| `/unsubscribe?token=` | Target of the link in the alert email. It posts the token to `/me/notification_settings/unsubscribe` and confirms, signed in or not (the router never redirects it) |
+
+The person icon on the home page opens `/account`, which also links to the alerts. After enabling or disabling 2FA, the session user is updated so the rest of the app sees the new 2FA state without a new sign-in.
+
+`TimeZoneSync` (started in `main.dart`) reads the device time zone with `flutter_timezone` whenever a user signs in or the session is restored, compares it with `time_zone` from `GET /me` and sends `PATCH /me` when they differ, so the API emails the alerts at 8h local time. Failures are ignored and retried on the next sign-in.
 
 ## Administration
 
@@ -133,7 +139,7 @@ flutter run -d chrome --dart-define=DEMO=true
 flutter build web --release --no-web-resources-cdn --dart-define=DEMO=true
 ```
 
-- `DemoServer` answers login, refresh, logout, `/me`, categories, balances and entries (CRUD, filters, paging, the API's validation codes), `POST /entry_series` (recurring and installments) and `GET /projection` (with accumulated savings, negative months and alerts), `POST /projection/simulation` (the same validation by position, computed on a copy that is thrown away) with the API's rules. Email flows answer success without sending anything. `/me/two_factor` keeps 2FA in memory: it checks the demo password, accepts any 6-digit code (a real TOTP check would need the secret on the device) and returns fixed backup codes.
+- `DemoServer` answers login, refresh, logout, `/me`, categories, balances and entries (CRUD, filters, paging, the API's validation codes), `POST /entry_series` (recurring and installments) and `GET /projection` (with accumulated savings, negative months and alerts), `POST /projection/simulation` (the same validation by position, computed on a copy that is thrown away) with the API's rules. Email flows answer success without sending anything. `/me/two_factor` keeps 2FA in memory: it checks the demo password, accepts any 6-digit code (a real TOTP check would need the secret on the device) and returns fixed backup codes. `/me` keeps the time zone and `/me/notification_settings` the alert preferences in memory; the unsubscribe link always answers `invalid_unsubscribe_token`, since the demo sends no email.
 - `DemoSeed` creates the demo family relative to today: a balance on the first day of the month, a year of salary and fixed and variable expenses created as recurring series, the 13th salary in December and a trip that leaves one month negative. Entries due up to today are paid.
 - The login page shows a demo notice with the account filled in (`DemoSeed.email` / `DemoSeed.password`). Data lives in memory, so reloading the page starts over.
 - The demo uses hash URLs (`/#/projection`), so the web build opens from any address without server rewrites.

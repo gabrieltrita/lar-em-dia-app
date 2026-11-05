@@ -337,6 +337,59 @@ void main() {
     });
   });
 
+  group('account', () {
+    setUp(signIn);
+
+    test('keeps the time zone and the notification settings', () {
+      expect(
+        (data(call('GET', '/me'))! as Map)['time_zone'],
+        'America/Sao_Paulo',
+      );
+      call('PATCH', '/me', body: {'time_zone': 'Europe/Lisbon'});
+      call('PATCH', '/me', body: {'first_name': 'Ana'});
+      expect((data(call('GET', '/me'))! as Map)['time_zone'], 'Europe/Lisbon');
+
+      expect(data(call('GET', '/me/notification_settings')), {
+        'due_alerts_enabled': true,
+        'due_alert_days_before': 1,
+      });
+      final updated = call(
+        'PATCH',
+        '/me/notification_settings',
+        body: {'due_alerts_enabled': false, 'due_alert_days_before': 3},
+      );
+      expect(data(updated), {
+        'due_alerts_enabled': false,
+        'due_alert_days_before': 3,
+      });
+      expect(
+        call(
+          'PATCH',
+          '/me/notification_settings',
+          body: {'due_alert_days_before': 8},
+        ).status,
+        422,
+      );
+      expect(
+        call(
+          'PATCH',
+          '/me/notification_settings',
+          body: {'due_alerts_enabled': 'yes'},
+        ).status,
+        422,
+      );
+    });
+
+    test('has no unsubscribe links', () {
+      final response = server.handle(
+        'POST',
+        '/me/notification_settings/unsubscribe',
+        body: {'token': 'x'},
+      );
+      expect(errorCode(response), 'invalid_unsubscribe_token');
+    });
+  });
+
   group('two-factor', () {
     setUp(signIn);
 

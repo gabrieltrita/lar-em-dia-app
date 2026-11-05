@@ -7,6 +7,7 @@ extension ApiErrorMessages on ApiError {
     'invalid_credentials' => l10n.errorInvalidCredentials,
     'email_not_confirmed' => l10n.errorEmailNotConfirmed,
     'invalid_two_factor_code' => l10n.errorInvalidTwoFactorCode,
+    'invalid_unsubscribe_token' => l10n.errorInvalidUnsubscribeToken,
     'two_factor_challenge_expired' => l10n.errorTwoFactorChallengeExpired,
     'invalid_confirmation_token' => l10n.errorInvalidConfirmationToken,
     'invalid_reset_token' => l10n.errorInvalidResetToken,

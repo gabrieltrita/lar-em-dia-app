@@ -15,6 +15,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   flutter_secure_storage: ^11.2.0
+  flutter_timezone: ^5.1.1
   flutter_web_plugins:
     sdk: flutter
   freezed_annotation: ^3.1.0

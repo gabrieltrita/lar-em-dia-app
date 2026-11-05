@@ -6,6 +6,9 @@ import 'package:lar_em_dia/core/di/injection.dart';
 import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/core/session/session_events.dart';
+import 'package:lar_em_dia/features/account/domain/account_repository.dart';
+import 'package:lar_em_dia/features/account/presentation/pages/notification_settings_page.dart';
+import 'package:lar_em_dia/features/account/presentation/pages/unsubscribe_page.dart';
 import 'package:lar_em_dia/features/admin/domain/admin_repository.dart';
 import 'package:lar_em_dia/features/admin/domain/admin_user.dart';
 import 'package:lar_em_dia/features/admin/presentation/pages/admin_metrics_page.dart';
@@ -38,6 +41,7 @@ import 'package:lar_em_dia/features/security/presentation/pages/two_factor_enrol
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../helpers/account_fixtures.dart';
 import '../../helpers/admin_fixtures.dart';
 import '../../helpers/auth_fixtures.dart';
 import '../../helpers/finance_fixtures.dart';
@@ -73,6 +77,12 @@ void main() {
       expect(sessionRedirect(admin, detail), isNull);
     });
 
+    test('opens the unsubscribe link in every session state', () {
+      for (final state in [unknown, signedIn, signedOut]) {
+        expect(sessionRedirect(state, AppRoutes.unsubscribe), isNull);
+      }
+    });
+
     test('sends a signed out user to the login', () {
       expect(sessionRedirect(signedOut, AppRoutes.home), AppRoutes.login);
       expect(sessionRedirect(signedOut, AppRoutes.splash), AppRoutes.login);
@@ -91,6 +101,7 @@ void main() {
     late MockProjectionRepository projections;
     late MockAdminRepository admin;
     late MockSecurityRepository security;
+    late MockAccountRepository account;
 
     setUpAll(() {
       registerFinanceFallbacks();
@@ -114,6 +125,9 @@ void main() {
       when(() => admin.user(carla.id)).thenAnswer((_) async => carla);
       when(admin.metrics).thenAnswer((_) async => metrics);
       security = MockSecurityRepository();
+      account = MockAccountRepository();
+      when(account.notificationSettings).thenAnswer((_) async => alertsOn);
+      when(() => account.unsubscribe('abc')).thenAnswer((_) async => alertsOff);
       when(security.twoFactorStatus).thenAnswer((_) async => twoFactorOff);
       when(
         () => projections.fetch(
@@ -135,7 +149,8 @@ void main() {
         ..registerSingleton<EntryRepository>(entries)
         ..registerSingleton<ProjectionRepository>(projections)
         ..registerSingleton<AdminRepository>(admin)
-        ..registerSingleton<SecurityRepository>(security);
+        ..registerSingleton<SecurityRepository>(security)
+        ..registerSingleton<AccountRepository>(account);
       events = SessionEvents();
       session = SessionCubit(repository, events);
       router = buildRouter(session);
@@ -293,13 +308,32 @@ void main() {
       session.signedIn(ana);
       await tester.pumpAndSettle();
 
-      router.go(AppRoutes.security);
+      router.go(AppRoutes.account);
       await tester.pumpAndSettle();
       expect(find.byType(SecurityPage), findsOneWidget);
 
       router.go(AppRoutes.twoFactorEnrollment);
       await tester.pumpAndSettle();
       expect(find.byType(TwoFactorEnrollmentPage), findsOneWidget);
+
+      router.go(AppRoutes.notificationSettings);
+      await tester.pumpAndSettle();
+      expect(find.byType(NotificationSettingsPage), findsOneWidget);
+    });
+
+    testWidgets('opens the unsubscribe link signed out', (tester) async {
+      await pumpRouter(tester);
+      session.signedIn(ana);
+      await tester.pumpAndSettle();
+      when(repository.logout).thenAnswer((_) async {});
+      await session.logout();
+      await tester.pumpAndSettle();
+
+      router.go('${AppRoutes.unsubscribe}?token=abc');
+      await tester.pumpAndSettle();
+
+      expect(find.byType(UnsubscribePage), findsOneWidget);
+      verify(() => account.unsubscribe('abc')).called(1);
     });
   });
 }
