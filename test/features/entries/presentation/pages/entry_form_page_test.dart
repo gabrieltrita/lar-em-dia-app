@@ -33,6 +33,7 @@ void main() {
     WidgetTester tester, {
     Entry? existing,
     EntryKind kind = EntryKind.income,
+    bool simulation = false,
   }) async {
     final router = GoRouter(
       routes: [
@@ -40,7 +41,7 @@ void main() {
           path: '/',
           builder: (context, _) => TextButton(
             onPressed: () async =>
-                popped.add(await context.push<bool>('/form')),
+                popped.add(await context.push<Object>('/form')),
             child: const Text('open'),
           ),
         ),
@@ -60,6 +61,7 @@ void main() {
               kind: kind,
               existing: existing,
               today: DateTime(2026, 11, 3),
+              simulation: simulation,
             ),
           ),
         ),
@@ -103,6 +105,38 @@ void main() {
 
     expect(find.text('Campo obrigatório'), findsNWidgets(2));
     expect(find.text('Informe um valor maior que zero'), findsOneWidget);
+    verifyNever(() => repository.create(any()));
+  });
+
+  testWidgets('returns a plan instead of saving in a simulation', (
+    tester,
+  ) async {
+    await pump(tester, simulation: true);
+
+    expect(find.text('Simular receita'), findsOneWidget);
+    expect(find.byKey(const Key('entry_settled')), findsNothing);
+    await fillIn(tester);
+    await tester.tap(find.byKey(const Key('entry_repeat')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Adicionar à simulação'));
+    await tester.pumpAndSettle();
+
+    expect(popped, [
+      EntryPlan(
+        kind: EntryKind.income,
+        draft: EntryDraft(
+          categoryId: salaryCategory.id,
+          description: 'Salário ACME',
+          amountCents: 500000,
+          dueOn: DateTime(2026, 11, 3),
+          status: EntryStatus.pending,
+        ),
+        recurrence: const Recurrence(
+          count: Recurrence.defaultCount,
+          direction: RecurrenceDirection.forward,
+        ),
+      ),
+    ]);
     verifyNever(() => repository.create(any()));
   });
 

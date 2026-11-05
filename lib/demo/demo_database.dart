@@ -227,6 +227,21 @@ class DemoDatabase {
 
   Row? latestBalance() => sortedBalances().firstOrNull;
 
+  T rollback<T>(T Function() action) {
+    final savedEntries = [...entries];
+    final savedSeries = [...series];
+    try {
+      return action();
+    } finally {
+      entries
+        ..clear()
+        ..addAll(savedEntries);
+      series
+        ..clear()
+        ..addAll(savedSeries);
+    }
+  }
+
   List<Row> projection({required DateTime from, required int months}) {
     final first = Dates.firstOfMonth(from);
     final start = _openingBalance(first);

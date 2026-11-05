@@ -47,6 +47,14 @@ void main() {
     );
   }
 
+  Future<void> reload(WidgetTester tester) async {
+    await tester
+        .element(find.byType(ProjectionPage))
+        .read<ProjectionCubit>()
+        .load();
+    await tester.pumpAndSettle();
+  }
+
   void verifyLoads(int times) => verify(
     () => repository.fetch(
       from: any(named: 'from'),
@@ -98,8 +106,7 @@ void main() {
         negativeMonthsCount: 2,
       ),
     );
-    await tester.drag(find.byType(ListView), const Offset(0, 300));
-    await tester.pumpAndSettle();
+    await reload(tester);
     expect(
       find.text('A partir de novembro de 2026, 2 meses ficam no vermelho.'),
       findsOneWidget,
@@ -128,8 +135,7 @@ void main() {
     expect(tester.widget<Text>(find.text(r'-R$ 2.300,00')).style?.color, error);
 
     answer(() => projection.copyWith(months: [novemberProjection]));
-    await tester.drag(find.byType(ListView), const Offset(0, 300));
-    await tester.pumpAndSettle();
+    await reload(tester);
 
     expect(
       tester.widget<Text>(find.text(r'R$ 3.700,00')).style?.color,
@@ -191,5 +197,24 @@ void main() {
     await tester.pumpAndSettle();
 
     verifyLoads(2);
+  });
+
+  testWidgets('opens the simulation and reloads only after a commit', (
+    tester,
+  ) async {
+    await pump(tester);
+
+    await tester.tap(find.text('Simular gasto'));
+    await tester.pumpAndSettle();
+    expect(find.text(routeMarker(AppRoutes.simulation)), findsOneWidget);
+    await tester.tap(find.text(closedAndBack));
+    await tester.pumpAndSettle();
+    verifyLoads(1);
+
+    await tester.tap(find.text('Simular gasto'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(savedAndBack));
+    await tester.pumpAndSettle();
+    verifyLoads(1);
   });
 }

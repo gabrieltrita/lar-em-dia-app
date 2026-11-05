@@ -21,11 +21,18 @@ import 'package:lar_em_dia/features/entries/presentation/widgets/nature_label.da
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
 class EntryFormPage extends StatefulWidget {
-  const new({required this.kind, this.existing, this.today, super.key});
+  const new({
+    required this.kind,
+    this.existing,
+    this.today,
+    this.simulation = false,
+    super.key,
+  });
 
   final EntryKind kind;
   final Entry? existing;
   final DateTime? today;
+  final bool simulation;
 
   @override
   State<EntryFormPage> createState() => _EntryFormPageState();
@@ -68,26 +75,46 @@ class _EntryFormPageState extends State<EntryFormPage> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
+    final draft = EntryDraft(
+      categoryId: _categoryId!,
+      description: _description.text.trim(),
+      amountCents: Money.parse(_amount.text)!,
+      dueOn: _dueOn,
+      status: _settled ? EntryStatus.paid : EntryStatus.pending,
+      nature: _isExpense ? _nature : null,
+    );
+    final recurrence = _repeat
+        ? Recurrence(count: _repeatCount, direction: _repeatDirection)
+        : null;
+    final installments = _installments
+        ? Installments(count: _installmentsCount)
+        : null;
+    if (widget.simulation) {
+      context.pop(
+        EntryPlan(
+          kind: widget.kind,
+          draft: draft,
+          recurrence: recurrence,
+          installments: installments,
+        ),
+      );
+      return;
+    }
     unawaited(
       context.read<EntryFormCubit>().save(
-        EntryDraft(
-          categoryId: _categoryId!,
-          description: _description.text.trim(),
-          amountCents: Money.parse(_amount.text)!,
-          dueOn: _dueOn,
-          status: _settled ? EntryStatus.paid : EntryStatus.pending,
-          nature: _isExpense ? _nature : null,
-        ),
+        draft,
         existing: widget.existing,
-        recurrence: _repeat
-            ? Recurrence(count: _repeatCount, direction: _repeatDirection)
-            : null,
-        installments: _installments
-            ? Installments(count: _installmentsCount)
-            : null,
+        recurrence: recurrence,
+        installments: installments,
       ),
     );
   }
+
+  String _title(AppLocalizations l10n) => switch ((widget.simulation, _isNew)) {
+    (true, _) => l10n.simulationEntryTitle(widget.kind.name),
+    (false, true) => l10n.entryFormNewTitle(widget.kind.name),
+    (false, false) => l10n.entryFormEditTitle(widget.kind.name),
+  };
 
   List<String> _failureMessages(AppLocalizations l10n, ApiError error) {
     final labels = {
@@ -269,13 +296,7 @@ class _EntryFormPageState extends State<EntryFormPage> {
         }
       },
       builder: (context, state) => Scaffold(
-        appBar: AppBar(
-          title: Text(
-            _isNew
-                ? l10n.entryFormNewTitle(widget.kind.name)
-                : l10n.entryFormEditTitle(widget.kind.name),
-          ),
-        ),
+        appBar: AppBar(title: Text(_title(l10n))),
         body: switch (categories) {
           Loading() => const Center(child: CircularProgressIndicator()),
           LoadFailure(:final error) => RetryMessage(
@@ -329,13 +350,14 @@ class _EntryFormPageState extends State<EntryFormPage> {
                     onChanged: (value) => setState(() => _dueOn = value),
                   ),
                   const SizedBox(height: 8),
-                  SwitchListTile(
-                    key: const Key('entry_settled'),
-                    title: Text(l10n.entrySettledLabel(widget.kind.name)),
-                    value: _settled,
-                    contentPadding: EdgeInsets.zero,
-                    onChanged: (value) => setState(() => _settled = value),
-                  ),
+                  if (!widget.simulation)
+                    SwitchListTile(
+                      key: const Key('entry_settled'),
+                      title: Text(l10n.entrySettledLabel(widget.kind.name)),
+                      value: _settled,
+                      contentPadding: EdgeInsets.zero,
+                      onChanged: (value) => setState(() => _settled = value),
+                    ),
                   if (_isNew) ..._repeatFields(l10n),
                   if (_isNew && _isExpense) ..._installmentsFields(l10n),
                   if (state case SubmissionFailure(:final error)) ...[
@@ -344,7 +366,7 @@ class _EntryFormPageState extends State<EntryFormPage> {
                   ],
                   const SizedBox(height: 24),
                   SubmitButton(
-                    label: l10n.save,
+                    label: widget.simulation ? l10n.simulationAdd : l10n.save,
                     busy: state is SubmissionInProgress,
                     onPressed: _submit,
                   ),

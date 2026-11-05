@@ -81,6 +81,14 @@ class _ProjectionView extends StatelessWidget {
 
   List<ProjectionMonth> get months => projection.months;
 
+  Future<void> _simulate(BuildContext context) async {
+    final cubit = context.read<ProjectionCubit>();
+    final committed = await context.push<bool>(AppRoutes.simulation);
+    if (committed ?? false) {
+      await cubit.load();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -93,6 +101,15 @@ class _ProjectionView extends StatelessWidget {
             l10n.projectionAnchor(
               Money.format(anchor.amountCents),
               Dates.display(anchor.asOf),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: FilledButton.tonalIcon(
+              icon: const Icon(Icons.science_outlined),
+              label: Text(l10n.simulationButton),
+              onPressed: () => unawaited(_simulate(context)),
             ),
           ),
           const SizedBox(height: 16),
