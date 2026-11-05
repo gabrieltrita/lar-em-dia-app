@@ -636,5 +636,29 @@
   "adminCategoryPosition": "Posição na lista",
   "adminCategoryPositionInvalid": "Informe um número inteiro a partir de 0",
   "adminCategoryActive": "Ativa",
-  "adminCategoryActiveHelper": "Categorias inativas não aparecem em novos lançamentos"
+  "adminCategoryActiveHelper": "Categorias inativas não aparecem em novos lançamentos",
+  "dueReminderTitle": "Conta a pagar: {description}",
+  "@dueReminderTitle": {
+    "placeholders": {
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "dueReminderBody": "{days, plural, =0{{amount} vence hoje} =1{{amount} vence amanhã} other{{amount} vence em {days} dias, no dia {date}}}",
+  "@dueReminderBody": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "amount": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "dueReminderChannel": "Vencimentos",
+  "dueReminderChannelDescription": "Lembretes das contas a pagar"
 }
