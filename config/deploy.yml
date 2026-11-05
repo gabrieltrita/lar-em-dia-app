@@ -1,0 +1,29 @@
+service: laremdia-web
+image: <%= ENV.fetch("KAMAL_REGISTRY_USERNAME").downcase %>/laremdia-web
+
+servers:
+  web:
+    hosts:
+      - <%= ENV.fetch("DEPLOY_HOST") %>
+
+ssh:
+  user: <%= ENV.fetch("DEPLOY_SSH_USER", "root") %>
+
+proxy:
+  ssl: true
+  host: <%= ENV.fetch("APP_HOST") %>
+  app_port: 80
+  healthcheck:
+    path: /up
+    interval: 3
+    timeout: 3
+
+registry:
+  server: ghcr.io
+  username: <%= ENV.fetch("KAMAL_REGISTRY_USERNAME") %>
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+builder:
+  context: .
+  arch: <%= ENV.fetch("DEPLOY_ARCH", "amd64") %>

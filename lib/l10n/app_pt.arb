@@ -1,0 +1,712 @@
+{
+  "@@locale": "pt",
+  "appTitle": "Lar em Dia",
+  "homeGreeting": "Olá, {name}!",
+  "@homeGreeting": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "logout": "Sair",
+  "emailLabel": "Email",
+  "passwordLabel": "Senha",
+  "passwordConfirmationLabel": "Confirme a senha",
+  "passwordHint": "Mínimo de 8 caracteres, com maiúscula, minúscula e número",
+  "firstNameLabel": "Nome",
+  "lastNameLabel": "Sobrenome (opcional)",
+  "loginTitle": "Entrar",
+  "loginDemoNotice": "Modo demonstração: os dados são de exemplo e voltam ao início quando a página é recarregada. É só tocar em Entrar.",
+  "loginSubmit": "Entrar",
+  "loginCreateAccount": "Criar conta",
+  "loginForgotPassword": "Esqueci minha senha",
+  "loginResendConfirmation": "Reenviar link de confirmação",
+  "twoFactorTitle": "Verificação em duas etapas",
+  "twoFactorDescription": "Digite o código do seu app autenticador ou um código de recuperação.",
+  "twoFactorCodeLabel": "Código",
+  "twoFactorSubmit": "Verificar",
+  "backToLogin": "Voltar para o login",
+  "registerTitle": "Criar conta",
+  "registerSubmit": "Criar conta",
+  "registerAcceptTerms": "Li e aceito os termos de uso",
+  "registerAcceptPrivacy": "Li e aceito a política de privacidade",
+  "registerHaveAccount": "Já tenho conta",
+  "checkEmailTitle": "Confira seu email",
+  "checkEmailDescription": "Se o endereço puder ser usado, enviamos um link para confirmar a conta. Abra o email e toque no link.",
+  "checkEmailResend": "Reenviar link",
+  "checkEmailResent": "Se houver uma conta pendente com esse email, enviamos um novo link.",
+  "confirmEmailTitle": "Confirmando seu email",
+  "confirmEmailInvalid": "Este link de confirmação é inválido ou expirou.",
+  "confirmEmailRequestNew": "Pedir um novo link",
+  "forgotPasswordTitle": "Recuperar senha",
+  "forgotPasswordDescription": "Informe seu email e enviaremos um link para criar uma nova senha.",
+  "forgotPasswordSubmit": "Enviar link",
+  "forgotPasswordSent": "Se houver uma conta com esse email, enviamos o link para criar uma nova senha.",
+  "resetPasswordTitle": "Nova senha",
+  "resetPasswordSubmit": "Salvar nova senha",
+  "resetPasswordDone": "Senha alterada. Entre com a nova senha.",
+  "resetPasswordInvalid": "Este link para criar uma nova senha é inválido ou expirou.",
+  "validationRequired": "Campo obrigatório",
+  "validationInvalidEmail": "Email inválido",
+  "validationPasswordTooShort": "A senha precisa de pelo menos 8 caracteres",
+  "validationPasswordTooLong": "A senha pode ter no máximo 72 caracteres",
+  "validationWeakPassword": "Use letras maiúsculas, minúsculas e números",
+  "validationMismatch": "As senhas não conferem",
+  "validationTaken": "Já está em uso",
+  "validationInvalid": "Valor inválido",
+  "errorInvalidCredentials": "Email ou senha incorretos.",
+  "errorEmailNotConfirmed": "Confirme seu email antes de entrar.",
+  "errorInvalidTwoFactorCode": "Código incorreto.",
+  "errorTwoFactorChallengeExpired": "A verificação expirou. Entre novamente.",
+  "errorInvalidConfirmationToken": "Este link de confirmação é inválido ou expirou.",
+  "errorInvalidResetToken": "Este link para criar uma nova senha é inválido ou expirou.",
+  "errorValidationFailed": "Confira os campos destacados.",
+  "errorRateLimited": "Muitas tentativas. Aguarde um pouco e tente de novo.",
+  "errorTwoFactorSetupRequired": "Ative a verificação em duas etapas para acessar a administração.",
+  "errorForbidden": "Você não tem permissão para fazer isso.",
+  "errorNetwork": "Não foi possível conectar. Verifique sua internet.",
+  "errorUnknown": "Algo deu errado. Tente de novo.",
+  "retry": "Tentar de novo",
+  "save": "Salvar",
+  "cancel": "Cancelar",
+  "delete": "Apagar",
+  "edit": "Editar",
+  "amountLabel": "Valor",
+  "dateLabel": "Data",
+  "homeBalanceTitle": "Saldo informado",
+  "homeBalanceAsOf": "em {date}",
+  "@homeBalanceAsOf": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "homeNoBalance": "Você ainda não informou seu saldo. Comece por ele para projetar os próximos meses.",
+  "homeInformBalance": "Informar saldo",
+  "homeBalanceHistory": "Histórico",
+  "homeEntriesTitle": "{kind, select, income{Receitas de {month}} other{Despesas de {month}}}",
+  "@homeEntriesTitle": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "homeEntriesBreakdown": "{kind, select, income{Recebidas {settled} · A receber {pending}} other{Pagas {settled} · A pagar {pending}}}",
+  "@homeEntriesBreakdown": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "settled": {
+        "type": "String"
+      },
+      "pending": {
+        "type": "String"
+      }
+    }
+  },
+  "homeSeeEntries": "{kind, select, income{Ver receitas} other{Ver despesas}}",
+  "@homeSeeEntries": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "homeProjectionTitle": "Saldo previsto no fim de {month}",
+  "@homeProjectionTitle": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "homeSeeProjection": "Ver projeção",
+  "homeProjectionSavings": "Economia acumulada até {month}: {amount}",
+  "@homeProjectionSavings": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "projectionTitle": "Projeção",
+  "projectionNoBalance": "Informe seu saldo para ver a projeção dos próximos meses.",
+  "projectionAnchor": "A partir do saldo de {amount} em {date}",
+  "@projectionAnchor": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "projectionChartLabel": "Gráfico do saldo previsto no fim de cada mês",
+  "projectionMonthFlow": "Entradas {income} · Saídas {expense}",
+  "@projectionMonthFlow": {
+    "placeholders": {
+      "income": {
+        "type": "String"
+      },
+      "expense": {
+        "type": "String"
+      }
+    }
+  },
+  "projectionSavingsTitle": "Economia acumulada até {month}",
+  "@projectionSavingsTitle": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "projectionMonthSavings": "Economia acumulada {amount}",
+  "@projectionMonthSavings": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "entriesTitle": "{kind, select, income{Receitas} other{Despesas}}",
+  "@entriesTitle": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "entriesEmpty": "{kind, select, income{Nenhuma receita neste mês.} other{Nenhuma despesa neste mês.}}",
+  "@entriesEmpty": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "entriesEmptyFilter": "Nenhuma despesa deste tipo neste mês.",
+  "entriesTotal": "Total do mês: {total}",
+  "@entriesTotal": {
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "entriesNatureBreakdown": "Fixas {fixed} · Variáveis {variable}",
+  "@entriesNatureBreakdown": {
+    "placeholders": {
+      "fixed": {
+        "type": "String"
+      },
+      "variable": {
+        "type": "String"
+      }
+    }
+  },
+  "entriesFilterAll": "Todas",
+  "entriesFilterFixed": "Fixas",
+  "entriesFilterVariable": "Variáveis",
+  "previousMonth": "Mês anterior",
+  "nextMonth": "Próximo mês",
+  "entrySettled": "{kind, select, income{Recebida} other{Paga}}",
+  "@entrySettled": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "entryPending": "{kind, select, income{A receber} other{A pagar}}",
+  "@entryPending": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "entryDeleteTitle": "{kind, select, income{Apagar receita?} other{Apagar despesa?}}",
+  "@entryDeleteTitle": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "entryDeleteMessage": "\"{description}\" será apagada.",
+  "@entryDeleteMessage": {
+    "placeholders": {
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "entryFormNewTitle": "{kind, select, income{Nova receita} other{Nova despesa}}",
+  "@entryFormNewTitle": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "entryFormEditTitle": "{kind, select, income{Editar receita} other{Editar despesa}}",
+  "@entryFormEditTitle": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "entryCategoryLabel": "{kind, select, income{Tipo de receita} other{Categoria}}",
+  "@entryCategoryLabel": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "entrySettledLabel": "{kind, select, income{Já recebida} other{Já paga}}",
+  "@entrySettledLabel": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "entryNatureLabel": "Tipo de despesa",
+  "entryNatureFixed": "Fixa",
+  "entryNatureVariable": "Variável",
+  "entryRepeatLabel": "Repetir em outros meses",
+  "entryRepeatCountLabel": "Quantidade de meses, contando este",
+  "entryRepeatDirectionLabel": "Repetir nos",
+  "entryRepeatForward": "Próximos meses",
+  "entryRepeatBackward": "Meses anteriores",
+  "entryRepeatMonths": "{count} meses",
+  "@entryRepeatMonths": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "entryRecurring": "Lançamento repetido",
+  "balancesTitle": "Saldos",
+  "balancesEmpty": "Nenhum saldo informado ainda.",
+  "balanceFormNewTitle": "Informar saldo",
+  "balanceFormEditTitle": "Editar saldo",
+  "balanceAmountHelper": "Pode ser negativo: digite - antes do valor",
+  "balanceDeleteTitle": "Apagar saldo?",
+  "balanceDeleteMessage": "O saldo de {date} será apagado.",
+  "@balanceDeleteMessage": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "entryDescriptionLabel": "Descrição",
+  "entryDueOnLabel": "Data",
+  "validationAmountRequired": "Informe um valor maior que zero",
+  "validationInFuture": "A data não pode estar no futuro",
+  "validationDateTaken": "Já existe um saldo nessa data",
+  "validationInactive": "Esta opção não está mais disponível",
+  "validationTooLong": "Texto muito longo",
+  "categorySalary": "Salário",
+  "categoryThirteenthSalary": "13º salário",
+  "categoryVacationBonus": "Férias",
+  "categoryBonus": "Bônus e PLR",
+  "categoryExtraIncome": "Renda extra",
+  "categoryRentReceived": "Aluguel recebido",
+  "categoryAlimonyReceived": "Pensão recebida",
+  "categoryTaxRefund": "Restituição de IR",
+  "categoryReimbursement": "Reembolso",
+  "categoryOtherIncome": "Outras receitas",
+  "categoryHousing": "Moradia",
+  "categoryUtilities": "Contas da casa",
+  "categoryInternetPhone": "Internet e telefone",
+  "categorySubscriptions": "Assinaturas",
+  "categoryEducation": "Educação",
+  "categoryInsurance": "Seguros",
+  "categoryHealthPlan": "Plano de saúde",
+  "categoryLoans": "Empréstimos e financiamentos",
+  "categoryGroceries": "Mercado",
+  "categoryRestaurants": "Restaurantes e delivery",
+  "categoryTransport": "Transporte",
+  "categoryHealth": "Saúde",
+  "categoryLeisure": "Lazer",
+  "categoryTravel": "Viagens",
+  "categoryClothing": "Roupas",
+  "categoryPersonalCare": "Cuidados pessoais",
+  "categoryPets": "Pets",
+  "categoryGiftsDonations": "Presentes e doações",
+  "categoryTaxesFees": "Impostos e taxas",
+  "categoryOtherExpense": "Outras despesas",
+  "adminTitle": "Administração",
+  "adminManageUsers": "Gerenciar usuários",
+  "adminUsersTitle": "Usuários",
+  "adminSearchEmail": "Buscar por email (exato)",
+  "adminFilterAll": "Todos",
+  "adminFilterActive": "Ativos",
+  "adminFilterDeactivated": "Desativados",
+  "adminUsersEmpty": "Nenhum usuário encontrado.",
+  "adminLoadMore": "Carregar mais",
+  "adminBadgeAdmin": "Admin",
+  "adminBadgeLocked": "Bloqueado",
+  "adminBadgeDeactivated": "Desativado",
+  "adminBadgeTwoFactor": "2FA",
+  "adminUserRole": "Papel",
+  "adminRoleUser": "Usuário",
+  "adminRoleAdmin": "Administrador",
+  "adminUserEmailConfirmed": "Email confirmado",
+  "adminUserTwoFactor": "Verificação em duas etapas",
+  "adminUserLocked": "Bloqueado por tentativas de login",
+  "adminUserDeactivated": "Conta desativada",
+  "adminUserLastSignIn": "Último acesso",
+  "adminUserSignInCount": "Acessos",
+  "adminUserCreatedAt": "Criado em",
+  "adminYes": "Sim",
+  "adminNo": "Não",
+  "adminNever": "Nunca",
+  "adminConfirm": "Confirmar",
+  "adminActionDone": "Feito.",
+  "adminUnlock": "Desbloquear",
+  "adminUnlockMessage": "As tentativas de login são zeradas e a pessoa pode entrar de novo.",
+  "adminResetTwoFactor": "Redefinir verificação em duas etapas",
+  "adminResetTwoFactorMessage": "A verificação em duas etapas é desativada, todas as sessões são encerradas e a pessoa recebe um email.",
+  "adminDeactivate": "Desativar conta",
+  "adminDeactivateMessage": "A pessoa perde o acesso, todas as sessões são encerradas e ela recebe um email. Os dados são mantidos.",
+  "adminReactivate": "Reativar conta",
+  "adminReactivateMessage": "A pessoa volta a poder entrar e recebe um email.",
+  "adminMakeAdmin": "Tornar administrador",
+  "adminMakeAdminMessage": "A pessoa passa a acessar a administração depois de ativar a verificação em duas etapas.",
+  "adminRemoveAdmin": "Remover administrador",
+  "adminRemoveAdminMessage": "A pessoa deixa de acessar a administração.",
+  "entryInstallmentsLabel": "Compra parcelada",
+  "entryInstallmentsCountLabel": "Número de parcelas",
+  "entryInstallmentsCount": "{count}x",
+  "@entryInstallmentsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "entryTotalAmountLabel": "Valor total",
+  "entryInstallmentsPreview": "{count}x de {amount}",
+  "@entryInstallmentsPreview": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "entryInstallmentsPreviewUneven": "1ª de {first} e {rest}x de {amount}",
+  "@entryInstallmentsPreviewUneven": {
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "rest": {
+        "type": "int"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "entryInstallment": "Parcela {position} de {count}",
+  "@entryInstallment": {
+    "placeholders": {
+      "position": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "entryInstallmentShort": "{position}/{count}",
+  "@entryInstallmentShort": {
+    "placeholders": {
+      "position": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "negativeMonthsAlert": "{count, plural, =1{Em {month} o saldo fica negativo.} other{A partir de {month}, {count} meses ficam no vermelho.}}",
+  "@negativeMonthsAlert": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "projectionNegativeMonth": "Mês no vermelho",
+  "errorInvalidCurrentPassword": "Senha atual incorreta.",
+  "errorTwoFactorAlreadyEnabled": "A verificação em duas etapas já está ativa.",
+  "errorTwoFactorRequired": "Administradores não podem desativar a verificação em duas etapas.",
+  "errorReauthenticationUnavailable": "Confirme sua identidade com a senha da conta.",
+  "securityTitle": "Conta",
+  "securityTwoFactorTitle": "Verificação em duas etapas",
+  "securityTwoFactorOn": "Ativa. Você tem {count} códigos de recuperação.",
+  "@securityTwoFactorOn": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "securityTwoFactorOff": "Desativada. Ative para proteger sua conta com um código do app autenticador.",
+  "securityTwoFactorRequired": "Obrigatória para administradores.",
+  "securityEnable": "Ativar",
+  "securityDisable": "Desativar",
+  "securityNewBackupCodes": "Gerar novos códigos de recuperação",
+  "securityConfirmIdentity": "Confirme sua identidade",
+  "securityConfirm": "Confirmar",
+  "enrollmentPasswordHint": "Digite sua senha para começar.",
+  "enrollmentContinue": "Continuar",
+  "enrollmentScan": "Escaneie o QR code com o app autenticador (Google Authenticator, Authy, 1Password…) ou digite a chave abaixo.",
+  "enrollmentSecretLabel": "Chave",
+  "enrollmentCopySecret": "Copiar chave",
+  "enrollmentCodeHint": "Digite o código de 6 dígitos que aparece no app.",
+  "enrollmentEnable": "Ativar verificação",
+  "enrollmentQrLabel": "QR code para o app autenticador",
+  "backupCodesTitle": "Códigos de recuperação",
+  "backupCodesHint": "Guarde estes códigos em um lugar seguro. Cada um funciona uma vez, se você perder o celular. Eles não aparecem de novo.",
+  "backupCodesCopy": "Copiar códigos",
+  "backupCodesDone": "Concluir",
+  "copied": "Copiado.",
+  "homeSecurity": "Conta",
+  "adminMetrics": "Métricas de uso",
+  "adminMetricsUsers": "Contas",
+  "adminMetricsEngagement": "Uso",
+  "adminMetricsTotal": "Total",
+  "adminMetricsConfirmed": "Confirmadas",
+  "adminMetricsActive": "Ativas em 30 dias",
+  "adminMetricsNew": "Novas em 30 dias",
+  "adminMetricsDeactivated": "Desativadas",
+  "adminMetricsTwoFactor": "Com 2FA",
+  "adminMetricsWithBalance": "Informaram saldo",
+  "adminMetricsWithEntries": "Têm lançamentos",
+  "adminMetricsWithFiveSeries": "Têm 5 ou mais séries",
+  "adminMetricsEntries30d": "Lançamentos em 30 dias",
+  "adminMetricsSignups": "Cadastros por semana",
+  "adminMetricsChartLabel": "Gráfico de cadastros nas últimas 12 semanas",
+  "simulationButton": "Simular gasto",
+  "simulationTitle": "Simular",
+  "simulationEntryTitle": "{kind, select, income{Simular receita} other{Simular despesa}}",
+  "@simulationEntryTitle": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "simulationAdd": "Adicionar à simulação",
+  "simulationAddExpense": "Adicionar despesa",
+  "simulationAddIncome": "Adicionar receita",
+  "simulationEmpty": "Adicione uma despesa ou receita para ver como ela muda a sua projeção. Nada é gravado até você efetivar.",
+  "simulationLimit": "Limite de {count} itens por simulação.",
+  "@simulationLimit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "simulationRemove": "Remover",
+  "simulationItemSubtitle": "{amount} · {date}",
+  "@simulationItemSubtitle": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "simulationEnd": "No fim de {month}",
+  "@simulationEnd": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "simulationBaseline": "Atual: {amount}",
+  "@simulationBaseline": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "simulationSimulated": "Simulado: {amount}",
+  "@simulationSimulated": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "simulationDifference": "Diferença: {amount}",
+  "@simulationDifference": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "simulationChartLabel": "Gráfico do saldo previsto no fim de cada mês, atual e simulado",
+  "simulationLegendBaseline": "Atual",
+  "simulationLegendSimulated": "Simulado",
+  "simulationCommit": "Efetivar",
+  "simulationDiscard": "Descartar",
+  "errorInvalidUnsubscribeToken": "Este link de descadastro é inválido ou expirou. Desligue os alertas em Conta, no app.",
+  "notificationsTitle": "Alertas de vencimento",
+  "notificationsHint": "Email com as contas a pagar que vencem em breve.",
+  "notificationsEmailLabel": "Receber alertas por email",
+  "notificationsEmailHint": "Às 8h, quando houver contas a pagar vencendo.",
+  "notificationsDaysLabel": "Quando avisar",
+  "notificationsDaysBefore": "{days, plural, =0{No dia do vencimento} =1{1 dia antes} other{{days} dias antes}}",
+  "@notificationsDaysBefore": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationsWebHint": "No celular, o app também avisa com uma notificação no dia escolhido.",
+  "unsubscribeDone": "Pronto. Você não vai mais receber alertas de vencimento por email.",
+  "unsubscribeOpenApp": "Abrir o app",
+  "validationImmutable": "Não pode ser alterado",
+  "adminCategories": "Categorias",
+  "adminCategoriesTitle": "Categorias",
+  "adminCategoriesEmpty": "Nenhuma categoria cadastrada.",
+  "adminCategoryInactive": "Inativa",
+  "adminCategorySubtitle": "{key} · posição {position}",
+  "@adminCategorySubtitle": {
+    "placeholders": {
+      "key": {
+        "type": "String"
+      },
+      "position": {
+        "type": "int"
+      }
+    }
+  },
+  "adminCategoryNewTitle": "Nova categoria",
+  "adminCategoryEditTitle": "Editar categoria",
+  "adminCategoryKind": "Tipo",
+  "adminCategoryKindName": "{kind, select, income{Receita} other{Despesa}}",
+  "@adminCategoryKindName": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "adminCategoryKey": "Chave",
+  "adminCategoryKeyHelper": "Identifica a categoria e não pode ser alterada depois",
+  "adminCategoryKeyInvalid": "Use letras minúsculas, números e _, começando por uma letra",
+  "adminCategoryName": "Nome",
+  "adminCategoryNameHelper": "Em inglês; o app mostra a tradução das categorias padrão",
+  "adminCategoryPosition": "Posição na lista",
+  "adminCategoryPositionInvalid": "Informe um número inteiro a partir de 0",
+  "adminCategoryActive": "Ativa",
+  "adminCategoryActiveHelper": "Categorias inativas não aparecem em novos lançamentos",
+  "dueReminderTitle": "Conta a pagar: {description}",
+  "@dueReminderTitle": {
+    "placeholders": {
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "dueReminderBody": "{days, plural, =0{{amount} vence hoje} =1{{amount} vence amanhã} other{{amount} vence em {days} dias, no dia {date}}}",
+  "@dueReminderBody": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "amount": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "dueReminderChannel": "Vencimentos",
+  "dueReminderChannelDescription": "Lembretes das contas a pagar",
+  "entryScopeEditTitle": "{kind, select, income{Editar receita da série} other{Editar despesa da série}}",
+  "@entryScopeEditTitle": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "entryScopeDeleteTitle": "{kind, select, income{Apagar receita da série} other{Apagar despesa da série}}",
+  "@entryScopeDeleteTitle": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "entryScopeQuestion": "Quais lançamentos de \"{description}\"?",
+  "@entryScopeQuestion": {
+    "placeholders": {
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "entryScopeOne": "Só este",
+  "entryScopeFollowing": "Este e os seguintes",
+  "entryScopeAll": "Todos da série",
+  "entryScopeNotice": "{scope, select, following{As alterações valem para este lançamento e os seguintes da série.} other{As alterações valem para todos os lançamentos da série.}}",
+  "@entryScopeNotice": {
+    "placeholders": {
+      "scope": {
+        "type": "String"
+      }
+    }
+  },
+  "entryAmountLocked": "O valor da parcela só muda em \"Só este\", porque alteraria o total.",
+  "entryMarkSettled": "{kind, select, income{Marcar como recebida} other{Marcar como paga}}",
+  "@entryMarkSettled": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "homeUpcomingTitle": "Próximos vencimentos",
+  "homeUpcomingEmpty": "Nenhuma conta a pagar nos próximos 7 dias.",
+  "errorOnlyForSingleEntry": "O pagamento só pode ser alterado em um lançamento por vez.",
+  "errorInstallmentAmountLocked": "O valor de uma parcela só pode ser alterado nela mesma."
+}
