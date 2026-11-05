@@ -68,11 +68,7 @@ class ApiEntryRepository implements EntryRepository {
     final response = await _client.post<List<Entry>>(
       seriesPath,
       decode: (data) => _decodeList((data! as Json)['entries']),
-      body: {
-        ..._body(draft),
-        'entries_count': recurrence.count,
-        'direction': recurrence.direction.name,
-      },
+      body: _seriesBody(draft, recurrence),
     );
     return response.data;
   }
@@ -82,16 +78,10 @@ class ApiEntryRepository implements EntryRepository {
     EntryDraft draft,
     Installments installments,
   ) async {
-    final body = _body(draft)..remove('amount_cents');
     final response = await _client.post<List<Entry>>(
       seriesPath,
       decode: (data) => _decodeList((data! as Json)['entries']),
-      body: {
-        ...body,
-        'kind': SeriesKind.installments.name,
-        'total_cents': draft.amountCents,
-        'entries_count': installments.count,
-      },
+      body: _installmentsBody(draft, installments),
     );
     return response.data;
   }
@@ -108,6 +98,30 @@ class ApiEntryRepository implements EntryRepository {
 
   @override
   Future<void> delete(String id) => _client.delete('$path/$id');
+
+  static Json planBody(EntryPlan plan) => switch (plan) {
+    EntryPlan(:final draft, recurrence: final recurrence?) => _seriesBody(
+      draft,
+      recurrence,
+    ),
+    EntryPlan(:final draft, installments: final installments?) =>
+      _installmentsBody(draft, installments),
+    EntryPlan(:final draft) => _body(draft),
+  };
+
+  static Json _seriesBody(EntryDraft draft, Recurrence recurrence) => {
+    ..._body(draft),
+    'entries_count': recurrence.count,
+    'direction': recurrence.direction.name,
+  };
+
+  static Json _installmentsBody(EntryDraft draft, Installments installments) =>
+      {
+        ..._body(draft)..remove('amount_cents'),
+        'kind': SeriesKind.installments.name,
+        'total_cents': draft.amountCents,
+        'entries_count': installments.count,
+      };
 
   static Json _body(EntryDraft draft) {
     final dueOn = Dates.toIso(draft.dueOn);

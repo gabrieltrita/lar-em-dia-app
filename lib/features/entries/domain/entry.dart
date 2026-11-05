@@ -52,6 +52,16 @@ abstract class EntryDraft with _$EntryDraft {
 }
 
 @freezed
+abstract class EntryPlan with _$EntryPlan {
+  const factory({
+    required EntryKind kind,
+    required EntryDraft draft,
+    Recurrence? recurrence,
+    Installments? installments,
+  }) = _EntryPlan;
+}
+
+@freezed
 abstract class Entry with _$Entry {
   const factory({
     required String id,

@@ -56,4 +56,35 @@ void main() {
     expect(result, const Projection(months: []));
     expect(adapter.requests.single.queryParameters['months'], 1);
   });
+
+  test('simulates plans and reads both projections', () async {
+    final body = {
+      'months': [monthJson(novemberProjection, '2026-11')],
+    };
+    final repository = build({'baseline': body, 'simulated': body});
+
+    final result = await repository.simulate(
+      [tvPlan, freelancePlan, sofaPlan],
+      from: DateTime(2026, 11, 20),
+      months: 6,
+    );
+
+    expect(result.baseline.months, [novemberProjection]);
+    expect(result.differenceCents, 0);
+    final request = adapter.requests.single;
+    expect(request.method, 'POST');
+    expect(request.path, '/projection/simulation');
+    final sent = request.data as Map<String, Object?>;
+    expect(sent['from'], '2026-11');
+    expect(sent['months'], 6);
+    final [tv, freelance, sofa] = (sent['entries']! as List<Object?>)
+        .cast<Map<String, Object?>>();
+    expect(tv, containsPair('amount_cents', 300000));
+    expect(tv.containsKey('entries_count'), isFalse);
+    expect(freelance, containsPair('entries_count', 3));
+    expect(freelance, containsPair('direction', 'forward'));
+    expect(sofa, containsPair('kind', 'installments'));
+    expect(sofa, containsPair('total_cents', 300000));
+    expect(sofa.containsKey('amount_cents'), isFalse);
+  });
 }

@@ -5,9 +5,15 @@ import 'package:lar_em_dia/core/money/money.dart';
 import 'package:lar_em_dia/features/projection/domain/projection.dart';
 
 class ProjectionChart extends StatelessWidget {
-  const new({required this.months, required this.semanticsLabel, super.key});
+  const new({
+    required this.months,
+    required this.semanticsLabel,
+    this.baseline,
+    super.key,
+  });
 
   final List<ProjectionMonth> months;
+  final List<ProjectionMonth>? baseline;
   final String semanticsLabel;
 
   static final _monthLabel = DateFormat.MMM('pt_BR');
@@ -17,8 +23,9 @@ class ProjectionChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final textStyle = Theme.of(context).textTheme.labelSmall;
-    final spots = [
-      for (final (index, month) in months.indexed)
+    final lines = [?baseline, months];
+    List<FlSpot> spotsOf(List<ProjectionMonth> line) => [
+      for (final (index, month) in line.indexed)
         FlSpot(index.toDouble(), month.closingCents / 100),
     ];
     return Semantics(
@@ -26,8 +33,15 @@ class ProjectionChart extends StatelessWidget {
       child: LineChart(
         LineChartData(
           lineBarsData: [
+            if (baseline case final previous?)
+              LineChartBarData(
+                spots: spotsOf(previous),
+                color: colors.outline,
+                dashArray: const [6, 4],
+                dotData: const FlDotData(show: false),
+              ),
             LineChartBarData(
-              spots: spots,
+              spots: spotsOf(months),
               color: colors.primary,
               barWidth: 3,
               dotData: FlDotData(
@@ -50,7 +64,9 @@ class ProjectionChart extends StatelessWidget {
               getTooltipItems: (spots) => [
                 for (final spot in spots)
                   LineTooltipItem(
-                    Money.format(months[spot.x.toInt()].closingCents),
+                    Money.format(
+                      lines[spot.barIndex][spot.x.toInt()].closingCents,
+                    ),
                     TextStyle(color: colors.onInverseSurface),
                   ),
               ],

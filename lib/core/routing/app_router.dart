@@ -30,7 +30,9 @@ import 'package:lar_em_dia/features/entries/presentation/pages/entry_form_page.d
 import 'package:lar_em_dia/features/home/presentation/cubits/home_cubit.dart';
 import 'package:lar_em_dia/features/home/presentation/home_page.dart';
 import 'package:lar_em_dia/features/projection/presentation/cubits/projection_cubit.dart';
+import 'package:lar_em_dia/features/projection/presentation/cubits/simulation_cubit.dart';
 import 'package:lar_em_dia/features/projection/presentation/pages/projection_page.dart';
+import 'package:lar_em_dia/features/projection/presentation/pages/simulation_page.dart';
 import 'package:lar_em_dia/features/security/presentation/cubits/security_cubits.dart';
 import 'package:lar_em_dia/features/security/presentation/pages/security_page.dart';
 import 'package:lar_em_dia/features/security/presentation/pages/two_factor_enrollment_page.dart';
@@ -52,6 +54,7 @@ abstract final class AppRoutes {
   static const expenses = '/expenses';
   static const expensesForm = '/expenses/form';
   static const projection = '/projection';
+  static const simulation = '$projection/simulate';
   static const admin = '/admin';
   static const adminUsers = '$admin/users';
   static const adminMetrics = '$admin/metrics';
@@ -64,6 +67,8 @@ abstract final class AppRoutes {
     EntryKind.income => income,
     EntryKind.expense => expenses,
   };
+
+  static String simulationEntry(EntryKind kind) => '$simulation/${kind.name}';
 
   static String entryForm(EntryKind kind) => switch (kind) {
     EntryKind.income => incomeForm,
@@ -166,6 +171,29 @@ GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
         child: const ProjectionPage(),
       ),
     ),
+    GoRoute(
+      path: AppRoutes.simulation,
+      builder: (context, state) => BlocProvider(
+        create: (_) => getIt<SimulationCubit>(),
+        child: const SimulationPage(),
+      ),
+    ),
+    for (final kind in EntryKind.values)
+      GoRoute(
+        path: AppRoutes.simulationEntry(kind),
+        builder: (context, state) => MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (_) => getIt<EntryFormCubit>()),
+            BlocProvider(
+              create: (_) => _started(
+                getIt<CategoriesCubit>(),
+                (cubit) => cubit.load(kind),
+              ),
+            ),
+          ],
+          child: EntryFormPage(kind: kind, simulation: true),
+        ),
+      ),
     GoRoute(
       path: AppRoutes.adminMetrics,
       builder: (context, state) => BlocProvider(

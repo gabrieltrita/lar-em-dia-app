@@ -235,6 +235,106 @@ void main() {
       server.database.balances.clear();
       expect((data(call('GET', '/projection'))! as Map)['anchor'], isNull);
     });
+
+    test('simulates entries and series without keeping them', () {
+      final expense =
+          (data(call('GET', '/categories', query: {'kind': 'expense'}))!
+                      as List)
+                  .first
+              as Map;
+      final entriesBefore = server.database.entries.length;
+      final seriesBefore = server.database.series.length;
+      final response = call(
+        'POST',
+        '/projection/simulation',
+        body: {
+          'from': '2026-11',
+          'months': 3,
+          'entries': [
+            {
+              'category_id': expense['id'],
+              'description': 'TV',
+              'amount_cents': 500000,
+              'due_on': '2026-12-01',
+            },
+            {
+              'category_id': expense['id'],
+              'description': 'Sofa',
+              'due_on': '2026-11-10',
+              'kind': 'installments',
+              'total_cents': 300000,
+              'entries_count': 3,
+            },
+          ],
+        },
+      );
+
+      expect(response.status, 200);
+      final body = data(response)! as Map;
+      List<Object?> closings(String key) => [
+        for (final month in (body[key]! as Map)['months']! as List)
+          (month as Map)['closing_cents'],
+      ];
+      final baseline = closings('baseline');
+      expect(baseline, hasLength(3));
+      expect(closings('simulated'), [
+        (baseline[0]! as int) - 100000,
+        (baseline[1]! as int) - 700000,
+        (baseline[2]! as int) - 800000,
+      ]);
+      expect(server.database.entries, hasLength(entriesBefore));
+      expect(server.database.series, hasLength(seriesBefore));
+    });
+
+    test('validates simulated items by position and the period', () {
+      final invalid = call(
+        'POST',
+        '/projection/simulation',
+        body: {
+          'entries': [
+            {'description': 'x'},
+            'not an object',
+            {'entries_count': 1},
+          ],
+        },
+      );
+      expect(invalid.status, 422);
+      final details =
+          (invalid.body!['error']! as Map<String, Object?>)['details']! as Map;
+      expect(
+        details.keys,
+        containsAll([
+          'entries.0.category',
+          'entries.1.description',
+          'entries.2.entries_count',
+        ]),
+      );
+
+      Object? entriesError(Object? entries) =>
+          ((call(
+                    'POST',
+                    '/projection/simulation',
+                    body: {'entries': entries},
+                  ).body!['error']!
+                  as Map)['details']!
+              as Map)['entries'];
+      expect(entriesError(null), [
+        {'code': 'blank', 'message': 'blank'},
+      ]);
+      expect(entriesError(List.filled(11, <String, Object?>{})), [
+        {'code': 'too_long', 'message': 'too_long'},
+      ]);
+      expect(
+        errorCode(
+          call(
+            'POST',
+            '/projection/simulation',
+            body: {'from': 'x', 'entries': <Object?>[]},
+          ),
+        ),
+        'invalid_month',
+      );
+    });
   });
 
   group('two-factor', () {

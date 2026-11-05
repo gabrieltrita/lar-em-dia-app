@@ -79,3 +79,21 @@ abstract class ProjectionDto with _$ProjectionDto {
     negativeMonthsCount: alerts.negativeMonthsCount,
   );
 }
+
+@freezed
+abstract class ProjectionComparisonDto with _$ProjectionComparisonDto {
+  const factory({
+    required ProjectionDto baseline,
+    required ProjectionDto simulated,
+  }) = _ProjectionComparisonDto;
+
+  const new _();
+
+  factory fromJson(Map<String, dynamic> json) =>
+      _$ProjectionComparisonDtoFromJson(json);
+
+  ProjectionComparison toDomain() => ProjectionComparison(
+    baseline: baseline.toDomain(),
+    simulated: simulated.toDomain(),
+  );
+}

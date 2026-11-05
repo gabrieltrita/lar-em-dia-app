@@ -512,5 +512,76 @@
   "adminMetricsWithFiveSeries": "Têm 5 ou mais séries",
   "adminMetricsEntries30d": "Lançamentos em 30 dias",
   "adminMetricsSignups": "Cadastros por semana",
-  "adminMetricsChartLabel": "Gráfico de cadastros nas últimas 12 semanas"
+  "adminMetricsChartLabel": "Gráfico de cadastros nas últimas 12 semanas",
+  "simulationButton": "Simular gasto",
+  "simulationTitle": "Simular",
+  "simulationEntryTitle": "{kind, select, income{Simular receita} other{Simular despesa}}",
+  "@simulationEntryTitle": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "simulationAdd": "Adicionar à simulação",
+  "simulationAddExpense": "Adicionar despesa",
+  "simulationAddIncome": "Adicionar receita",
+  "simulationEmpty": "Adicione uma despesa ou receita para ver como ela muda a sua projeção. Nada é gravado até você efetivar.",
+  "simulationLimit": "Limite de {count} itens por simulação.",
+  "@simulationLimit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "simulationRemove": "Remover",
+  "simulationItemSubtitle": "{amount} · {date}",
+  "@simulationItemSubtitle": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "simulationEnd": "No fim de {month}",
+  "@simulationEnd": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "simulationBaseline": "Atual: {amount}",
+  "@simulationBaseline": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "simulationSimulated": "Simulado: {amount}",
+  "@simulationSimulated": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "simulationDifference": "Diferença: {amount}",
+  "@simulationDifference": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "simulationChartLabel": "Gráfico do saldo previsto no fim de cada mês, atual e simulado",
+  "simulationLegendBaseline": "Atual",
+  "simulationLegendSimulated": "Simulado",
+  "simulationCommit": "Efetivar",
+  "simulationDiscard": "Descartar"
 }

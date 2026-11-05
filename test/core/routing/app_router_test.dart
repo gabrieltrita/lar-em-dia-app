@@ -31,6 +31,7 @@ import 'package:lar_em_dia/features/entries/presentation/pages/entry_form_page.d
 import 'package:lar_em_dia/features/home/presentation/home_page.dart';
 import 'package:lar_em_dia/features/projection/domain/projection_repository.dart';
 import 'package:lar_em_dia/features/projection/presentation/pages/projection_page.dart';
+import 'package:lar_em_dia/features/projection/presentation/pages/simulation_page.dart';
 import 'package:lar_em_dia/features/security/domain/security_repository.dart';
 import 'package:lar_em_dia/features/security/presentation/pages/security_page.dart';
 import 'package:lar_em_dia/features/security/presentation/pages/two_factor_enrollment_page.dart';
@@ -234,6 +235,9 @@ void main() {
         '${AppRoutes.expenses}?month=2026-03': EntriesPage,
         AppRoutes.expensesForm: EntryFormPage,
         AppRoutes.projection: ProjectionPage,
+        AppRoutes.simulation: SimulationPage,
+        AppRoutes.simulationEntry(EntryKind.income): EntryFormPage,
+        AppRoutes.simulationEntry(EntryKind.expense): EntryFormPage,
       };
       for (final MapEntry(key: location, value: page) in pages.entries) {
         router.go(location);

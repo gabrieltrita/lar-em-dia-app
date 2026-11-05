@@ -26,6 +26,7 @@ class DemoServer {
   static const refreshToken = 'demo-refresh-token';
   static const pageSize = 25;
   static const maxPageSize = 100;
+  static const maxSimulationEntries = 10;
 
   static const twoFactorSecret = 'JBSWY3DPEHPK3PXP';
   static const backupCodesCount = 10;
@@ -78,6 +79,7 @@ class DemoServer {
           () => database.deleteEntry(id),
         ),
         ('GET', ['projection']) => _projection(query),
+        ('POST', ['projection', 'simulation']) => _simulation(body),
         _ => throw const DemoNotFound(),
       };
     } on DemoNotFound {
@@ -220,24 +222,68 @@ class DemoServer {
   }
 
   DemoResponse _projection(Map<String, String> query) {
+    final (month, months) = _period(query);
+    return _data(_projectionBody(month, months));
+  }
+
+  DemoResponse _simulation(Map<String, Object?> body) {
+    final (month, months) = _period({
+      if (body['from'] case final Object from) 'from': '$from',
+      if (body['months'] case final Object count) 'months': '$count',
+    });
+    final inputs = body['entries'];
+    final items = inputs is List ? inputs : const <Object?>[];
+    if (items.isEmpty || items.length > maxSimulationEntries) {
+      throw DemoValidationError({
+        'entries': [if (items.isEmpty) 'blank' else 'too_long'],
+      });
+    }
+    final baseline = _projectionBody(month, months);
+    final simulated = database.rollback(() {
+      final errors = <String, List<String>>{};
+      for (final (index, item) in items.indexed) {
+        final input = item is Map<String, Object?>
+            ? item
+            : const <String, Object?>{};
+        try {
+          input['entries_count'] == null
+              ? database.createEntry(input)
+              : database.createSeries(input);
+        } on DemoValidationError catch (error) {
+          for (final MapEntry(:key, :value) in error.details.entries) {
+            errors['entries.$index.$key'] = value;
+          }
+        }
+      }
+      if (errors.isNotEmpty) {
+        throw DemoValidationError(errors);
+      }
+      return _projectionBody(month, months);
+    });
+    return _data({'baseline': baseline, 'simulated': simulated});
+  }
+
+  (DateTime, int) _period(Map<String, String> query) {
     final from = query['from'];
-    final month = from == null
-        ? Dates.firstOfMonth(database.today)
-        : Dates.parseMonth(from);
-    if (month == null) {
+    final month = from == null ? null : Dates.parseMonth(from);
+    if (from != null && month == null) {
       throw const DemoBadRequest('invalid_month');
     }
     final months = int.tryParse(query['months'] ?? '12');
     if (months == null || months < 1 || months > 24) {
       throw const DemoBadRequest('invalid_months');
     }
+    return (month ?? Dates.firstOfMonth(database.today), months);
+  }
+
+  Map<String, Object?> _projectionBody(DateTime month, int months) {
     final anchor = database.latestBalance();
     final rows = database.projection(from: month, months: months);
     final negative = [
       for (final row in rows)
         if (row['negative'] == true) row['month'],
     ];
-    return _data({
+    return {
       'anchor': anchor == null
           ? null
           : {'amount_cents': anchor['amount_cents'], 'as_of': anchor['as_of']},
@@ -246,7 +292,7 @@ class DemoServer {
         'first_negative_month': negative.firstOrNull,
         'negative_months_count': negative.length,
       },
-    });
+    };
   }
 
   static DateTime? _date(String? value) {

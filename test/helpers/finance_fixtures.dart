@@ -124,7 +124,48 @@ final projection = Projection(
   negativeMonthsCount: 1,
 );
 
+final tvPlan = EntryPlan(
+  kind: EntryKind.expense,
+  draft: EntryDraft(
+    categoryId: groceriesCategory.id,
+    description: 'TV',
+    amountCents: 300000,
+    dueOn: DateTime(2026, 12, 5),
+    status: EntryStatus.pending,
+    nature: EntryNature.variable,
+  ),
+);
+
+final freelancePlan = EntryPlan(
+  kind: EntryKind.income,
+  draft: salary.toDraft().copyWith(description: 'Freelance'),
+  recurrence: const Recurrence(
+    count: 3,
+    direction: RecurrenceDirection.forward,
+  ),
+);
+
+final EntryPlan sofaPlan = tvPlan.copyWith(
+  draft: tvPlan.draft.copyWith(description: 'Sofa'),
+  installments: const Installments(count: 4),
+);
+
+final Projection simulatedProjection = projection.copyWith(
+  months: [
+    novemberProjection,
+    decemberProjection.copyWith(closingCents: -406544),
+  ],
+  firstNegativeMonth: DateTime(2026, 12),
+  negativeMonthsCount: 1,
+);
+
+final comparison = ProjectionComparison(
+  baseline: projection,
+  simulated: simulatedProjection,
+);
+
 void registerFinanceFallbacks() {
+  registerFallbackValue(<EntryPlan>[]);
   registerFallbackValue(DateTime(2026));
   registerFallbackValue(EntryKind.income);
   registerFallbackValue(salary.toDraft());

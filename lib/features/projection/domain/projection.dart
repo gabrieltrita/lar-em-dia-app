@@ -37,3 +37,14 @@ abstract class Projection with _$Projection {
     @Default(0) int negativeMonthsCount,
   }) = _Projection;
 }
+
+@freezed
+abstract class ProjectionComparison with _$ProjectionComparison {
+  const factory({required Projection baseline, required Projection simulated}) =
+      _ProjectionComparison;
+
+  const new _();
+
+  int get differenceCents =>
+      simulated.months.last.closingCents - baseline.months.last.closingCents;
+}
