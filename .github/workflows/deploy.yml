@@ -58,7 +58,7 @@ jobs:
 
       - name: Set up QEMU for arm64 images
         if: env.DEPLOY_ARCH == 'arm64'
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
         with:
           platforms: arm64
 
