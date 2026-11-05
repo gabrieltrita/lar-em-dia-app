@@ -323,6 +323,10 @@ class _EntryFormPageState extends State<EntryFormPage> {
                     InfoMessage(l10n.entryScopeNotice(widget.scope.name)),
                     const SizedBox(height: 16),
                   ],
+                  if (options.isEmpty) ...[
+                    InfoMessage(l10n.entryNoCategories),
+                    const SizedBox(height: 16),
+                  ],
                   _categoryField(l10n, options),
                   const SizedBox(height: 16),
                   if (_isExpense) ...[
