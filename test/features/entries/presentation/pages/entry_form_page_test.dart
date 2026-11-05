@@ -32,6 +32,7 @@ void main() {
   Future<void> pump(
     WidgetTester tester, {
     Entry? existing,
+    EntryScope scope = EntryScope.one,
     EntryKind kind = EntryKind.income,
     bool simulation = false,
   }) async {
@@ -60,6 +61,7 @@ void main() {
             child: EntryFormPage(
               kind: kind,
               existing: existing,
+              scope: scope,
               today: DateTime(2026, 11, 3),
               simulation: simulation,
             ),
@@ -526,5 +528,99 @@ void main() {
       'Fixa',
       'Variável',
     ]);
+  });
+
+  group('a series entry', () {
+    final sofa = housing.copyWith(
+      description: 'Sofá',
+      amountCents: 50000,
+      seriesId: 'series-1',
+      seriesPosition: 3,
+      seriesKind: SeriesKind.installments,
+      seriesCount: 10,
+    );
+
+    testWidgets('locks the installment amount and the payment outside one', (
+      tester,
+    ) async {
+      when(() => repository.update(sofa.id, any(), scope: EntryScope.following))
+          .thenAnswer((_) async => sofa);
+      await pump(
+        tester,
+        existing: sofa,
+        scope: EntryScope.following,
+        kind: EntryKind.expense,
+      );
+
+      expect(
+        find.text(
+          'As alterações valem para este lançamento e os seguintes da série.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('só muda em "Só este"'), findsOneWidget);
+      expect(
+        tester
+            .widget<TextField>(
+              find.descendant(
+                of: find.byKey(const Key('entry_amount')),
+                matching: find.byType(TextField),
+              ),
+            )
+            .enabled,
+        isFalse,
+      );
+      expect(find.byKey(const Key('entry_settled')), findsNothing);
+
+      await tester.enterText(
+        find.byKey(const Key('entry_description')),
+        'Sofá novo',
+      );
+      await tester.tap(save);
+      await tester.pumpAndSettle();
+
+      verify(
+        () => repository.update(
+          sofa.id,
+          sofa.toDraft().copyWith(description: 'Sofá novo'),
+          scope: EntryScope.following,
+        ),
+      ).called(1);
+      expect(popped, [true]);
+    });
+
+    testWidgets('keeps a recurring amount editable for the whole series', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        existing: rent.copyWith(seriesId: 'series-2', seriesPosition: 1),
+        scope: EntryScope.all,
+      );
+
+      expect(
+        find.text('As alterações valem para todos os lançamentos da série.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('só muda em "Só este"'), findsNothing);
+    });
+
+    testWidgets('shows the API refusal of a payment change', (tester) async {
+      when(() => repository.update(any(), any(), scope: EntryScope.all))
+          .thenThrow(const ApiError(code: 'only_for_single_entry'));
+      await pump(
+        tester,
+        existing: rent.copyWith(seriesId: 'series-2', seriesPosition: 1),
+        scope: EntryScope.all,
+      );
+
+      await tester.tap(save);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('O pagamento só pode ser alterado em um lançamento por vez.'),
+        findsOneWidget,
+      );
+    });
   });
 }

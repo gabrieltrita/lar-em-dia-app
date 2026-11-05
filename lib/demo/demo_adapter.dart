@@ -83,10 +83,10 @@ class DemoServer {
         ('POST', ['entry_series']) => _data(database.createSeries(body), 201),
         ('GET', ['entries', final id]) => _data(database.findEntry(id)),
         ('PATCH', ['entries', final id]) => _data(
-          database.updateEntry(id, body),
+          database.updateEntry(id, body, scope: query['scope']),
         ),
         ('DELETE', ['entries', final id]) => _noContent(
-          () => database.deleteEntry(id),
+          () => database.deleteEntry(id, scope: query['scope']),
         ),
         ('GET', ['projection']) => _projection(query),
         ('POST', ['projection', 'simulation']) => _simulation(body),
@@ -107,6 +107,8 @@ class DemoServer {
           },
         },
       });
+    } on DemoUnprocessable catch (error) {
+      return _error(422, error.code, 'Only for a single entry');
     } on DemoBadRequest catch (error) {
       return _error(400, error.code, 'Invalid query parameter');
     }

@@ -24,6 +24,7 @@ class EntryFormPage extends StatefulWidget {
   const new({
     required this.kind,
     this.existing,
+    this.scope = EntryScope.one,
     this.today,
     this.simulation = false,
     super.key,
@@ -31,6 +32,7 @@ class EntryFormPage extends StatefulWidget {
 
   final EntryKind kind;
   final Entry? existing;
+  final EntryScope scope;
   final DateTime? today;
   final bool simulation;
 
@@ -63,6 +65,11 @@ class _EntryFormPageState extends State<EntryFormPage> {
   bool get _isExpense => widget.kind == EntryKind.expense;
 
   bool get _isNew => widget.existing == null;
+
+  bool get _scoped => widget.scope != EntryScope.one;
+
+  bool get _amountLocked =>
+      _scoped && (widget.existing?.isInstallment ?? false);
 
   @override
   void dispose() {
@@ -104,6 +111,7 @@ class _EntryFormPageState extends State<EntryFormPage> {
       context.read<EntryFormCubit>().save(
         draft,
         existing: widget.existing,
+        scope: widget.scope,
         recurrence: recurrence,
         installments: installments,
       ),
@@ -311,6 +319,10 @@ class _EntryFormPageState extends State<EntryFormPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (_scoped) ...[
+                    InfoMessage(l10n.entryScopeNotice(widget.scope.name)),
+                    const SizedBox(height: 16),
+                  ],
                   _categoryField(l10n, options),
                   const SizedBox(height: 16),
                   if (_isExpense) ...[
@@ -330,11 +342,14 @@ class _EntryFormPageState extends State<EntryFormPage> {
                   TextFormField(
                     key: const Key('entry_amount'),
                     controller: _amount,
+                    enabled: !_amountLocked,
                     decoration: InputDecoration(
                       labelText: _installments
                           ? l10n.entryTotalAmountLabel
                           : l10n.amountLabel,
                       prefixText: r'R$ ',
+                      helperText: _amountLocked ? l10n.entryAmountLocked : null,
+                      helperMaxLines: 2,
                     ),
                     keyboardType: TextInputType.number,
                     inputFormatters: [MoneyInputFormatter()],
@@ -350,7 +365,7 @@ class _EntryFormPageState extends State<EntryFormPage> {
                     onChanged: (value) => setState(() => _dueOn = value),
                   ),
                   const SizedBox(height: 8),
-                  if (!widget.simulation)
+                  if (!widget.simulation && !_scoped)
                     SwitchListTile(
                       key: const Key('entry_settled'),
                       title: Text(l10n.entrySettledLabel(widget.kind.name)),

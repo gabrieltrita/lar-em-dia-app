@@ -12,6 +12,8 @@ enum RecurrenceDirection { forward, backward }
 
 enum SeriesKind { recurring, installments }
 
+enum EntryScope { one, following, all }
+
 @freezed
 abstract class Recurrence with _$Recurrence {
   const factory({required int count, required RecurrenceDirection direction}) =
@@ -95,4 +97,12 @@ abstract class Entry with _$Entry {
     status: status,
     nature: nature,
   );
+}
+
+@freezed
+abstract class EntryEdit with _$EntryEdit {
+  const factory({
+    required Entry entry,
+    @Default(EntryScope.one) EntryScope scope,
+  }) = _EntryEdit;
 }

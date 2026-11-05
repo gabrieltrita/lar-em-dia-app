@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lar_em_dia/core/dates/dates.dart';
 import 'package:lar_em_dia/core/forms/error_messages.dart';
 import 'package:lar_em_dia/core/money/money.dart';
+import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/core/state/load_state.dart';
 import 'package:lar_em_dia/core/widgets/confirm_dialog.dart';
@@ -13,40 +14,89 @@ import 'package:lar_em_dia/core/widgets/form_widgets.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/presentation/cubits/entry_cubits.dart';
 import 'package:lar_em_dia/features/entries/presentation/widgets/category_label.dart';
+import 'package:lar_em_dia/features/entries/presentation/widgets/entry_scope_dialog.dart';
 import 'package:lar_em_dia/features/entries/presentation/widgets/nature_label.dart';
+import 'package:lar_em_dia/features/entries/presentation/widgets/paid_checkbox.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
 class EntriesPage extends StatelessWidget {
   const new({super.key});
 
   Future<void> _open(BuildContext context, [Entry? entry]) async {
+    final l10n = AppLocalizations.of(context);
     final cubit = context.read<MonthEntriesCubit>();
+    final scope = entry?.seriesId == null
+        ? EntryScope.one
+        : await askEntryScope(
+            context,
+            title: l10n.entryScopeEditTitle(cubit.kind.name),
+            entry: entry!,
+          );
+    if (scope == null || !context.mounted) {
+      return;
+    }
     final saved = await context.push<bool>(
       AppRoutes.entryForm(cubit.kind),
-      extra: entry,
+      extra: entry == null ? null : EntryEdit(entry: entry, scope: scope),
     );
     if (saved ?? false) {
       await cubit.load();
     }
   }
 
+  Future<EntryScope?> _deletionScope(BuildContext context, Entry entry) async {
+    final l10n = AppLocalizations.of(context);
+    final kind = entry.kind.name;
+    if (entry.seriesId != null) {
+      return await askEntryScope(
+        context,
+        title: l10n.entryScopeDeleteTitle(kind),
+        entry: entry,
+      );
+    }
+    final confirmed = await confirmDeletion(
+      context,
+      title: l10n.entryDeleteTitle(kind),
+      message: l10n.entryDeleteMessage(entry.description),
+    );
+    return confirmed ? EntryScope.one : null;
+  }
+
   Future<bool> _delete(BuildContext context, Entry entry) async {
     final l10n = AppLocalizations.of(context);
     final cubit = context.read<MonthEntriesCubit>();
     final messenger = ScaffoldMessenger.of(context);
-    final confirmed = await confirmDeletion(
-      context,
-      title: l10n.entryDeleteTitle(cubit.kind.name),
-      message: l10n.entryDeleteMessage(entry.description),
-    );
-    if (!confirmed) {
+    final scope = await _deletionScope(context, entry);
+    if (scope == null) {
       return false;
     }
-    final error = await cubit.delete(entry);
+    final error = await cubit.delete(entry, scope: scope);
+    _report(messenger, l10n, error);
+    return error == null;
+  }
+
+  Future<void> _setPaid(
+    BuildContext context,
+    Entry entry, {
+    required bool paid,
+  }) async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final error = await context.read<MonthEntriesCubit>().setPaid(
+      entry,
+      paid: paid,
+    );
+    _report(messenger, l10n, error);
+  }
+
+  void _report(
+    ScaffoldMessengerState messenger,
+    AppLocalizations l10n,
+    ApiError? error,
+  ) {
     if (error != null) {
       messenger.showSnackBar(SnackBar(content: Text(error.localized(l10n))));
     }
-    return error == null;
   }
 
   @override
@@ -83,6 +133,8 @@ class EntriesPage extends StatelessWidget {
                   onFilter: cubit.filter,
                   onOpen: (entry) => unawaited(_open(context, entry)),
                   onDelete: (entry) => _delete(context, entry),
+                  onPaid: (entry, {required paid}) =>
+                      unawaited(_setPaid(context, entry, paid: paid)),
                 ),
               },
             ),
@@ -171,6 +223,7 @@ class _EntryList extends StatelessWidget {
     required this.onFilter,
     required this.onOpen,
     required this.onDelete,
+    required this.onPaid,
   });
 
   final EntryKind kind;
@@ -179,6 +232,7 @@ class _EntryList extends StatelessWidget {
   final ValueChanged<EntryNature?> onFilter;
   final ValueChanged<Entry> onOpen;
   final Future<bool> Function(Entry entry) onDelete;
+  final PaidChanged onPaid;
 
   @override
   Widget build(BuildContext context) {
@@ -221,6 +275,7 @@ class _EntryList extends StatelessWidget {
                     ),
                     onOpen: onOpen,
                     onDelete: onDelete,
+                    onPaid: onPaid,
                   ),
                 ),
         ),
@@ -235,12 +290,14 @@ class _EntryTile extends StatelessWidget {
     required this.categoryText,
     required this.onOpen,
     required this.onDelete,
+    required this.onPaid,
   });
 
   final Entry entry;
   final String categoryText;
   final ValueChanged<Entry> onOpen;
   final Future<bool> Function(Entry entry) onDelete;
+  final PaidChanged onPaid;
 
   @override
   Widget build(BuildContext context) {
@@ -294,7 +351,13 @@ class _EntryTile extends StatelessWidget {
               l10n.entryPending(kind),
           ].join(' · '),
         ),
-        trailing: Text(Money.format(entry.amountCents)),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(Money.format(entry.amountCents)),
+            PaidCheckbox(entry: entry, onChanged: onPaid),
+          ],
+        ),
         onTap: () => onOpen(entry),
       ),
     );

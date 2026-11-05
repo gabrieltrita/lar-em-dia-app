@@ -42,6 +42,8 @@ void main() {
       ).thenAnswer(
         (_) async => projection.copyWith(months: [decemberProjection]),
       );
+      when(() => entries.between(any(), any(), kind: any(named: 'kind')))
+          .thenAnswer((_) async => []);
       when(() => entries.month(any(), kind: EntryKind.income))
           .thenAnswer((_) async => [salary, rent]);
       when(() => entries.month(any(), kind: EntryKind.expense))
@@ -64,6 +66,46 @@ void main() {
         session: harness.session,
       );
     }
+
+    testWidgets('lists the bills of the next days and marks one as paid', (
+      tester,
+    ) async {
+      when(() => entries.between(any(), any(), kind: EntryKind.expense))
+          .thenAnswer((_) async => [housing, groceries]);
+      when(() => entries.markPaid(housing.id, paidOn: any(named: 'paidOn')))
+          .thenAnswer((_) async => housing);
+      await pump(tester);
+
+      expect(find.text('Próximos vencimentos'), findsOneWidget);
+      expect(find.text('Aluguel de casa'), findsOneWidget);
+      expect(find.text('10/11/2026'), findsOneWidget);
+      expect(find.text('Mercado do mês'), findsNothing);
+
+      when(() => entries.between(any(), any(), kind: EntryKind.expense))
+          .thenAnswer((_) async => []);
+      await tester.tap(find.bySemanticsLabel('Marcar como paga'));
+      await tester.pumpAndSettle();
+
+      verify(() => entries.markPaid(housing.id, paidOn: any(named: 'paidOn')))
+          .called(1);
+      expect(
+        find.text('Nenhuma conta a pagar nos próximos 7 dias.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows the error of a failed payment', (tester) async {
+      when(() => entries.between(any(), any(), kind: EntryKind.expense))
+          .thenAnswer((_) async => [housing]);
+      when(() => entries.markPaid(any(), paidOn: any(named: 'paidOn')))
+          .thenThrow(const ApiError(code: ApiError.networkErrorCode));
+      await pump(tester);
+
+      await tester.tap(find.bySemanticsLabel('Marcar como paga'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Não foi possível conectar'), findsOneWidget);
+    });
 
     testWidgets('shows the projected end of the month in red when negative', (
       tester,
@@ -201,6 +243,8 @@ void main() {
       harness.session.signedIn(rafaelAdmin);
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(find.text('Gerenciar usuários'), 200);
+      await tester.ensureVisible(find.text('Gerenciar usuários'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Gerenciar usuários'));
       await tester.pumpAndSettle();
 
@@ -262,6 +306,8 @@ void main() {
       final entries = MockEntryRepository();
       when(balances.latest).thenAnswer((_) async => null);
       when(() => entries.month(any(), kind: any(named: 'kind')))
+          .thenAnswer((_) async => []);
+      when(() => entries.between(any(), any(), kind: any(named: 'kind')))
           .thenAnswer((_) async => []);
       getIt
         ..allowReassignment = true

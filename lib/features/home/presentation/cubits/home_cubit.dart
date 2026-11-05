@@ -44,6 +44,7 @@ abstract class HomeSummary with _$HomeSummary {
     ProjectionMonth? horizon,
     DateTime? firstNegativeMonth,
     @Default(0) int negativeMonthsCount,
+    @Default([]) List<Entry> upcoming,
   }) = _HomeSummary;
 
   const new _();
@@ -64,14 +65,21 @@ class HomeCubit extends Cubit<LoadState<HomeSummary>> {
   final ProjectionRepository _projections;
 
   static const horizonMonths = 12;
+  static const upcomingDays = 7;
 
   Future<void> load({DateTime? today}) async {
     emit(const LoadState<HomeSummary>.loading());
-    final month = Dates.firstOfMonth(today ?? DateTime.now());
+    final day = Dates.dateOnly(today ?? DateTime.now());
+    final month = Dates.firstOfMonth(day);
     try {
       final latest = await _balances.latest();
       final income = await _entries.month(month, kind: EntryKind.income);
       final expenses = await _entries.month(month, kind: EntryKind.expense);
+      final upcoming = await _entries.between(
+        day,
+        day.add(const Duration(days: upcomingDays)),
+        kind: EntryKind.expense,
+      );
       final projection = latest == null
           ? null
           : await _projections.fetch(from: month, months: horizonMonths);
@@ -86,11 +94,28 @@ class HomeCubit extends Cubit<LoadState<HomeSummary>> {
             horizon: projection?.months.last,
             firstNegativeMonth: projection?.firstNegativeMonth,
             negativeMonthsCount: projection?.negativeMonthsCount ?? 0,
+            upcoming: [
+              for (final entry in upcoming)
+                if (!entry.isPaid) entry,
+            ],
           ),
         ),
       );
     } on ApiError catch (error) {
       emit(LoadState.failure(error));
+    }
+  }
+
+  Future<ApiError?> markPaid(Entry entry, {DateTime? today}) async {
+    try {
+      await _entries.markPaid(
+        entry.id,
+        paidOn: Dates.dateOnly(today ?? DateTime.now()),
+      );
+      await load(today: today);
+      return null;
+    } on ApiError catch (error) {
+      return error;
     }
   }
 }

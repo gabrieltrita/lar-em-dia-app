@@ -11,6 +11,12 @@ final class DemoValidationError implements Exception {
   final FieldErrors details;
 }
 
+final class DemoUnprocessable implements Exception {
+  const new(this.code);
+
+  final String code;
+}
+
 final class DemoNotFound implements Exception {
   const new();
 }
@@ -212,8 +218,60 @@ class DemoDatabase {
     );
   }
 
-  Row updateEntry(String id, Row input) {
+  static const sharedFields = [
+    'category_id',
+    'nature',
+    'description',
+    'amount_cents',
+  ];
+
+  Row updateEntry(String id, Row input, {String? scope}) {
     final entry = findEntry(id);
+    final scoped = _scoped(entry, scope);
+    if (scoped == null) {
+      return _updateOne(entry, input);
+    }
+    if (_changes(entry, input, 'status') || _changes(entry, input, 'paid_on')) {
+      throw const DemoUnprocessable('only_for_single_entry');
+    }
+    if (entry['series_kind'] == 'installments' &&
+        _changes(entry, input, 'amount_cents')) {
+      throw const DemoUnprocessable('installment_amount_locked');
+    }
+    final shared = {
+      for (final field in sharedFields)
+        if (input.containsKey(field)) field: input[field],
+    };
+    final dueOn = input.containsKey('due_on')
+        ? _parseDate(input['due_on'])
+        : null;
+    final position = entry['series_position']! as int;
+    final updates = [
+      for (final row in scoped)
+        (
+          row,
+          _entryFields({
+            ...row,
+            ...shared,
+            if (input.containsKey('due_on'))
+              'due_on': dueOn == null
+                  ? null
+                  : Dates.toIso(
+                      _shift(
+                        dueOn,
+                        (row['series_position']! as int) - position,
+                      ),
+                    ),
+          }),
+        ),
+    ];
+    for (final (row, fields) in updates) {
+      row.addAll(fields);
+    }
+    return entry;
+  }
+
+  Row _updateOne(Row entry, Row input) {
     final merged = {...entry, ...input};
     if (input.containsKey('category_id') &&
         input['category_id'] != entry['category_id'] &&
@@ -223,7 +281,52 @@ class DemoDatabase {
     return entry..addAll(_entryFields(merged));
   }
 
-  void deleteEntry(String id) => entries.remove(findEntry(id));
+  void deleteEntry(String id, {String? scope}) {
+    final entry = findEntry(id);
+    final seriesId = entry['series_id'];
+    final scoped = _scoped(entry, scope);
+    if (scoped == null) {
+      entries.remove(entry);
+    } else {
+      entries.removeWhere(scoped.contains);
+    }
+    if (seriesId == null) {
+      return;
+    }
+    final row = _find(series, seriesId as String);
+    final remaining = entries.where((e) => e['series_id'] == seriesId).toList();
+    if (remaining.isEmpty) {
+      series.remove(row);
+    } else if (scope == 'following') {
+      row['entries_count'] = remaining.length;
+      if (row['kind'] == 'installments') {
+        row['total_cents'] = remaining.fold<int>(
+          0,
+          (sum, e) => sum + _cents(e),
+        );
+      }
+      for (final e in remaining) {
+        e['series_count'] = remaining.length;
+      }
+    }
+  }
+
+  List<Row>? _scoped(Row entry, String? scope) {
+    final seriesId = entry['series_id'];
+    if (seriesId == null || (scope != 'following' && scope != 'all')) {
+      return null;
+    }
+    final position = entry['series_position']! as int;
+    return [
+      for (final row in entries)
+        if (row['series_id'] == seriesId &&
+            (scope == 'all' || (row['series_position']! as int) >= position))
+          row,
+    ];
+  }
+
+  static bool _changes(Row entry, Row input, String field) =>
+      input.containsKey(field) && input[field] != entry[field];
 
   Row? latestBalance() => sortedBalances().firstOrNull;
 

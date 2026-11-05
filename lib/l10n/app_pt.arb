@@ -660,5 +660,53 @@
     }
   },
   "dueReminderChannel": "Vencimentos",
-  "dueReminderChannelDescription": "Lembretes das contas a pagar"
+  "dueReminderChannelDescription": "Lembretes das contas a pagar",
+  "entryScopeEditTitle": "{kind, select, income{Editar receita da série} other{Editar despesa da série}}",
+  "@entryScopeEditTitle": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "entryScopeDeleteTitle": "{kind, select, income{Apagar receita da série} other{Apagar despesa da série}}",
+  "@entryScopeDeleteTitle": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "entryScopeQuestion": "Quais lançamentos de \"{description}\"?",
+  "@entryScopeQuestion": {
+    "placeholders": {
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "entryScopeOne": "Só este",
+  "entryScopeFollowing": "Este e os seguintes",
+  "entryScopeAll": "Todos da série",
+  "entryScopeNotice": "{scope, select, following{As alterações valem para este lançamento e os seguintes da série.} other{As alterações valem para todos os lançamentos da série.}}",
+  "@entryScopeNotice": {
+    "placeholders": {
+      "scope": {
+        "type": "String"
+      }
+    }
+  },
+  "entryAmountLocked": "O valor da parcela só muda em \"Só este\", porque alteraria o total.",
+  "entryMarkSettled": "{kind, select, income{Marcar como recebida} other{Marcar como paga}}",
+  "@entryMarkSettled": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "homeUpcomingTitle": "Próximos vencimentos",
+  "homeUpcomingEmpty": "Nenhuma conta a pagar nos próximos 7 dias.",
+  "errorOnlyForSingleEntry": "O pagamento só pode ser alterado em um lançamento por vez.",
+  "errorInstallmentAmountLocked": "O valor de uma parcela só pode ser alterado nela mesma."
 }

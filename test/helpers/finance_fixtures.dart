@@ -168,6 +168,7 @@ void registerFinanceFallbacks() {
   registerFallbackValue(<EntryPlan>[]);
   registerFallbackValue(DateTime(2026));
   registerFallbackValue(EntryKind.income);
+  registerFallbackValue(EntryScope.one);
   registerFallbackValue(salary.toDraft());
   registerFallbackValue(salary);
   registerFallbackValue(balance);

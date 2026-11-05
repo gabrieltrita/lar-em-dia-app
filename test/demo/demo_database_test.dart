@@ -207,6 +207,145 @@ void main() {
       for (final row in created['entries']! as List<Row>) row[field],
     ];
 
+    group('scopes', () {
+      Row installments() => database.createSeries({
+        'kind': 'installments',
+        'category_id': rent,
+        'description': 'Sofa',
+        'total_cents': 1000,
+        'due_on': '2026-01-31',
+        'entries_count': 3,
+      });
+
+      List<Row> rowsOf(Row created) => [
+        for (final row in database.entries)
+          if (row['series_id'] == created['id']) row,
+      ];
+
+      String idAt(Row created, int position) =>
+          rowsOf(
+                created,
+              ).firstWhere((row) => row['series_position'] == position)['id']!
+              as String;
+
+      String? codeOf(void Function() action) {
+        try {
+          action();
+        } on DemoUnprocessable catch (error) {
+          return error.code;
+        }
+        return null;
+      }
+
+      test('edit the following entries and move their day', () {
+        final created = series('2026-01-31', 4, 'forward');
+
+        database.updateEntry(idAt(created, 2), {
+          'description': 'New',
+          'amount_cents': 200,
+          'due_on': '2026-02-15',
+          'status': 'pending',
+        }, scope: 'following');
+
+        final rows = rowsOf(created);
+        expect(
+          [for (final row in rows) row['description']],
+          ['Salary', 'New', 'New', 'New'],
+        );
+        expect(
+          [for (final row in rows) row['due_on']],
+          ['2026-01-31', '2026-02-15', '2026-03-15', '2026-04-15'],
+        );
+      });
+
+      test('edit every entry and keep the month end', () {
+        final created = series('2026-01-31', 3, 'forward');
+
+        database.updateEntry(idAt(created, 3), {
+          'due_on': '2026-03-30',
+        }, scope: 'all');
+
+        expect(
+          [for (final row in rowsOf(created)) row['due_on']],
+          ['2026-01-30', '2026-02-28', '2026-03-30'],
+        );
+      });
+
+      test('refuse payment and installment amount changes', () {
+        final created = series('2026-01-31', 2, 'forward');
+        final sofa = installments();
+
+        expect(
+          codeOf(
+            () => database.updateEntry(idAt(created, 1), {
+              'status': 'paid',
+            }, scope: 'all'),
+          ),
+          'only_for_single_entry',
+        );
+        expect(
+          codeOf(
+            () => database.updateEntry(idAt(created, 1), {
+              'paid_on': '2026-01-31',
+            }, scope: 'all'),
+          ),
+          'only_for_single_entry',
+        );
+        expect(
+          codeOf(
+            () => database.updateEntry(idAt(sofa, 1), {
+              'amount_cents': 5,
+            }, scope: 'following'),
+          ),
+          'installment_amount_locked',
+        );
+        expect(
+          errorsOf(
+            () => database.updateEntry(idAt(created, 1), {
+              'due_on': 'nope',
+            }, scope: 'all'),
+          ),
+          {
+            'due_on': ['blank'],
+          },
+        );
+      });
+
+      test('treat an entry outside a series as one', () {
+        final id = entry(rent, 100, '2026-11-05')['id']! as String;
+
+        database.updateEntry(id, {'description': 'Single'}, scope: 'all');
+        expect(database.findEntry(id)['description'], 'Single');
+
+        database.deleteEntry(id, scope: 'all');
+        expect(() => database.findEntry(id), throwsA(isA<DemoNotFound>()));
+      });
+
+      test('delete the following entries and recount the series', () {
+        final sofa = installments();
+
+        database.deleteEntry(idAt(sofa, 2), scope: 'following');
+
+        final row = database.series.single;
+        expect(row['entries_count'], 1);
+        expect(row['total_cents'], rowsOf(sofa).single['amount_cents']);
+        expect(rowsOf(sofa).single['series_count'], 1);
+      });
+
+      test('delete the whole series or its last entry', () {
+        final created = series('2026-01-31', 3, 'forward');
+        database.deleteEntry(idAt(created, 2), scope: 'all');
+        expect(rowsOf(created), isEmpty);
+        expect(database.series, isEmpty);
+
+        final pair = series('2026-01-31', 2, 'forward');
+        database.deleteEntry(idAt(pair, 1));
+        expect(database.series.single['entries_count'], 2);
+        database.deleteEntry(idAt(pair, 2), scope: 'following');
+        expect(database.series, isEmpty);
+      });
+    });
+
     test('create one entry per month in position order', () {
       final created = series('2026-11-05', 3, 'forward');
 

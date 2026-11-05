@@ -135,6 +135,49 @@ void main() {
       expect(second.body!['meta'], containsPair('prev', 1));
     });
 
+    test('passes the scope of a series entry', () {
+      signIn();
+      final created =
+          data(
+                call(
+                  'POST',
+                  '/entry_series',
+                  body: {
+                    'category_id': server.database
+                        .categoriesOf('expense')
+                        .first['id'],
+                    'description': 'Rent',
+                    'amount_cents': 100,
+                    'due_on': '2026-11-05',
+                    'entries_count': 3,
+                    'direction': 'forward',
+                  },
+                ),
+              )!
+              as Map<String, Object?>;
+      final first =
+          (created['entries']! as List<Object?>).first! as Map<String, Object?>;
+      final id = first['id']! as String;
+
+      final refused = call(
+        'PATCH',
+        '/entries/$id',
+        query: {'scope': 'all'},
+        body: {'status': 'paid'},
+      );
+      expect(refused.status, 422);
+      expect(errorCode(refused), 'only_for_single_entry');
+
+      expect(
+        call('DELETE', '/entries/$id', query: {'scope': 'all'}).status,
+        204,
+      );
+      expect(
+        server.database.series.where((row) => row['id'] == created['id']),
+        isEmpty,
+      );
+    });
+
     test('creates, updates and deletes entries with validation errors', () {
       final category = (data(call('GET', '/categories'))! as List).first as Map;
       final created = call(

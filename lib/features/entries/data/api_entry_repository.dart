@@ -29,7 +29,15 @@ class ApiEntryRepository implements EntryRepository {
   }
 
   @override
-  Future<List<Entry>> month(DateTime month, {required EntryKind kind}) async {
+  Future<List<Entry>> month(DateTime month, {required EntryKind kind}) =>
+      between(Dates.firstOfMonth(month), Dates.lastOfMonth(month), kind: kind);
+
+  @override
+  Future<List<Entry>> between(
+    DateTime from,
+    DateTime to, {
+    required EntryKind kind,
+  }) async {
     final entries = <Entry>[];
     int? page = 1;
     while (page != null) {
@@ -37,8 +45,8 @@ class ApiEntryRepository implements EntryRepository {
         path,
         decode: _decodeList,
         query: {
-          'from': Dates.toIso(Dates.firstOfMonth(month)),
-          'to': Dates.toIso(Dates.lastOfMonth(month)),
+          'from': Dates.toIso(from),
+          'to': Dates.toIso(to),
           'kind': kind.name,
           'limit': pageSize,
           'page': page,
@@ -87,17 +95,43 @@ class ApiEntryRepository implements EntryRepository {
   }
 
   @override
-  Future<Entry> update(String id, EntryDraft draft) async {
+  Future<Entry> update(
+    String id,
+    EntryDraft draft, {
+    EntryScope scope = EntryScope.one,
+  }) async {
     final response = await _client.patch<Entry>(
-      '$path/$id',
+      _scoped(id, scope),
       decode: _decode,
-      body: _body(draft),
+      body: scope == EntryScope.one ? _body(draft) : _sharedBody(draft),
     );
     return response.data;
   }
 
   @override
-  Future<void> delete(String id) => _client.delete('$path/$id');
+  Future<Entry> markPaid(String id, {required DateTime? paidOn}) async {
+    final response = await _client.patch<Entry>(
+      '$path/$id',
+      decode: _decode,
+      body: {
+        'status':
+            (paidOn == null ? EntryStatus.pending : EntryStatus.paid).name,
+        'paid_on': paidOn == null ? null : Dates.toIso(paidOn),
+      },
+    );
+    return response.data;
+  }
+
+  @override
+  Future<void> delete(String id, {EntryScope scope = EntryScope.one}) =>
+      _client.delete(_scoped(id, scope));
+
+  static String _scoped(String id, EntryScope scope) =>
+      scope == EntryScope.one ? '$path/$id' : '$path/$id?scope=${scope.name}';
+
+  static Json _sharedBody(EntryDraft draft) =>
+      _body(draft)
+        ..removeWhere((key, _) => key == 'status' || key == 'paid_on');
 
   static Json planBody(EntryPlan plan) => switch (plan) {
     EntryPlan(:final draft, recurrence: final recurrence?) => _seriesBody(
