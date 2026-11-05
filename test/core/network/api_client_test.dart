@@ -69,6 +69,25 @@ void main() {
     expect(response.data, isNull);
   });
 
+  test('a response that cannot be decoded becomes an unknown error', () async {
+    client = clientFor(
+      (_) => FakeAdapter.json(200, {
+        'data': {'name': 42},
+      }),
+    );
+
+    await expectLater(
+      client.get('/me', decode: decodeName),
+      throwsA(
+        isA<ApiError>().having(
+          (e) => e.code,
+          'code',
+          ApiError.unknownErrorCode,
+        ),
+      ),
+    );
+  });
+
   test('errors become ApiError with the API code', () async {
     client = clientFor(
       (_) => FakeAdapter.json(404, {

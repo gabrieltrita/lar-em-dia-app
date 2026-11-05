@@ -468,6 +468,22 @@ void main() {
     expect(popped, isEmpty);
   });
 
+  testWidgets('explains an empty category list', (tester) async {
+    when(() => repository.categories(EntryKind.income))
+        .thenAnswer((_) async => []);
+    await pump(tester);
+
+    expect(
+      find.text(
+        'Nenhuma categoria disponível agora. Tente de novo mais tarde.',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+    expect(popped, isEmpty);
+  });
+
   testWidgets('retries loading the categories', (tester) async {
     when(() => repository.categories(EntryKind.income))
         .thenThrow(const ApiError(code: 'network_error'));

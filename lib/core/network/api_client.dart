@@ -56,6 +56,8 @@ class ApiClient {
       );
     } on DioException catch (exception) {
       throw ApiError.fromDioException(exception);
+    } on Object {
+      throw const ApiError(code: ApiError.unknownErrorCode);
     }
   }
 }
