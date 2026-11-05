@@ -6,6 +6,12 @@ abstract interface class EntryRepository {
 
   Future<List<Entry>> month(DateTime month, {required EntryKind kind});
 
+  Future<List<Entry>> between(
+    DateTime from,
+    DateTime to, {
+    required EntryKind kind,
+  });
+
   Future<Entry> create(EntryDraft draft);
 
   Future<List<Entry>> createSeries(EntryDraft draft, Recurrence recurrence);
@@ -15,7 +21,13 @@ abstract interface class EntryRepository {
     Installments installments,
   );
 
-  Future<Entry> update(String id, EntryDraft draft);
+  Future<Entry> update(
+    String id,
+    EntryDraft draft, {
+    EntryScope scope = EntryScope.one,
+  });
 
-  Future<void> delete(String id);
+  Future<Entry> markPaid(String id, {required DateTime? paidOn});
+
+  Future<void> delete(String id, {EntryScope scope = EntryScope.one});
 }

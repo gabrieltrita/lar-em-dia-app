@@ -1,5 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lar_em_dia/core/dates/dates.dart';
 import 'package:lar_em_dia/core/forms/submission.dart';
 import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/core/state/load_state.dart';
@@ -166,6 +167,59 @@ void main() {
     await cubit.close();
   });
 
+  test('delete sends the scope of a series entry', () async {
+    when(() => repository.delete('entry-1', scope: EntryScope.following))
+        .thenAnswer((_) async {});
+    final cubit = MonthEntriesCubit(repository, EntryKind.income);
+
+    expect(await cubit.delete(salary, scope: EntryScope.following), isNull);
+    verify(() => repository.delete('entry-1', scope: EntryScope.following))
+        .called(1);
+    await cubit.close();
+  });
+
+  group('setPaid', () {
+    final today = Dates.dateOnly(DateTime.now());
+    final paidRent = rent.copyWith(status: EntryStatus.paid, paidOn: today);
+
+    test('replaces the entry in the list', () async {
+      when(() => repository.markPaid(rent.id, paidOn: today))
+          .thenAnswer((_) async => paidRent);
+      final cubit = MonthEntriesCubit(repository, EntryKind.income);
+      await cubit.load(november);
+
+      expect(await cubit.setPaid(rent, paid: true), isNull);
+
+      final data = cubit.state.data as Loaded<MonthEntries>;
+      expect(data.value.entries, [salary, paidRent]);
+      verify(() => repository.month(november, kind: EntryKind.income))
+          .called(1);
+      await cubit.close();
+    });
+
+    test('sends pending without a date and keeps an unloaded list', () async {
+      when(() => repository.markPaid(salary.id, paidOn: null))
+          .thenAnswer((_) async => salary);
+      when(() => repository.month(any(), kind: EntryKind.income))
+          .thenThrow(failure);
+      final cubit = MonthEntriesCubit(repository, EntryKind.income);
+      await cubit.load(november);
+
+      expect(await cubit.setPaid(salary, paid: false), isNull);
+      expect(cubit.state.data, const LoadState<MonthEntries>.failure(failure));
+      await cubit.close();
+    });
+
+    test('returns the error', () async {
+      when(() => repository.markPaid(any(), paidOn: any(named: 'paidOn')))
+          .thenThrow(failure);
+      final cubit = MonthEntriesCubit(repository, EntryKind.income);
+
+      expect(await cubit.setPaid(rent, paid: true), failure);
+      await cubit.close();
+    });
+  });
+
   blocTest<CategoriesCubit, LoadState<List<Category>>>(
     'loads the categories',
     build: () => CategoriesCubit(repository),
@@ -251,6 +305,21 @@ void main() {
             .thenAnswer((_) async => salary),
     build: () => EntryFormCubit(repository),
     act: (cubit) => cubit.save(salary.toDraft(), existing: salary),
+    expect: () => [
+      const Submission<Entry>.inProgress(),
+      Submission.success(salary),
+    ],
+  );
+
+  blocTest<EntryFormCubit, Submission<Entry>>(
+    'updates the entries of a series in the chosen scope',
+    setUp: () => when(
+      () =>
+          repository.update('entry-1', salary.toDraft(), scope: EntryScope.all),
+    ).thenAnswer((_) async => salary),
+    build: () => EntryFormCubit(repository),
+    act: (cubit) =>
+        cubit.save(salary.toDraft(), existing: salary, scope: EntryScope.all),
     expect: () => [
       const Submission<Entry>.inProgress(),
       Submission.success(salary),

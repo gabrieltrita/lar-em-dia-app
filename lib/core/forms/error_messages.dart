@@ -19,6 +19,8 @@ extension ApiErrorMessages on ApiError {
     'two_factor_already_enabled' => l10n.errorTwoFactorAlreadyEnabled,
     'two_factor_required' => l10n.errorTwoFactorRequired,
     'reauthentication_unavailable' => l10n.errorReauthenticationUnavailable,
+    'only_for_single_entry' => l10n.errorOnlyForSingleEntry,
+    'installment_amount_locked' => l10n.errorInstallmentAmountLocked,
     ApiError.networkErrorCode => l10n.errorNetwork,
     _ => l10n.errorUnknown,
   };

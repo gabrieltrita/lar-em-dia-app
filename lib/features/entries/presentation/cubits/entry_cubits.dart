@@ -86,10 +86,39 @@ class MonthEntriesCubit extends Cubit<MonthEntriesState> {
 
   Future<void> next() => load(Dates.addMonths(state.month, 1));
 
-  Future<ApiError?> delete(Entry entry) async {
+  Future<ApiError?> delete(
+    Entry entry, {
+    EntryScope scope = EntryScope.one,
+  }) async {
     try {
-      await _repository.delete(entry.id);
+      await _repository.delete(entry.id, scope: scope);
       await load();
+      return null;
+    } on ApiError catch (error) {
+      return error;
+    }
+  }
+
+  Future<ApiError?> setPaid(Entry entry, {required bool paid}) async {
+    try {
+      final updated = await _repository.markPaid(
+        entry.id,
+        paidOn: paid ? Dates.dateOnly(DateTime.now()) : null,
+      );
+      if (state.data case Loaded(:final value)) {
+        emit(
+          state.copyWith(
+            data: LoadState.loaded(
+              value.copyWith(
+                entries: [
+                  for (final current in value.entries)
+                    if (current.id == updated.id) updated else current,
+                ],
+              ),
+            ),
+          ),
+        );
+      }
       return null;
     } on ApiError catch (error) {
       return error;
@@ -122,11 +151,12 @@ class EntryFormCubit extends SubmissionCubit<Entry> {
   Future<void> save(
     EntryDraft draft, {
     Entry? existing,
+    EntryScope scope = EntryScope.one,
     Recurrence? recurrence,
     Installments? installments,
   }) => run(
     () => switch ((existing, recurrence, installments)) {
-      (final entry?, _, _) => _repository.update(entry.id, draft),
+      (final entry?, _, _) => _repository.update(entry.id, draft, scope: scope),
       (null, final repeat?, _) => _sent(
         draft,
         _repository.createSeries(draft, repeat),

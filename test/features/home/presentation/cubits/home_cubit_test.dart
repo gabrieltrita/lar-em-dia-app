@@ -24,6 +24,13 @@ void main() {
     'summarizes the latest balance and the month income and expenses',
     setUp: () {
       when(balances.latest).thenAnswer((_) async => balance);
+      when(
+        () => entries.between(
+          DateTime(2026, 11, 3),
+          DateTime(2026, 11, 10),
+          kind: EntryKind.expense,
+        ),
+      ).thenAnswer((_) async => [housing, groceries]);
       when(() => entries.month(november, kind: EntryKind.income))
           .thenAnswer((_) async => [salary, rent]);
       when(() => entries.month(november, kind: EntryKind.expense))
@@ -48,6 +55,7 @@ void main() {
           horizon: decemberProjection,
           firstNegativeMonth: DateTime(2026, 12),
           negativeMonthsCount: 1,
+          upcoming: [housing],
         ),
       ),
     ],
@@ -63,6 +71,8 @@ void main() {
     setUp: () {
       when(balances.latest).thenAnswer((_) async => null);
       when(() => entries.month(november, kind: any(named: 'kind')))
+          .thenAnswer((_) async => []);
+      when(() => entries.between(any(), any(), kind: any(named: 'kind')))
           .thenAnswer((_) async => []);
     },
     build: () => HomeCubit(balances, entries, projections),
@@ -91,4 +101,48 @@ void main() {
       LoadState<HomeSummary>.failure(ApiError(code: 'network_error')),
     ],
   );
+
+  group('markPaid', () {
+    final today = DateTime(2026, 11, 3);
+
+    setUp(() {
+      when(balances.latest).thenAnswer((_) async => null);
+      when(() => entries.month(any(), kind: any(named: 'kind')))
+          .thenAnswer((_) async => []);
+      when(() => entries.between(any(), any(), kind: any(named: 'kind')))
+          .thenAnswer((_) async => []);
+    });
+
+    blocTest<HomeCubit, LoadState<HomeSummary>>(
+      'marks a bill as paid today and reloads',
+      setUp: () =>
+          when(() => entries.markPaid(housing.id, paidOn: today))
+              .thenAnswer((_) async => housing),
+      build: () => HomeCubit(balances, entries, projections),
+      act: (cubit) async {
+        expect(await cubit.markPaid(housing, today: today), isNull);
+      },
+      expect: () => [
+        const LoadState<HomeSummary>.loading(),
+        isA<Loaded<HomeSummary>>(),
+      ],
+      verify: (_) =>
+          verify(() => entries.markPaid(housing.id, paidOn: today)).called(1),
+    );
+
+    blocTest<HomeCubit, LoadState<HomeSummary>>(
+      'returns the error without reloading',
+      setUp: () =>
+          when(() => entries.markPaid(any(), paidOn: any(named: 'paidOn')))
+              .thenThrow(const ApiError(code: 'network_error')),
+      build: () => HomeCubit(balances, entries, projections),
+      act: (cubit) async {
+        expect(
+          await cubit.markPaid(housing),
+          const ApiError(code: 'network_error'),
+        );
+      },
+      expect: () => const <LoadState<HomeSummary>>[],
+    );
+  });
 }

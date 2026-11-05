@@ -12,6 +12,7 @@ import 'package:lar_em_dia/core/widgets/form_widgets.dart';
 import 'package:lar_em_dia/features/auth/domain/auth_user.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
+import 'package:lar_em_dia/features/entries/presentation/widgets/paid_checkbox.dart';
 import 'package:lar_em_dia/features/home/presentation/cubits/home_cubit.dart';
 import 'package:lar_em_dia/features/projection/domain/projection.dart';
 import 'package:lar_em_dia/features/projection/presentation/widgets/negative_months_alert.dart';
@@ -88,6 +89,8 @@ class HomePage extends StatelessWidget {
                   _ProjectionCard(projected: projected, horizon: horizon),
                   const SizedBox(height: 16),
                 ],
+                _UpcomingCard(entries: summary.upcoming),
+                const SizedBox(height: 16),
                 for (final kind in EntryKind.values) ...[
                   _EntriesCard(kind: kind, summary: summary),
                   const SizedBox(height: 16),
@@ -106,6 +109,65 @@ Future<void> _pushAndReload(BuildContext context, String location) async {
   final cubit = context.read<HomeCubit>();
   await context.push<bool>(location);
   await cubit.load();
+}
+
+class _UpcomingCard extends StatelessWidget {
+  const new({required this.entries});
+
+  final List<Entry> entries;
+
+  Future<void> _markPaid(BuildContext context, Entry entry) async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final error = await context.read<HomeCubit>().markPaid(entry);
+    if (error != null) {
+      messenger.showSnackBar(SnackBar(content: Text(error.localized(l10n))));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                l10n.homeUpcomingTitle,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (entries.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(l10n.homeUpcomingEmpty),
+              ),
+            for (final entry in entries)
+              ListTile(
+                title: Text(entry.description),
+                subtitle: Text(Dates.display(entry.dueOn)),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(Money.format(entry.amountCents)),
+                    PaidCheckbox(
+                      entry: entry,
+                      onChanged: (entry, {required paid}) =>
+                          unawaited(_markPaid(context, entry)),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _BalanceCard extends StatelessWidget {

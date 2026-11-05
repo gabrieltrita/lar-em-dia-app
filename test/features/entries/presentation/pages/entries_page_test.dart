@@ -201,7 +201,7 @@ void main() {
     await tester.tap(find.text('Salário ACME'));
     await tester.pumpAndSettle();
     expect(
-      find.text(routeMarker(AppRoutes.incomeForm, salary)),
+      find.text(routeMarker(AppRoutes.incomeForm, EntryEdit(entry: salary))),
       findsOneWidget,
     );
     await tester.tap(find.text(savedAndBack));
@@ -266,5 +266,147 @@ void main() {
       find.text('Não foi possível conectar. Verifique sua internet.'),
       findsOneWidget,
     );
+  });
+
+  group('a series entry', () {
+    final seriesRent = rent.copyWith(seriesId: 'series-1', seriesPosition: 2);
+
+    setUp(
+      () =>
+          when(() => repository.month(any(), kind: EntryKind.income))
+              .thenAnswer((_) async => [salary, seriesRent]),
+    );
+
+    testWidgets('asks which entries to edit before opening the form', (
+      tester,
+    ) async {
+      await pump(tester);
+
+      await tester.tap(find.text('Aluguel apto 12'));
+      await tester.pumpAndSettle();
+      expect(find.text('Editar receita da série'), findsOneWidget);
+      expect(
+        find.text('Quais lançamentos de "Aluguel apto 12"?'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Este e os seguintes'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          routeMarker(
+            AppRoutes.incomeForm,
+            EntryEdit(entry: seriesRent, scope: EntryScope.following),
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('stays on the list when the question is cancelled', (
+      tester,
+    ) async {
+      await pump(tester);
+
+      await tester.tap(find.text('Aluguel apto 12'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Aluguel apto 12'), findsOneWidget);
+      expect(find.textContaining('route:'), findsNothing);
+    });
+
+    testWidgets('deletes the whole series', (tester) async {
+      when(() => repository.delete(seriesRent.id, scope: EntryScope.all))
+          .thenAnswer((_) async {});
+      await pump(tester);
+
+      when(() => repository.month(any(), kind: EntryKind.income))
+          .thenAnswer((_) async => [salary]);
+      await swipe(tester, 'Aluguel apto 12');
+      expect(find.text('Apagar receita da série'), findsOneWidget);
+      await tester.tap(find.text('Todos da série'));
+      await tester.pumpAndSettle();
+
+      verify(() => repository.delete(seriesRent.id, scope: EntryScope.all))
+          .called(1);
+      expect(find.text('Aluguel apto 12'), findsNothing);
+    });
+
+    testWidgets('keeps the series when the question is cancelled', (
+      tester,
+    ) async {
+      await pump(tester);
+
+      await swipe(tester, 'Aluguel apto 12');
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
+
+      verifyNever(() => repository.delete(any(), scope: any(named: 'scope')));
+      expect(find.text('Aluguel apto 12'), findsOneWidget);
+    });
+  });
+
+  group('the paid checkbox', () {
+    Finder checkboxOf(String description) => find.descendant(
+      of: find.ancestor(
+        of: find.text(description),
+        matching: find.byType(ListTile),
+      ),
+      matching: find.byType(Checkbox),
+    );
+
+    testWidgets('marks an entry as received', (tester) async {
+      when(() => repository.markPaid(rent.id, paidOn: any(named: 'paidOn')))
+          .thenAnswer(
+            (_) async => rent.copyWith(
+              status: EntryStatus.paid,
+              paidOn: DateTime(2026, 11, 10),
+            ),
+          );
+      await pump(tester);
+
+      expect(
+        tester.widget<Checkbox>(checkboxOf('Aluguel apto 12')).value,
+        isFalse,
+      );
+      expect(find.bySemanticsLabel('Marcar como recebida'), findsNWidgets(2));
+      await tester.tap(checkboxOf('Aluguel apto 12'));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.widget<Checkbox>(checkboxOf('Aluguel apto 12')).value,
+        isTrue,
+      );
+      expect(
+        find.text('Aluguel recebido · 10/11/2026 · Recebida'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('unmarks a received entry', (tester) async {
+      when(
+        () => repository.markPaid(salary.id, paidOn: null),
+      ).thenAnswer((_) async => salary.copyWith(status: EntryStatus.pending));
+      await pump(tester);
+
+      await tester.tap(checkboxOf('Salário ACME'));
+      await tester.pumpAndSettle();
+
+      verify(() => repository.markPaid(salary.id, paidOn: null)).called(1);
+      expect(find.text('Salário · 05/11/2026 · A receber'), findsOneWidget);
+    });
+
+    testWidgets('shows the error of a failed change', (tester) async {
+      when(() => repository.markPaid(any(), paidOn: any(named: 'paidOn')))
+          .thenThrow(const ApiError(code: ApiError.networkErrorCode));
+      await pump(tester);
+
+      await tester.tap(checkboxOf('Aluguel apto 12'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Não foi possível conectar'), findsOneWidget);
+    });
   });
 }

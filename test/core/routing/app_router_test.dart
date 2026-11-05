@@ -142,6 +142,8 @@ void main() {
       ).thenAnswer((_) async => projection);
       when(balances.latest).thenAnswer((_) async => null);
       when(balances.list).thenAnswer((_) async => []);
+      when(() => entries.between(any(), any(), kind: any(named: 'kind')))
+          .thenAnswer((_) async => []);
       when(() => entries.month(any(), kind: any(named: 'kind')))
           .thenAnswer((_) async => []);
       when(() => entries.categories(EntryKind.income))
@@ -273,13 +275,17 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Editar saldo'), findsOneWidget);
 
-      router.go(AppRoutes.incomeForm, extra: salary);
+      router.go(AppRoutes.incomeForm, extra: EntryEdit(entry: salary));
       await tester.pumpAndSettle();
       expect(find.text('Editar receita'), findsOneWidget);
 
-      router.go(AppRoutes.expensesForm, extra: housing);
+      router.go(
+        AppRoutes.expensesForm,
+        extra: EntryEdit(entry: housing, scope: EntryScope.all),
+      );
       await tester.pumpAndSettle();
       expect(find.text('Editar despesa'), findsOneWidget);
+      expect(find.textContaining('todos os lançamentos'), findsOneWidget);
     });
 
     testWidgets('opens the administration only for admins', (tester) async {

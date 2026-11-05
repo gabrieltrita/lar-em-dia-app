@@ -260,4 +260,83 @@ void main() {
     expect(adapter.requests.single.method, 'DELETE');
     expect(adapter.requests.single.path, '/entries/entry-2');
   });
+
+  test('reads entries between two days', () async {
+    final repository = build(
+      (_) => FakeAdapter.json(200, {
+        'data': [entryJson('entry-1')],
+        'meta': {'next': null},
+      }),
+    );
+
+    final entries = await repository.between(
+      DateTime(2026, 11, 28),
+      DateTime(2026, 12, 5),
+      kind: EntryKind.expense,
+    );
+
+    expect(entries, hasLength(1));
+    expect(adapter.requests.single.queryParameters, {
+      'from': '2026-11-28',
+      'to': '2026-12-05',
+      'kind': 'expense',
+      'limit': ApiEntryRepository.pageSize,
+      'page': 1,
+    });
+  });
+
+  test('updates the following entries without the payment fields', () async {
+    final repository = build(
+      (_) => FakeAdapter.json(200, {'data': entryJson('entry-2')}),
+    );
+
+    await repository.update(
+      'entry-2',
+      rent.toDraft(),
+      scope: EntryScope.following,
+    );
+
+    final request = adapter.requests.single;
+    expect(request.uri.path, '/entries/entry-2');
+    expect(request.uri.queryParameters, {'scope': 'following'});
+    expect(request.data, {
+      'category_id': rent.categoryId,
+      'description': rent.description,
+      'amount_cents': rent.amountCents,
+      'due_on': '2026-11-10',
+      'nature': null,
+    });
+  });
+
+  test('marks an entry as paid on a day and back to pending', () async {
+    final repository = build(
+      (_) => FakeAdapter.json(200, {
+        'data': entryJson('entry-2', paidOn: '2026-11-04'),
+      }),
+    );
+
+    final paid = await repository.markPaid(
+      'entry-2',
+      paidOn: DateTime(2026, 11, 4),
+    );
+    await repository.markPaid('entry-2', paidOn: null);
+
+    expect(paid.isPaid, isTrue);
+    expect(adapter.requests.first.method, 'PATCH');
+    expect(adapter.requests.first.data, {
+      'status': 'paid',
+      'paid_on': '2026-11-04',
+    });
+    expect(adapter.requests.last.data, {'status': 'pending', 'paid_on': null});
+  });
+
+  test('deletes the whole series of an entry', () async {
+    final repository = build((_) => FakeAdapter.json(204, null));
+
+    await repository.delete('entry-2', scope: EntryScope.all);
+
+    expect(adapter.requests.single.method, 'DELETE');
+    expect(adapter.requests.single.uri.path, '/entries/entry-2');
+    expect(adapter.requests.single.uri.queryParameters, {'scope': 'all'});
+  });
 }

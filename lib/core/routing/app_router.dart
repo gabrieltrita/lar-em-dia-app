@@ -142,7 +142,14 @@ List<GoRoute> _entryRoutes(EntryKind kind) => [
               _started(getIt<CategoriesCubit>(), (cubit) => cubit.load(kind)),
         ),
       ],
-      child: EntryFormPage(kind: kind, existing: state.extra as Entry?),
+      child: switch (state.extra) {
+        EntryEdit(:final entry, :final scope) => EntryFormPage(
+          kind: kind,
+          existing: entry,
+          scope: scope,
+        ),
+        _ => EntryFormPage(kind: kind),
+      },
     ),
   ),
 ];
