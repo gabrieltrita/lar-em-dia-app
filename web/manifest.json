@@ -1,11 +1,13 @@
 {
-    "name": "lar_em_dia",
-    "short_name": "lar_em_dia",
+    "name": "Lar em Dia",
+    "short_name": "Lar em Dia",
+    "description": "Orçamento da família e projeção do saldo mês a mês.",
+    "lang": "pt-BR",
     "start_url": ".",
+    "scope": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#2E7D5B",
+    "theme_color": "#2E7D5B",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
