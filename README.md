@@ -150,6 +150,16 @@ flutter build web --release --no-web-resources-cdn --dart-define=DEMO=true
 - The login page shows a demo notice with the account filled in (`DemoSeed.email` / `DemoSeed.password`). Data lives in memory, so reloading the page starts over.
 - The demo uses hash URLs (`/#/projection`), so the web build opens from any address without server rewrites.
 
+## Deploying the web app
+
+The web build runs on the same server as the API, behind the API's kamal-proxy, so the app and the API share one registrable domain (the refresh cookie is `SameSite=Strict`). `Dockerfile` copies `build/web` into `nginx:alpine` with `deploy/nginx.conf`: every unknown path falls back to `index.html`, so path URLs work; `index.html`, `flutter_bootstrap.js`, `flutter_service_worker.js`, `manifest.json` and `version.json` are served with `no-cache`, so an installed PWA picks up a new version on the next launch; `/up` answers the proxy health check. `.dockerignore` sends only the build and the nginx configuration. `config/deploy.yml` builds from the local directory (`context: .`), because `build/web` is not committed.
+
+`.github/workflows/deploy.yml` runs the CI (reusable through `workflow_call`) and then, on a push to `main`, builds the web app on the runner with `--dart-define=API_BASE_URL` set to `STAGING_API_BASE_URL` and runs `kamal deploy -d staging`. Running the workflow by hand on `main` runs `kamal setup -d staging` instead, for the first deploy. The job is skipped while `STAGING_DEPLOY_HOST` is empty. arm64 servers get their image through QEMU, which is quick here because the image only copies files. Images go to `ghcr.io` with the workflow token.
+
+Repository variables: `STAGING_DEPLOY_HOST`, `STAGING_DEPLOY_SSH_USER` (default `root`; `ubuntu` on Oracle Cloud), `STAGING_DEPLOY_ARCH` (default `amd64`), `STAGING_APP_HOST` (the app's host name, which must also be in the API's `CORS_ORIGINS` and `FRONTEND_URL`) and `STAGING_API_BASE_URL` (for example `https://staging-api.example.com/api/v1`).
+
+Repository secrets: `STAGING_DEPLOY_SSH_PRIVATE_KEY` and `STAGING_DEPLOY_SSH_KNOWN_HOSTS`. `tool/deploy_key.sh staging HOST` (OpenSSH and `gh` logged in) generates a deploy key just for this repository, stores both secrets without printing the private key, and prints the public key to append to `~/.ssh/authorized_keys` of the deploy user and the host key fingerprint to compare with `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` on the server. The server itself (Docker, firewall, kamal-proxy) is prepared by the API's setup run, so set the API up first.
+
 ## Quality
 
 ```bash
