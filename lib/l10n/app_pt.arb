@@ -269,6 +269,7 @@
       }
     }
   },
+  "entryNoCategories": "Nenhuma categoria disponível agora. Tente de novo mais tarde.",
   "entryCategoryLabel": "{kind, select, income{Tipo de receita} other{Categoria}}",
   "@entryCategoryLabel": {
     "placeholders": {
