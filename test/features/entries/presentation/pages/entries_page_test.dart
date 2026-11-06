@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
+import 'package:lar_em_dia/core/widgets/skeleton.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/presentation/cubits/entry_cubits.dart';
 import 'package:lar_em_dia/features/entries/presentation/pages/entries_page.dart';
+import 'package:lar_em_dia/features/entries/presentation/widgets/category_visuals.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/auth_fixtures.dart';
@@ -46,6 +50,8 @@ void main() {
     expect(find.text('novembro de 2026'), findsOneWidget);
     expect(find.text(r'Total do mês: R$ 6.500,00'), findsOneWidget);
     expect(find.text('Salário ACME'), findsOneWidget);
+    expect(find.text(r'+R$ 5.000,00'), findsOneWidget);
+    expect(find.byType(CategoryAvatar), findsNWidgets(2));
     expect(find.text('Salário · 05/11/2026 · Recebida'), findsOneWidget);
     expect(
       find.text('Aluguel recebido · 10/11/2026 · A receber'),
@@ -180,6 +186,42 @@ void main() {
     await pump(tester);
 
     expect(find.text('Nenhuma receita neste mês.'), findsOneWidget);
+    expect(
+      find.text(
+        'Cadastre o que você recebe para ver quanto sobra no fim do mês.',
+      ),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Nova receita'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(routeMarker(AppRoutes.entryForm(EntryKind.income))),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('shows placeholders while loading', (tester) async {
+    final pending = Completer<List<Entry>>();
+    when(() => repository.month(any(), kind: EntryKind.income))
+        .thenAnswer((_) => pending.future);
+    await pumpPage(
+      tester,
+      BlocProvider(
+        create: (_) => started(
+          MonthEntriesCubit(repository, EntryKind.income),
+          (cubit) => cubit.load(november),
+        ),
+        child: const EntriesPage(),
+      ),
+      session: harness.session,
+      settle: false,
+    );
+
+    expect(find.byType(SkeletonList), findsOneWidget);
+    pending.complete([]);
+    await tester.pumpAndSettle();
   });
 
   testWidgets('retries a failed load', (tester) async {

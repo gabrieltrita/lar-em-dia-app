@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
+import 'package:lar_em_dia/core/theme/finance_colors.dart';
 import 'package:lar_em_dia/features/projection/domain/projection.dart';
 import 'package:lar_em_dia/features/projection/presentation/cubits/projection_cubit.dart';
 import 'package:lar_em_dia/features/projection/presentation/pages/projection_page.dart';
@@ -138,8 +139,8 @@ void main() {
     await reload(tester);
 
     expect(
-      tester.widget<Text>(find.text(r'R$ 3.700,00')).style?.color,
-      isNot(error),
+      tester.widget<Text>(find.text(r'+R$ 3.700,00')).style?.color,
+      FinanceColors.of(context).positive,
     );
   });
 

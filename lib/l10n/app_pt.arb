@@ -85,6 +85,7 @@
   },
   "homeNoBalance": "Você ainda não informou seu saldo. Comece por ele para projetar os próximos meses.",
   "homeInformBalance": "Informar saldo",
+  "loadingLabel": "Carregando",
   "homeBalanceHistory": "Histórico",
   "homeEntriesTitle": "{kind, select, income{Receitas de {month}} other{Despesas de {month}}}",
   "@homeEntriesTitle": {
@@ -190,6 +191,14 @@
   },
   "entriesEmpty": "{kind, select, income{Nenhuma receita neste mês.} other{Nenhuma despesa neste mês.}}",
   "@entriesEmpty": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "entriesEmptyMessage": "{kind, select, income{Cadastre o que você recebe para ver quanto sobra no fim do mês.} other{Cadastre suas contas para ver para onde vai o dinheiro.}}",
+  "@entriesEmptyMessage": {
     "placeholders": {
       "kind": {
         "type": "String"
@@ -305,6 +314,7 @@
   "entryRecurring": "Lançamento repetido",
   "balancesTitle": "Saldos",
   "balancesEmpty": "Nenhum saldo informado ainda.",
+  "balancesEmptyMessage": "Informe quanto tem na conta hoje ou numa data passada para a projeção começar dali.",
   "balanceFormNewTitle": "Informar saldo",
   "balanceFormEditTitle": "Editar saldo",
   "balanceAmountHelper": "Pode ser negativo: digite - antes do valor",

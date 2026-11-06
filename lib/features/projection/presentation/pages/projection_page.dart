@@ -8,7 +8,10 @@ import 'package:lar_em_dia/core/forms/error_messages.dart';
 import 'package:lar_em_dia/core/money/money.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/core/state/load_state.dart';
+import 'package:lar_em_dia/core/theme/finance_colors.dart';
 import 'package:lar_em_dia/core/widgets/form_widgets.dart';
+import 'package:lar_em_dia/core/widgets/money_text.dart';
+import 'package:lar_em_dia/core/widgets/skeleton.dart';
 import 'package:lar_em_dia/features/projection/domain/projection.dart';
 import 'package:lar_em_dia/features/projection/presentation/cubits/projection_cubit.dart';
 import 'package:lar_em_dia/features/projection/presentation/widgets/negative_months_alert.dart';
@@ -26,7 +29,7 @@ class ProjectionPage extends StatelessWidget {
       appBar: AppBar(title: Text(l10n.projectionTitle)),
       body: BlocBuilder<ProjectionCubit, LoadState<Projection>>(
         builder: (context, state) => switch (state) {
-          Loading() => const Center(child: CircularProgressIndicator()),
+          Loading() => SkeletonList(label: l10n.loadingLabel),
           LoadFailure(:final error) => RetryMessage(
             message: error.localized(l10n),
             onRetry: () => unawaited(cubit.load()),
@@ -146,7 +149,6 @@ class _SavingsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final textTheme = Theme.of(context).textTheme;
-    final colors = Theme.of(context).colorScheme;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -160,11 +162,11 @@ class _SavingsCard extends StatelessWidget {
               style: textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
-            Text(
-              Money.format(month.savingsCents),
-              style: textTheme.headlineSmall?.copyWith(
-                color: month.isSaving ? null : colors.error,
-              ),
+            MoneyText(
+              month.savingsCents,
+              signed: true,
+              colored: true,
+              style: textTheme.headlineSmall,
             ),
           ],
         ),
@@ -181,13 +183,13 @@ class _MonthTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final colors = Theme.of(context).colorScheme;
+    final finance = FinanceColors.of(context);
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: month.isNegative
           ? Icon(
               Icons.warning_amber,
-              color: colors.error,
+              color: finance.negative,
               semanticLabel: l10n.projectionNegativeMonth,
             )
           : const SizedBox(width: 24),
@@ -207,10 +209,10 @@ class _MonthTile extends StatelessWidget {
           l10n.projectionMonthSavings(Money.format(month.savingsCents)),
         ].join('\n'),
       ),
-      trailing: Text(
-        Money.format(month.closingCents),
-        style: Theme.of(context).textTheme.titleMedium
-            ?.copyWith(color: month.isNegative ? colors.error : null),
+      trailing: MoneyText(
+        month.closingCents,
+        colored: true,
+        style: Theme.of(context).textTheme.titleMedium,
       ),
     );
   }
