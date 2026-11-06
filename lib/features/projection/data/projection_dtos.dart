@@ -20,6 +20,20 @@ abstract class ProjectionAnchorDto with _$ProjectionAnchorDto {
 }
 
 @freezed
+abstract class CategoryAmountDto with _$CategoryAmountDto {
+  const factory({required String categoryKey, required int amountCents}) =
+      _CategoryAmountDto;
+
+  const new _();
+
+  factory fromJson(Map<String, dynamic> json) =>
+      _$CategoryAmountDtoFromJson(json);
+
+  CategoryAmount toDomain() =>
+      CategoryAmount(categoryKey: categoryKey, amountCents: amountCents);
+}
+
+@freezed
 abstract class ProjectionMonthDto with _$ProjectionMonthDto {
   const factory({
     required String month,
@@ -30,6 +44,7 @@ abstract class ProjectionMonthDto with _$ProjectionMonthDto {
     required int variableExpenseCents,
     required int closingCents,
     required int savingsCents,
+    @Default([]) List<CategoryAmountDto> expenseByCategory,
   }) = _ProjectionMonthDto;
 
   const new _();
@@ -46,6 +61,9 @@ abstract class ProjectionMonthDto with _$ProjectionMonthDto {
     variableExpenseCents: variableExpenseCents,
     closingCents: closingCents,
     savingsCents: savingsCents,
+    expenseByCategory: [
+      for (final amount in expenseByCategory) amount.toDomain(),
+    ],
   );
 }
 
@@ -65,6 +83,7 @@ abstract class ProjectionDto with _$ProjectionDto {
   const factory({
     required List<ProjectionMonthDto> months,
     ProjectionAnchorDto? anchor,
+    String? lastEntryMonth,
     @Default(ProjectionAlertsDto()) ProjectionAlertsDto alerts,
   }) = _ProjectionDto;
 
@@ -76,6 +95,7 @@ abstract class ProjectionDto with _$ProjectionDto {
     anchor: anchor?.toDomain(),
     months: [for (final month in months) month.toDomain()],
     firstNegativeMonth: Dates.parseMonth(alerts.firstNegativeMonth),
+    lastEntryMonth: Dates.parseMonth(lastEntryMonth),
     negativeMonthsCount: alerts.negativeMonthsCount,
   );
 }

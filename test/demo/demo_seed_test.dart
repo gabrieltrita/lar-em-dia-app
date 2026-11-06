@@ -35,7 +35,7 @@ void main() {
         .where((entry) => entry['description'] == 'Salário');
     expect(salaries, hasLength(DemoSeed.months));
     expect(salaries.map((entry) => entry['series_id']).toSet(), hasLength(1));
-    expect(database.series, hasLength(8));
+    expect(database.series, hasLength(9));
 
     final fridge = database
         .filteredEntries(kind: 'expense')
@@ -48,6 +48,12 @@ void main() {
     expect(fridge.first, containsPair('series_kind', 'installments'));
     expect(months[2]['negative'], isTrue);
     expect(months[0]['negative'], isFalse);
+
+    final course = database
+        .filteredEntries(kind: 'expense')
+        .where((entry) => entry['description'] == 'Curso de inglês');
+    expect(course, hasLength(DemoSeed.courseInstallments));
+    expect(database.lastEntryMonth(), DateTime(2028, 10));
   });
 
   test('places the 13th salary in December wherever the year starts', () {
@@ -56,6 +62,9 @@ void main() {
     final thirteenth = database
         .filteredEntries(kind: 'income')
         .where((entry) => entry['description'] == '13º salário');
-    expect(thirteenth.single['due_on'], '2027-12-18');
+    expect(thirteenth.map((entry) => entry['due_on']), [
+      '2027-12-18',
+      '2028-12-18',
+    ]);
   });
 }

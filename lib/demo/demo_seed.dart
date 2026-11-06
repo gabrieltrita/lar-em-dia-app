@@ -62,11 +62,13 @@ abstract final class DemoSeed {
     ('leisure', 'Lazer', 60000, 20),
   ];
 
-  static const months = 12;
+  static const months = 24;
   static const tripMonthOffset = 2;
   static const tripShortfallCents = 80000;
   static const fridgeCents = 120000;
   static const fridgeInstallments = 10;
+  static const courseCents = 120000;
+  static const courseInstallments = 24;
 
   static DemoDatabase build(DateTime today) {
     final database = DemoDatabase(today: today);
@@ -117,17 +119,22 @@ abstract final class DemoSeed {
       });
     }
 
-    database.createSeries({
-      ...fields(
-        'other_expense',
-        'Geladeira nova',
-        1,
-        DateTime(firstMonth.year, firstMonth.month, 14),
-      ),
-      'kind': 'installments',
-      'total_cents': fridgeCents,
-      'entries_count': fridgeInstallments,
-    });
+    for (final (key, description, day, total, count) in [
+      ('other_expense', 'Geladeira nova', 14, fridgeCents, fridgeInstallments),
+      ('education', 'Curso de inglês', 18, courseCents, courseInstallments),
+    ]) {
+      database.createSeries({
+        ...fields(
+          key,
+          description,
+          1,
+          DateTime(firstMonth.year, firstMonth.month, day),
+        ),
+        'kind': 'installments',
+        'total_cents': total,
+        'entries_count': count,
+      });
+    }
 
     void add(String key, String description, int cents, DateTime dueOn) =>
         database.createEntry(fields(key, description, cents, dueOn));

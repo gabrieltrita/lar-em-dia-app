@@ -116,7 +116,7 @@ void main() {
         },
       );
       expect(data(first), hasLength(2));
-      expect(first.body!['meta'], containsPair('total', 4));
+      expect(first.body!['meta'], containsPair('total', 5));
       expect(first.body!['meta'], containsPair('prev', null));
 
       final last = call(
@@ -124,7 +124,7 @@ void main() {
         '/entries',
         query: {'limit': '1000', 'page': '99', 'kind': 'x', 'nature': 'y'},
       );
-      expect(last.body!['meta'], containsPair('page', 1));
+      expect(last.body!['meta'], containsPair('page', 3));
       expect(last.body!['meta'], containsPair('per_page', 100));
 
       final second = call(
@@ -246,8 +246,19 @@ void main() {
       expect((body['months'] as List).first, containsPair('month', '2026-11'));
       expect(body['alerts'], {
         'first_negative_month': '2027-01',
-        'negative_months_count': 3,
+        'negative_months_count': 4,
       });
+      expect(body['last_entry_month'], '2028-10');
+      final november = (body['months'] as List).first as Map;
+      final byCategory = november['expense_by_category'] as List;
+      expect(
+        byCategory.fold<int>(
+          0,
+          (sum, item) => sum + ((item as Map)['amount_cents'] as int),
+        ),
+        november['expense_cents'],
+      );
+      expect((byCategory.first as Map)['category_key'], 'housing');
 
       final short =
           data(
@@ -259,6 +270,28 @@ void main() {
               )!
               as Map;
       expect(short['months'], hasLength(2));
+    });
+
+    test('projects through the last entry with months=all', () {
+      List<Object?> months(String from) =>
+          (data(
+                    call(
+                      'GET',
+                      '/projection',
+                      query: {'from': from, 'months': 'all'},
+                    ),
+                  )!
+                  as Map)['months']!
+              as List;
+
+      expect(months('2026-11'), hasLength(24));
+      expect(months('2030-01'), hasLength(1));
+      expect(months('2020-01'), hasLength(DemoServer.allMonthsLimit));
+
+      server.database.entries.clear();
+      final empty = data(call('GET', '/projection', query: {'months': 'all'}));
+      expect((empty! as Map)['months'], hasLength(1));
+      expect((empty as Map)['last_entry_month'], isNull);
     });
 
     test('rejects a bad projection period and works without a balance', () {

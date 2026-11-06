@@ -95,11 +95,25 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light,
-        home: const Scaffold(body: CategoryAvatar(category: housingCategory)),
+        home: Scaffold(
+          body: Column(
+            children: [
+              CategoryAvatar(category: housingCategory),
+              CategoryAvatar.forKey('travel'),
+              CategoryAvatar.forKey('created_by_admin'),
+            ],
+          ),
+        ),
       ),
     );
 
+    final colors = FinanceColors.light.categories;
     final icon = tester.widget<Icon>(find.byIcon(Icons.home_outlined));
-    expect(icon.color, FinanceColors.light.categories[CategoryGroup.home]);
+    expect(icon.color, colors[CategoryGroup.home]);
+    expect(
+      tester.widget<Icon>(find.byIcon(Icons.label_outline)).color,
+      colors[CategoryGroup.other],
+    );
+    expect(categoryVisualForKey('housing'), categoryVisual(housingCategory));
   });
 }

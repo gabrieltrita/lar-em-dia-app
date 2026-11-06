@@ -62,8 +62,19 @@ void main() {
     await tester.tap(find.text('Ver projeção'));
     await tester.pumpAndSettle();
     expect(
-      find.textContaining(r'A partir do saldo de R$ 3.500,00'),
+      find.textContaining(RegExp('você vai (guardar|perder)')),
       findsOneWidget,
     );
+
+    await tester.tap(find.text('Tudo'));
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining(RegExp('você vai (guardar|perder)')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Ver mais ›'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sua economia'), findsOneWidget);
   });
 }

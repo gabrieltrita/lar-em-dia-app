@@ -35,8 +35,10 @@ import 'package:lar_em_dia/features/entries/presentation/pages/entries_page.dart
 import 'package:lar_em_dia/features/entries/presentation/pages/entry_form_page.dart';
 import 'package:lar_em_dia/features/home/presentation/cubits/home_cubit.dart';
 import 'package:lar_em_dia/features/home/presentation/home_page.dart';
+import 'package:lar_em_dia/features/projection/domain/projection.dart';
 import 'package:lar_em_dia/features/projection/presentation/cubits/projection_cubit.dart';
 import 'package:lar_em_dia/features/projection/presentation/cubits/simulation_cubit.dart';
+import 'package:lar_em_dia/features/projection/presentation/pages/projection_details_page.dart';
 import 'package:lar_em_dia/features/projection/presentation/pages/projection_page.dart';
 import 'package:lar_em_dia/features/projection/presentation/pages/simulation_page.dart';
 import 'package:lar_em_dia/features/security/presentation/cubits/security_cubits.dart';
@@ -61,6 +63,7 @@ abstract final class AppRoutes {
   static const expensesForm = '/expenses/form';
   static const projection = '/projection';
   static const simulation = '$projection/simulate';
+  static const projectionDetails = '$projection/details';
   static const admin = '/admin';
   static const adminUsers = '$admin/users';
   static const adminMetrics = '$admin/metrics';
@@ -190,6 +193,13 @@ GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
             _started(getIt<ProjectionCubit>(), (cubit) => cubit.load()),
         child: const ProjectionPage(),
       ),
+    ),
+    GoRoute(
+      path: AppRoutes.projectionDetails,
+      redirect: (context, state) =>
+          state.extra is Projection ? null : AppRoutes.projection,
+      builder: (context, state) =>
+          ProjectionDetailsPage(projection: state.extra! as Projection),
     ),
     GoRoute(
       path: AppRoutes.simulation,

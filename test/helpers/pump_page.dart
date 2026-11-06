@@ -32,6 +32,7 @@ Future<void> pumpPage(
         AppRoutes.expensesForm,
         AppRoutes.projection,
         AppRoutes.simulation,
+        AppRoutes.projectionDetails,
         AppRoutes.adminUsers,
         AppRoutes.adminMetrics,
         AppRoutes.adminCategories,

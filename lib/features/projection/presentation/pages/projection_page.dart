@@ -3,43 +3,73 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lar_em_dia/core/dates/dates.dart';
 import 'package:lar_em_dia/core/forms/error_messages.dart';
-import 'package:lar_em_dia/core/money/money.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/core/state/load_state.dart';
-import 'package:lar_em_dia/core/theme/finance_colors.dart';
 import 'package:lar_em_dia/core/widgets/form_widgets.dart';
-import 'package:lar_em_dia/core/widgets/money_text.dart';
 import 'package:lar_em_dia/core/widgets/skeleton.dart';
 import 'package:lar_em_dia/features/projection/domain/projection.dart';
 import 'package:lar_em_dia/features/projection/presentation/cubits/projection_cubit.dart';
+import 'package:lar_em_dia/features/projection/presentation/widgets/cash_flow_chart.dart';
 import 'package:lar_em_dia/features/projection/presentation/widgets/negative_months_alert.dart';
-import 'package:lar_em_dia/features/projection/presentation/widgets/projection_chart.dart';
+import 'package:lar_em_dia/features/projection/presentation/widgets/projection_summary.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
 class ProjectionPage extends StatelessWidget {
   const new({super.key});
+
+  Future<void> _simulate(BuildContext context) async {
+    final cubit = context.read<ProjectionCubit>();
+    final committed = await context.push<bool>(AppRoutes.simulation);
+    if (committed ?? false) {
+      await cubit.load();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final cubit = context.read<ProjectionCubit>();
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.projectionTitle)),
-      body: BlocBuilder<ProjectionCubit, LoadState<Projection>>(
-        builder: (context, state) => switch (state) {
-          Loading() => SkeletonList(label: l10n.loadingLabel),
-          LoadFailure(:final error) => RetryMessage(
-            message: error.localized(l10n),
-            onRetry: () => unawaited(cubit.load()),
+      appBar: AppBar(
+        title: Text(l10n.projectionTitle),
+        actions: [
+          IconButton(
+            tooltip: l10n.simulationButton,
+            icon: const Icon(Icons.science_outlined),
+            onPressed: () => unawaited(_simulate(context)),
           ),
-          Loaded(value: Projection(anchor: null)) => const _NoBalance(),
-          Loaded(value: final projection) => _ProjectionView(
-            projection: projection,
-            anchor: projection.anchor!,
-          ),
-        },
+        ],
+      ),
+      body: BlocBuilder<ProjectionCubit, ProjectionState>(
+        builder: (context, state) => Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: SizedBox(
+                width: double.infinity,
+                child: PeriodSelector(
+                  selected: state.period,
+                  onSelected: (period) => unawaited(cubit.selectPeriod(period)),
+                ),
+              ),
+            ),
+            Expanded(
+              child: switch (state.data) {
+                Loading() => SkeletonList(label: l10n.loadingLabel),
+                LoadFailure(:final error) => RetryMessage(
+                  message: error.localized(l10n),
+                  onRetry: () => unawaited(cubit.load()),
+                ),
+                Loaded(value: Projection(anchor: null)) => const _NoBalance(),
+                Loaded(value: final projection) => _ProjectionView(
+                  key: ValueKey(projection),
+                  projection: projection,
+                ),
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -76,143 +106,85 @@ class _NoBalance extends StatelessWidget {
   }
 }
 
-class _ProjectionView extends StatelessWidget {
-  const new({required this.projection, required this.anchor});
+class _ProjectionView extends StatefulWidget {
+  const new({required this.projection, super.key});
 
   final Projection projection;
-  final ProjectionAnchor anchor;
 
-  List<ProjectionMonth> get months => projection.months;
+  @override
+  State<_ProjectionView> createState() => _ProjectionViewState();
+}
 
-  Future<void> _simulate(BuildContext context) async {
-    final cubit = context.read<ProjectionCubit>();
-    final committed = await context.push<bool>(AppRoutes.simulation);
-    if (committed ?? false) {
-      await cubit.load();
-    }
-  }
+class _ProjectionViewState extends State<_ProjectionView> {
+  bool _showBalance = true;
+  bool _showFlow = true;
+  late int _selected = widget.projection.months.length - 1;
+  int? _expanded;
+
+  List<ProjectionMonth> get _months => widget.projection.months;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final projection = widget.projection;
     return RefreshIndicator(
       onRefresh: () => context.read<ProjectionCubit>().load(),
       child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: [
-          Text(
-            l10n.projectionAnchor(
-              Money.format(anchor.amountCents),
-              Dates.display(anchor.asOf),
+          ProjectionHero(
+            months: _months,
+            onSeeMore: () => unawaited(
+              context.push<void>(
+                AppRoutes.projectionDetails,
+                extra: projection,
+              ),
             ),
           ),
+          const SizedBox(height: 12),
+          SeriesLegend(
+            showBalance: _showBalance,
+            showFlow: _showFlow,
+            onBalance: (value) => setState(() => _showBalance = value),
+            onFlow: (value) => setState(() => _showFlow = value),
+          ),
+          const SizedBox(height: 12),
+          MonthReadout(month: _months[_selected]),
           const SizedBox(height: 8),
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: FilledButton.tonalIcon(
-              icon: const Icon(Icons.science_outlined),
-              label: Text(l10n.simulationButton),
-              onPressed: () => unawaited(_simulate(context)),
+          SizedBox(
+            height: 240,
+            child: CashFlowChart(
+              months: _months,
+              selected: _selected,
+              showBalance: _showBalance,
+              showFlow: _showFlow,
+              semanticsLabel: l10n.projectionCashFlowLabel,
+              onSelect: (index) => setState(() => _selected = index),
             ),
           ),
-          const SizedBox(height: 16),
           if (projection.firstNegativeMonth case final first?) ...[
+            const SizedBox(height: 16),
             NegativeMonthsAlert(
               firstMonth: first,
               count: projection.negativeMonthsCount,
             ),
-            const SizedBox(height: 16),
           ],
-          _SavingsCard(month: months.last),
           const SizedBox(height: 16),
-          SizedBox(
-            height: 240,
-            child: ProjectionChart(
-              months: months,
-              semanticsLabel: l10n.projectionChartLabel,
-            ),
+          Text(
+            l10n.projectionMonthsTitle.toUpperCase(),
+            style: Theme.of(context).textTheme.labelMedium,
           ),
-          const SizedBox(height: 16),
-          for (final month in months) _MonthTile(month: month),
+          for (final (index, month) in _months.indexed) ...[
+            const Divider(height: 1),
+            MonthSummaryTile(
+              month: month,
+              expanded: _expanded == index,
+              onTap: () =>
+                  setState(() => _expanded = _expanded == index ? null : index),
+            ),
+          ],
         ],
-      ),
-    );
-  }
-}
-
-class _SavingsCard extends StatelessWidget {
-  const new({required this.month});
-
-  final ProjectionMonth month;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final textTheme = Theme.of(context).textTheme;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.projectionSavingsTitle(
-                MaterialLocalizations.of(context).formatMonthYear(month.month),
-              ),
-              style: textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            MoneyText(
-              month.savingsCents,
-              signed: true,
-              colored: true,
-              style: textTheme.headlineSmall,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MonthTile extends StatelessWidget {
-  const new({required this.month});
-
-  final ProjectionMonth month;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final finance = FinanceColors.of(context);
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: month.isNegative
-          ? Icon(
-              Icons.warning_amber,
-              color: finance.negative,
-              semanticLabel: l10n.projectionNegativeMonth,
-            )
-          : const SizedBox(width: 24),
-      title: Text(
-        MaterialLocalizations.of(context).formatMonthYear(month.month),
-      ),
-      subtitle: Text(
-        [
-          l10n.projectionMonthFlow(
-            Money.format(month.incomeCents),
-            Money.format(month.expenseCents),
-          ),
-          l10n.entriesNatureBreakdown(
-            Money.format(month.fixedExpenseCents),
-            Money.format(month.variableExpenseCents),
-          ),
-          l10n.projectionMonthSavings(Money.format(month.savingsCents)),
-        ].join('\n'),
-      ),
-      trailing: MoneyText(
-        month.closingCents,
-        colored: true,
-        style: Theme.of(context).textTheme.titleMedium,
       ),
     );
   }

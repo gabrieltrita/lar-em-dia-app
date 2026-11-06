@@ -719,5 +719,105 @@
   "homeUpcomingTitle": "Próximos vencimentos",
   "homeUpcomingEmpty": "Nenhuma conta a pagar nos próximos 7 dias.",
   "errorOnlyForSingleEntry": "O pagamento só pode ser alterado em um lançamento por vez.",
-  "errorInstallmentAmountLocked": "O valor de uma parcela só pode ser alterado nela mesma."
+  "errorInstallmentAmountLocked": "O valor de uma parcela só pode ser alterado nela mesma.",
+  "projectionPeriodThreeMonths": "3M",
+  "projectionPeriodSixMonths": "6M",
+  "projectionPeriodYear": "1A",
+  "projectionPeriodAll": "Tudo",
+  "projectionPeriodLabel": "Período",
+  "projectionHeroTitle": "{saving, select, true{Até {month} você vai guardar} other{Até {month} você vai perder}}",
+  "@projectionHeroTitle": {
+    "placeholders": {
+      "saving": {
+        "type": "String"
+      },
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "projectionHeroClosing": "Saldo previsto em {month}: {amount}",
+  "@projectionHeroClosing": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "projectionSeeMore": "Ver mais",
+  "projectionSeriesBalance": "Saldo",
+  "projectionSeriesFlow": "Entradas e saídas",
+  "projectionReadoutIncome": "Entrou",
+  "projectionReadoutExpense": "Saiu",
+  "projectionCashFlowLabel": "Gráfico de entradas, saídas e saldo de cada mês",
+  "projectionMonthsTitle": "Mês a mês",
+  "projectionMonthIn": "Entrou {amount}",
+  "@projectionMonthIn": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "projectionMonthOut": "Saiu {amount}",
+  "@projectionMonthOut": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "projectionMonthFixed": "Fixas {amount}",
+  "@projectionMonthFixed": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "projectionMonthVariable": "Variáveis {amount}",
+  "@projectionMonthVariable": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "projectionMonthSaved": "Juntado até aqui",
+  "projectionDetailsTitle": "Sua economia",
+  "projectionWaterfallTitle": "Como chegamos aqui",
+  "projectionWaterfallHint": "Do saldo do início, somamos o que entra e tiramos as contas fixas e as variáveis do período.",
+  "projectionWaterfallStart": "Início",
+  "projectionWaterfallIncome": "Entradas",
+  "projectionWaterfallFixed": "Fixas",
+  "projectionWaterfallVariable": "Variáveis",
+  "projectionWaterfallEnd": "Fim",
+  "projectionResultsTitle": "Resultado de cada mês",
+  "projectionResultsHint": "Verde: o mês sobrou. Vermelho: faltou. A linha é o que você juntou até ali.",
+  "projectionNatureTitle": "Fixas e variáveis",
+  "projectionNatureShare": "fixas",
+  "projectionPerMonth": "{amount}/mês",
+  "@projectionPerMonth": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "projectionNatureTotal": "Total no período",
+  "projectionTopTitle": "O que mais pesa",
+  "projectionAttentionTitle": "Meses de atenção",
+  "projectionTopEmpty": "Nenhuma despesa neste período.",
+  "projectionAttentionEmpty": "Nenhum mês gasta mais do que entra neste período.",
+  "projectionAttentionReason": "Pesaram: {categories}",
+  "@projectionAttentionReason": {
+    "placeholders": {
+      "categories": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -20,32 +20,62 @@ void main() {
     expect(decemberProjection.isNegative, isTrue);
   });
 
-  blocTest<ProjectionCubit, LoadState<Projection>>(
+  blocTest<ProjectionCubit, ProjectionState>(
     'loads twelve months from the current month',
-    setUp: () =>
-        when(() => repository.fetch(from: november, months: 12))
-            .thenAnswer((_) async => projection),
+    setUp: () => when(
+      () => repository.fetch(from: november, period: ProjectionPeriod.year),
+    ).thenAnswer((_) async => projection),
     build: () => ProjectionCubit(repository),
     act: (cubit) => cubit.load(today: DateTime(2026, 11, 3)),
     expect: () => [
-      const LoadState<Projection>.loading(),
-      LoadState.loaded(projection),
+      const ProjectionState(),
+      ProjectionState(data: LoadState.loaded(projection)),
     ],
   );
 
-  blocTest<ProjectionCubit, LoadState<Projection>>(
+  blocTest<ProjectionCubit, ProjectionState>(
     'uses today by default and reports failures',
     setUp: () => when(
       () => repository.fetch(
         from: Dates.firstOfMonth(DateTime.now()),
-        months: 12,
+        period: ProjectionPeriod.year,
       ),
     ).thenThrow(const ApiError(code: 'network_error')),
     build: () => ProjectionCubit(repository),
     act: (cubit) => cubit.load(),
     expect: () => const [
-      LoadState<Projection>.loading(),
-      LoadState<Projection>.failure(ApiError(code: 'network_error')),
+      ProjectionState(),
+      ProjectionState(data: LoadState.failure(ApiError(code: 'network_error'))),
     ],
   );
+
+  blocTest<ProjectionCubit, ProjectionState>(
+    'reloads with the selected period and ignores the current one',
+    setUp: () => when(
+      () => repository.fetch(from: november, period: ProjectionPeriod.all),
+    ).thenAnswer((_) async => projection),
+    build: () => ProjectionCubit(repository),
+    act: (cubit) async {
+      await cubit.selectPeriod(ProjectionPeriod.year);
+      await cubit.selectPeriod(
+        ProjectionPeriod.all,
+        today: DateTime(2026, 11, 3),
+      );
+    },
+    expect: () => [
+      const ProjectionState(period: ProjectionPeriod.all),
+      ProjectionState(
+        period: ProjectionPeriod.all,
+        data: LoadState.loaded(projection),
+      ),
+    ],
+  );
+
+  test('knows the months of each period and its result', () {
+    expect(
+      [for (final period in ProjectionPeriod.values) period.query],
+      ['3', '6', '12', 'all'],
+    );
+    expect(novemberProjection.resultCents, 370000);
+  });
 }

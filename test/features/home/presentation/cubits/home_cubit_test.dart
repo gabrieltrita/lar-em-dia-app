@@ -35,7 +35,7 @@ void main() {
           .thenAnswer((_) async => [salary, rent]);
       when(() => entries.month(november, kind: EntryKind.expense))
           .thenAnswer((_) async => [housing, groceries]);
-      when(() => projections.fetch(from: november, months: 12))
+      when(() => projections.fetch(from: november))
           .thenAnswer((_) async => projection);
     },
     build: () => HomeCubit(balances, entries, projections),

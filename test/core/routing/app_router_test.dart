@@ -37,6 +37,7 @@ import 'package:lar_em_dia/features/entries/presentation/pages/entries_page.dart
 import 'package:lar_em_dia/features/entries/presentation/pages/entry_form_page.dart';
 import 'package:lar_em_dia/features/home/presentation/home_page.dart';
 import 'package:lar_em_dia/features/projection/domain/projection_repository.dart';
+import 'package:lar_em_dia/features/projection/presentation/pages/projection_details_page.dart';
 import 'package:lar_em_dia/features/projection/presentation/pages/projection_page.dart';
 import 'package:lar_em_dia/features/projection/presentation/pages/simulation_page.dart';
 import 'package:lar_em_dia/features/security/domain/security_repository.dart';
@@ -137,7 +138,7 @@ void main() {
       when(
         () => projections.fetch(
           from: any(named: 'from'),
-          months: any(named: 'months'),
+          period: any(named: 'period'),
         ),
       ).thenAnswer((_) async => projection);
       when(balances.latest).thenAnswer((_) async => null);
@@ -286,6 +287,22 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Editar despesa'), findsOneWidget);
       expect(find.textContaining('todos os lançamentos'), findsOneWidget);
+    });
+
+    testWidgets('opens the projection details only with a projection', (
+      tester,
+    ) async {
+      await pumpRouter(tester);
+      session.signedIn(ana);
+      await tester.pumpAndSettle();
+
+      router.go(AppRoutes.projectionDetails);
+      await tester.pumpAndSettle();
+      expect(find.byType(ProjectionPage), findsOneWidget);
+
+      router.go(AppRoutes.projectionDetails, extra: projection);
+      await tester.pumpAndSettle();
+      expect(find.byType(ProjectionDetailsPage), findsOneWidget);
     });
 
     testWidgets('opens the administration only for admins', (tester) async {
