@@ -10,10 +10,15 @@ import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/core/state/load_state.dart';
 import 'package:lar_em_dia/core/widgets/confirm_dialog.dart';
+import 'package:lar_em_dia/core/widgets/empty_state.dart';
 import 'package:lar_em_dia/core/widgets/form_widgets.dart';
+import 'package:lar_em_dia/core/widgets/money_text.dart';
+import 'package:lar_em_dia/core/widgets/skeleton.dart';
+import 'package:lar_em_dia/features/entries/domain/category.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/presentation/cubits/entry_cubits.dart';
 import 'package:lar_em_dia/features/entries/presentation/widgets/category_label.dart';
+import 'package:lar_em_dia/features/entries/presentation/widgets/category_visuals.dart';
 import 'package:lar_em_dia/features/entries/presentation/widgets/entry_scope_dialog.dart';
 import 'package:lar_em_dia/features/entries/presentation/widgets/nature_label.dart';
 import 'package:lar_em_dia/features/entries/presentation/widgets/paid_checkbox.dart';
@@ -121,7 +126,7 @@ class EntriesPage extends StatelessWidget {
             ),
             Expanded(
               child: switch (state.data) {
-                Loading() => const Center(child: CircularProgressIndicator()),
+                Loading() => SkeletonList(label: l10n.loadingLabel),
                 LoadFailure(:final error) => RetryMessage(
                   message: error.localized(l10n),
                   onRetry: () => unawaited(cubit.load()),
@@ -131,6 +136,7 @@ class EntriesPage extends StatelessWidget {
                   data: value,
                   nature: state.nature,
                   onFilter: cubit.filter,
+                  onCreate: () => unawaited(_open(context)),
                   onOpen: (entry) => unawaited(_open(context, entry)),
                   onDelete: (entry) => _delete(context, entry),
                   onPaid: (entry, {required paid}) =>
@@ -221,6 +227,7 @@ class _EntryList extends StatelessWidget {
     required this.data,
     required this.nature,
     required this.onFilter,
+    required this.onCreate,
     required this.onOpen,
     required this.onDelete,
     required this.onPaid,
@@ -230,6 +237,7 @@ class _EntryList extends StatelessWidget {
   final MonthEntries data;
   final EntryNature? nature;
   final ValueChanged<EntryNature?> onFilter;
+  final VoidCallback onCreate;
   final ValueChanged<Entry> onOpen;
   final Future<bool> Function(Entry entry) onDelete;
   final PaidChanged onPaid;
@@ -239,7 +247,13 @@ class _EntryList extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final textTheme = Theme.of(context).textTheme;
     if (data.entries.isEmpty) {
-      return Center(child: Text(l10n.entriesEmpty(kind.name)));
+      return EmptyState(
+        icon: Icons.receipt_long_outlined,
+        title: l10n.entriesEmpty(kind.name),
+        message: l10n.entriesEmptyMessage(kind.name),
+        actionLabel: l10n.entryFormNewTitle(kind.name),
+        onAction: onCreate,
+      );
     }
     final isExpense = kind == EntryKind.expense;
     final entries = data.withNature(nature);
@@ -269,10 +283,7 @@ class _EntryList extends StatelessWidget {
                   separatorBuilder: (_, _) => const Divider(height: 1),
                   itemBuilder: (context, index) => _EntryTile(
                     entry: entries[index],
-                    categoryText: categoryLabel(
-                      l10n,
-                      data.categories[entries[index].categoryId],
-                    ),
+                    category: data.categories[entries[index].categoryId],
                     onOpen: onOpen,
                     onDelete: onDelete,
                     onPaid: onPaid,
@@ -287,17 +298,41 @@ class _EntryList extends StatelessWidget {
 class _EntryTile extends StatelessWidget {
   const new({
     required this.entry,
-    required this.categoryText,
+    required this.category,
     required this.onOpen,
     required this.onDelete,
     required this.onPaid,
   });
 
   final Entry entry;
-  final String categoryText;
+  final Category? category;
   final ValueChanged<Entry> onOpen;
   final Future<bool> Function(Entry entry) onDelete;
   final PaidChanged onPaid;
+
+  String _title(AppLocalizations l10n) => switch (entry) {
+    Entry(isInstallment: true, :final seriesPosition?, :final seriesCount?) =>
+      '${entry.description} '
+          '${l10n.entryInstallmentShort(seriesPosition, seriesCount)}',
+    _ => entry.description,
+  };
+
+  Widget? _seriesIcon(AppLocalizations l10n) => switch (entry) {
+    Entry(isInstallment: true, :final seriesPosition?, :final seriesCount?) =>
+      Padding(
+        padding: const EdgeInsetsDirectional.only(start: 4),
+        child: Icon(
+          Icons.credit_card,
+          size: 16,
+          semanticLabel: l10n.entryInstallment(seriesPosition, seriesCount),
+        ),
+      ),
+    Entry(isRecurring: true) => Padding(
+      padding: const EdgeInsetsDirectional.only(start: 4),
+      child: Icon(Icons.repeat, size: 16, semanticLabel: l10n.entryRecurring),
+    ),
+    _ => null,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -314,35 +349,16 @@ class _EntryTile extends StatelessWidget {
         child: const Icon(Icons.delete_outline),
       ),
       child: ListTile(
-        leading: switch (entry) {
-          Entry(
-            isInstallment: true,
-            :final seriesPosition?,
-            :final seriesCount?,
-          ) =>
-            Icon(
-              Icons.credit_card,
-              semanticLabel: l10n.entryInstallment(seriesPosition, seriesCount),
-            ),
-          Entry(isRecurring: true) => Icon(
-            Icons.repeat,
-            semanticLabel: l10n.entryRecurring,
-          ),
-          _ => const SizedBox(width: 24),
-        },
-        title: Text(switch (entry) {
-          Entry(
-            isInstallment: true,
-            :final seriesPosition?,
-            :final seriesCount?,
-          ) =>
-            '${entry.description} '
-                '${l10n.entryInstallmentShort(seriesPosition, seriesCount)}',
-          _ => entry.description,
-        }),
+        leading: CategoryAvatar(category: category),
+        title: Row(
+          children: [
+            Flexible(child: Text(_title(l10n))),
+            ?_seriesIcon(l10n),
+          ],
+        ),
         subtitle: Text(
           [
-            categoryText,
+            categoryLabel(l10n, category),
             if (entry.nature case final nature?) natureLabel(l10n, nature),
             Dates.display(entry.dueOn),
             if (entry.isPaid)
@@ -354,7 +370,14 @@ class _EntryTile extends StatelessWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(Money.format(entry.amountCents)),
+            MoneyText(
+              entry.kind == EntryKind.expense
+                  ? -entry.amountCents
+                  : entry.amountCents,
+              signed: true,
+              colored: true,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
             PaidCheckbox(entry: entry, onChanged: onPaid),
           ],
         ),

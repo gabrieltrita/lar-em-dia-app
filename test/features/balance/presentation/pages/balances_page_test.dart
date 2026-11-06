@@ -51,6 +51,11 @@ void main() {
     await pump(tester);
 
     expect(find.text('Nenhum saldo informado ainda.'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Informar saldo'));
+    await tester.pumpAndSettle();
+
+    expect(find.text(routeMarker(AppRoutes.balanceForm)), findsOneWidget);
   });
 
   testWidgets('retries a failed load', (tester) async {

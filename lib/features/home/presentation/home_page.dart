@@ -9,6 +9,8 @@ import 'package:lar_em_dia/core/money/money.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/core/state/load_state.dart';
 import 'package:lar_em_dia/core/widgets/form_widgets.dart';
+import 'package:lar_em_dia/core/widgets/money_text.dart';
+import 'package:lar_em_dia/core/widgets/skeleton.dart';
 import 'package:lar_em_dia/features/auth/domain/auth_user.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
@@ -49,7 +51,7 @@ class HomePage extends StatelessWidget {
       ),
       body: BlocBuilder<HomeCubit, LoadState<HomeSummary>>(
         builder: (context, state) => switch (state) {
-          Loading() => const Center(child: CircularProgressIndicator()),
+          Loading() => SkeletonList(label: l10n.loadingLabel),
           LoadFailure(:final error) => RetryMessage(
             message: error.localized(l10n),
             onRetry: () => unawaited(context.read<HomeCubit>().load()),
@@ -154,7 +156,7 @@ class _UpcomingCard extends StatelessWidget {
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(Money.format(entry.amountCents)),
+                    MoneyText(entry.amountCents),
                     PaidCheckbox(
                       entry: entry,
                       onChanged: (entry, {required paid}) =>
@@ -191,8 +193,9 @@ class _BalanceCard extends StatelessWidget {
             if (balance == null)
               Text(l10n.homeNoBalance)
             else ...[
-              Text(
-                Money.format(balance.amountCents),
+              MoneyText(
+                balance.amountCents,
+                colored: true,
                 style: textTheme.headlineMedium,
               ),
               Text(l10n.homeBalanceAsOf(Dates.display(balance.asOf))),
@@ -241,13 +244,10 @@ class _ProjectionCard extends StatelessWidget {
           children: [
             Text(l10n.homeProjectionTitle(month), style: textTheme.titleMedium),
             const SizedBox(height: 8),
-            Text(
-              Money.format(projected.closingCents),
-              style: textTheme.headlineMedium?.copyWith(
-                color: projected.isNegative
-                    ? Theme.of(context).colorScheme.error
-                    : null,
-              ),
+            MoneyText(
+              projected.closingCents,
+              colored: true,
+              style: textTheme.headlineMedium,
             ),
             const SizedBox(height: 4),
             Text(
@@ -293,10 +293,7 @@ class _EntriesCard extends StatelessWidget {
               style: textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
-            Text(
-              Money.format(totals.totalCents),
-              style: textTheme.headlineMedium,
-            ),
+            MoneyText(totals.totalCents, style: textTheme.headlineMedium),
             Text(
               l10n.homeEntriesBreakdown(
                 kind.name,

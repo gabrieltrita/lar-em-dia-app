@@ -70,6 +70,16 @@ tool/check_core_coverage.sh   fails below 100% line coverage in lib/core
 - Tokens: login and refresh return `data.tokens.access_token` and `data.tokens.refresh_token`. Mobile uses the body mode and keeps the refresh token in secure storage. The web build uses the API's cookie mode: every request sends `X-Token-Transport: cookie` and `withCredentials`, so the refresh token lives in an httpOnly cookie and never reaches JavaScript.
 - DTOs use snake_case keys globally (`build.yaml` sets `field_rename: snake` for `json_serializable`).
 
+## Visual system
+
+Shared visual pieces live in `lib/core/theme` and `lib/core/widgets`, and every screen uses them instead of picking colors or formats on its own:
+
+- `FinanceColors` (a `ThemeExtension` registered by `AppTheme.light` and `AppTheme.dark`) holds the positive, negative and warning colors and one color per `CategoryGroup`. Negative is always the scheme's `error`. Read it with `FinanceColors.of(context)`.
+- `MoneyText` shows an amount in cents with tabular figures, optionally signed (`+R$`) and colored by sign. Money on screen goes through it, never through a colored `Text`.
+- `categoryVisual` (`features/entries/presentation/widgets/category_visuals.dart`) maps each category `key` to an icon and a group, the same way `categoryLabel` maps it to a name; unknown keys get a generic icon grouped by kind. `CategoryAvatar` draws it.
+- `SkeletonList` is the loading state of list screens (it pulses unless the system disables animations) and `EmptyState` is the empty state, with an optional action.
+- The app follows the system light or dark mode.
+
 ## Balance, income, expenses and projection
 
 | Route | Page |
