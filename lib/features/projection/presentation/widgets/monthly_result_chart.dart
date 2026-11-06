@@ -45,6 +45,8 @@ class MonthlyResultPainter extends CustomPainter {
     required this.monthLabel,
   });
 
+  static const dash = 5.0;
+
   final List<ProjectionMonth> months;
   final FinanceColors colors;
   final Color lineColor;
@@ -90,8 +92,14 @@ class MonthlyResultPainter extends CustomPainter {
         for (final (index, month) in months.indexed)
           Offset(bands.center(index), y(month.savingsCents)),
       ], false);
+    final dashed = Path();
+    for (final metric in savings.computeMetrics()) {
+      for (var start = 0.0; start < metric.length; start += dash * 2) {
+        dashed.addPath(metric.extractPath(start, start + dash), Offset.zero);
+      }
+    }
     canvas.drawPath(
-      savings,
+      dashed,
       Paint()
         ..color = savingsColor
         ..style = PaintingStyle.stroke

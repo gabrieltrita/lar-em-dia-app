@@ -268,12 +268,11 @@ class _NatureDonut extends StatelessWidget {
                 variable,
               ),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(child: Text(l10n.projectionNatureTotal)),
-                  Text(Money.format(total)),
-                ],
+              Text(
+                l10n.projectionNatureTotal,
+                style: theme.textTheme.bodySmall,
               ),
+              Text(Money.format(total), style: theme.textTheme.titleSmall),
             ],
           ),
         ),
