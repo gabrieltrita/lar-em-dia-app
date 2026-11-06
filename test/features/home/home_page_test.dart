@@ -37,7 +37,7 @@ void main() {
       when(
         () => projections.fetch(
           from: any(named: 'from'),
-          months: any(named: 'months'),
+          period: any(named: 'period'),
         ),
       ).thenAnswer(
         (_) async => projection.copyWith(months: [decemberProjection]),
@@ -131,7 +131,7 @@ void main() {
       when(
         () => projections.fetch(
           from: any(named: 'from'),
-          months: any(named: 'months'),
+          period: any(named: 'period'),
         ),
       ).thenAnswer((_) async => projection);
       await pump(tester);
@@ -223,7 +223,7 @@ void main() {
       when(
         () => projections.fetch(
           from: any(named: 'from'),
-          months: any(named: 'months'),
+          period: any(named: 'period'),
         ),
       ).thenAnswer(
         (_) async => projection.copyWith(

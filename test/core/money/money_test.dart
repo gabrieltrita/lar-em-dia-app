@@ -12,6 +12,17 @@ void main() {
       expect(Money.formatAmount(-150), '-1,50');
     });
 
+    test('shortens amounts for charts and badges', () {
+      String plain(String text) => text.replaceAll('\u00a0', ' ');
+
+      expect(Money.compact(0), '0');
+      expect(Money.compact(0, signed: true), '0');
+      expect(Money.compact(40000, signed: true), '+400');
+      expect(plain(Money.compact(150000)), '1,5 mil');
+      expect(plain(Money.compact(-1030000)), '−10,3 mil');
+      expect(plain(Money.compact(123000000)), '1,23 mi');
+    });
+
     test('parses BRL amounts into cents', () {
       expect(Money.parse('1.234,56'), 123456);
       expect(Money.parse(' 1234,5 '), 123450);

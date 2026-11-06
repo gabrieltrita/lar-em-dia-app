@@ -345,6 +345,22 @@ class DemoDatabase {
     }
   }
 
+  DateTime? lastEntryMonth() {
+    final dates = [for (final entry in entries) _date(entry, 'due_on')];
+    return dates.isEmpty
+        ? null
+        : Dates.firstOfMonth(dates.reduce((a, b) => a.isAfter(b) ? a : b));
+  }
+
+  int monthsThroughLastEntry(DateTime from, {required int limit}) {
+    final last = lastEntryMonth();
+    if (last == null || last.isBefore(from)) {
+      return 1;
+    }
+    final span = (last.year - from.year) * 12 + last.month - from.month + 1;
+    return span > limit ? limit : span;
+  }
+
   List<Row> projection({required DateTime from, required int months}) {
     final first = Dates.firstOfMonth(from);
     final start = _openingBalance(first);
@@ -365,6 +381,21 @@ class DemoDatabase {
     final income = sum((entry) => entry['kind'] == 'income');
     final fixed = sum((entry) => entry['nature'] == 'fixed');
     final variable = sum((entry) => entry['nature'] == 'variable');
+    final byCategory = <String, int>{};
+    for (final entry in rows.where((entry) => entry['kind'] == 'expense')) {
+      final key =
+          categories.firstWhere(
+                (category) => category['id'] == entry['category_id'],
+              )['key']!
+              as String;
+      byCategory[key] = (byCategory[key] ?? 0) + _cents(entry);
+    }
+    final sorted = byCategory.entries.toList()
+      ..sort(
+        (a, b) => a.value == b.value
+            ? a.key.compareTo(b.key)
+            : b.value.compareTo(a.value),
+      );
     return {
       'month': Dates.toMonth(month),
       'opening_cents': opening,
@@ -375,6 +406,10 @@ class DemoDatabase {
       'closing_cents': opening + income - fixed - variable,
       'savings_cents': opening + income - fixed - variable - start,
       'negative': opening + income - fixed - variable < 0,
+      'expense_by_category': [
+        for (final MapEntry(:key, :value) in sorted)
+          {'category_key': key, 'amount_cents': value},
+      ],
     };
   }
 

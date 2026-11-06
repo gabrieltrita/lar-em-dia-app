@@ -5,7 +5,13 @@ import 'package:lar_em_dia/features/entries/domain/entry.dart';
 
 typedef CategoryVisual = ({IconData icon, CategoryGroup group});
 
-CategoryVisual categoryVisual(Category? category) => switch (category?.key) {
+CategoryVisual categoryVisual(Category? category) =>
+    categoryVisualForKey(category?.key, kind: category?.kind);
+
+CategoryVisual categoryVisualForKey(
+  String? key, {
+  EntryKind? kind,
+}) => switch (key) {
   'salary' => (icon: Icons.work_outline, group: CategoryGroup.income),
   'thirteenth_salary' => (
     icon: Icons.event_available_outlined,
@@ -80,20 +86,23 @@ CategoryVisual categoryVisual(Category? category) => switch (category?.key) {
   'other_expense' => (icon: Icons.more_horiz, group: CategoryGroup.other),
   _ => (
     icon: Icons.label_outline,
-    group: category?.kind == EntryKind.income
+    group: kind == EntryKind.income
         ? CategoryGroup.income
         : CategoryGroup.other,
   ),
 };
 
 class CategoryAvatar extends StatelessWidget {
-  const new({required this.category, super.key});
+  new({required Category? category, super.key})
+    : visual = categoryVisual(category);
 
-  final Category? category;
+  new forKey(String categoryKey, {super.key})
+    : visual = categoryVisualForKey(categoryKey, kind: EntryKind.expense);
+
+  final CategoryVisual visual;
 
   @override
   Widget build(BuildContext context) {
-    final visual = categoryVisual(category);
     final color = FinanceColors.of(context).categories[visual.group]!;
     return ExcludeSemantics(
       child: CircleAvatar(

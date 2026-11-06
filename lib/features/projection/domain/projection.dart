@@ -8,6 +8,25 @@ abstract class ProjectionAnchor with _$ProjectionAnchor {
       _ProjectionAnchor;
 }
 
+enum ProjectionPeriod {
+  threeMonths(3),
+  sixMonths(6),
+  year(12),
+  all(null);
+
+  new(this.months);
+
+  final int? months;
+
+  String get query => months?.toString() ?? 'all';
+}
+
+@freezed
+abstract class CategoryAmount with _$CategoryAmount {
+  const factory({required String categoryKey, required int amountCents}) =
+      _CategoryAmount;
+}
+
 @freezed
 abstract class ProjectionMonth with _$ProjectionMonth {
   const factory({
@@ -19,11 +38,14 @@ abstract class ProjectionMonth with _$ProjectionMonth {
     required int variableExpenseCents,
     required int closingCents,
     required int savingsCents,
+    @Default([]) List<CategoryAmount> expenseByCategory,
   }) = _ProjectionMonth;
 
   const new _();
 
   bool get isNegative => closingCents < 0;
+
+  int get resultCents => incomeCents - expenseCents;
 
   bool get isSaving => savingsCents >= 0;
 }
@@ -34,6 +56,7 @@ abstract class Projection with _$Projection {
     required List<ProjectionMonth> months,
     ProjectionAnchor? anchor,
     DateTime? firstNegativeMonth,
+    DateTime? lastEntryMonth,
     @Default(0) int negativeMonthsCount,
   }) = _Projection;
 }

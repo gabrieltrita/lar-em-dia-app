@@ -104,6 +104,10 @@ final novemberProjection = ProjectionMonth(
   variableExpenseCents: 80000,
   closingCents: 493456,
   savingsCents: 370000,
+  expenseByCategory: const [
+    CategoryAmount(categoryKey: 'housing', amountCents: 200000),
+    CategoryAmount(categoryKey: 'groceries', amountCents: 80000),
+  ],
 );
 
 final decemberProjection = ProjectionMonth(
@@ -115,12 +119,18 @@ final decemberProjection = ProjectionMonth(
   variableExpenseCents: 400000,
   closingCents: -106544,
   savingsCents: -230000,
+  expenseByCategory: const [
+    CategoryAmount(categoryKey: 'travel', amountCents: 320000),
+    CategoryAmount(categoryKey: 'housing', amountCents: 200000),
+    CategoryAmount(categoryKey: 'pet_insurance', amountCents: 80000),
+  ],
 );
 
 final projection = Projection(
   anchor: ProjectionAnchor(amountCents: 123456, asOf: DateTime(2026, 11, 3)),
   months: [novemberProjection, decemberProjection],
   firstNegativeMonth: DateTime(2026, 12),
+  lastEntryMonth: DateTime(2027, 3),
   negativeMonthsCount: 1,
 );
 
@@ -168,6 +178,7 @@ void registerFinanceFallbacks() {
   registerFallbackValue(<EntryPlan>[]);
   registerFallbackValue(DateTime(2026));
   registerFallbackValue(EntryKind.income);
+  registerFallbackValue(ProjectionPeriod.year);
   registerFallbackValue(EntryScope.one);
   registerFallbackValue(salary.toDraft());
   registerFallbackValue(salary);

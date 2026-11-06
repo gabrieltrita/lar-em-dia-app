@@ -64,7 +64,6 @@ class HomeCubit extends Cubit<LoadState<HomeSummary>> {
   final EntryRepository _entries;
   final ProjectionRepository _projections;
 
-  static const horizonMonths = 12;
   static const upcomingDays = 7;
 
   Future<void> load({DateTime? today}) async {
@@ -82,7 +81,7 @@ class HomeCubit extends Cubit<LoadState<HomeSummary>> {
       );
       final projection = latest == null
           ? null
-          : await _projections.fetch(from: month, months: horizonMonths);
+          : await _projections.fetch(from: month);
       emit(
         LoadState.loaded(
           HomeSummary(

@@ -26,6 +26,13 @@ void main() {
     'variable_expense_cents': month.variableExpenseCents,
     'closing_cents': month.closingCents,
     'savings_cents': month.savingsCents,
+    'expense_by_category': [
+      for (final amount in month.expenseByCategory)
+        {
+          'category_key': amount.categoryKey,
+          'amount_cents': amount.amountCents,
+        },
+    ],
   };
 
   test('reads the anchor and the months from the given month', () async {
@@ -36,6 +43,7 @@ void main() {
         monthJson(decemberProjection, '2026-12'),
       ],
       'alerts': {'first_negative_month': '2026-12', 'negative_months_count': 1},
+      'last_entry_month': '2027-03',
     });
 
     final result = await repository.fetch(from: DateTime(2026, 11, 20));
@@ -44,17 +52,20 @@ void main() {
     expect(adapter.requests.single.path, '/projection');
     expect(adapter.requests.single.queryParameters, {
       'from': '2026-11',
-      'months': 12,
+      'months': '12',
     });
   });
 
   test('reads a projection without an anchor', () async {
     final repository = build({'anchor': null, 'months': <Object?>[]});
 
-    final result = await repository.fetch(from: november, months: 1);
+    final result = await repository.fetch(
+      from: november,
+      period: ProjectionPeriod.all,
+    );
 
     expect(result, const Projection(months: []));
-    expect(adapter.requests.single.queryParameters['months'], 1);
+    expect(adapter.requests.single.queryParameters['months'], 'all');
   });
 
   test('simulates plans and reads both projections', () async {
