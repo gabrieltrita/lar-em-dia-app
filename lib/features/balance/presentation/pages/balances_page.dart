@@ -5,11 +5,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lar_em_dia/core/dates/dates.dart';
 import 'package:lar_em_dia/core/forms/error_messages.dart';
-import 'package:lar_em_dia/core/money/money.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/core/state/load_state.dart';
 import 'package:lar_em_dia/core/widgets/confirm_dialog.dart';
+import 'package:lar_em_dia/core/widgets/empty_state.dart';
 import 'package:lar_em_dia/core/widgets/form_widgets.dart';
+import 'package:lar_em_dia/core/widgets/money_text.dart';
+import 'package:lar_em_dia/core/widgets/skeleton.dart';
 import 'package:lar_em_dia/features/balance/domain/balance.dart';
 import 'package:lar_em_dia/features/balance/presentation/cubits/balance_cubits.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
@@ -58,13 +60,17 @@ class BalancesPage extends StatelessWidget {
       ),
       body: BlocBuilder<BalancesCubit, LoadState<List<Balance>>>(
         builder: (context, state) => switch (state) {
-          Loading() => const Center(child: CircularProgressIndicator()),
+          Loading() => SkeletonList(label: l10n.loadingLabel),
           LoadFailure(:final error) => RetryMessage(
             message: error.localized(l10n),
             onRetry: () => unawaited(context.read<BalancesCubit>().load()),
           ),
-          Loaded(value: final balances) when balances.isEmpty => Center(
-            child: Text(l10n.balancesEmpty),
+          Loaded(value: final balances) when balances.isEmpty => EmptyState(
+            icon: Icons.account_balance_wallet_outlined,
+            title: l10n.balancesEmpty,
+            message: l10n.balancesEmptyMessage,
+            actionLabel: l10n.balanceFormNewTitle,
+            onAction: () => unawaited(_open(context)),
           ),
           Loaded(value: final balances) => ListView.separated(
             itemCount: balances.length,
@@ -72,7 +78,7 @@ class BalancesPage extends StatelessWidget {
             itemBuilder: (context, index) {
               final balance = balances[index];
               return ListTile(
-                title: Text(Money.format(balance.amountCents)),
+                title: MoneyText(balance.amountCents, colored: true),
                 subtitle: Text(Dates.display(balance.asOf)),
                 onTap: () => unawaited(_open(context, balance)),
                 trailing: IconButton(

@@ -2,6 +2,7 @@ import 'package:intl/intl.dart';
 
 abstract final class Money {
   static final _grouping = NumberFormat.decimalPattern('pt_BR');
+  static final _compact = NumberFormat.compact(locale: 'pt_BR');
   static final _amount = RegExp(
     r'^(-)?(\d{1,3}(?:\.\d{3})*|\d+)(?:,(\d{1,2}))?$',
   );
@@ -17,6 +18,15 @@ abstract final class Money {
     final units = _grouping.format(absolute ~/ 100);
     final fraction = (absolute % 100).toString().padLeft(2, '0');
     return '$sign$units,$fraction';
+  }
+
+  static String compact(int cents, {bool signed = false}) {
+    final sign = switch (cents) {
+      < 0 => '−',
+      > 0 when signed => '+',
+      _ => '',
+    };
+    return '$sign${_compact.format(cents.abs() / 100)}';
   }
 
   static int? parse(String text) {

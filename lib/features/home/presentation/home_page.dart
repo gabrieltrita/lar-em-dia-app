@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -8,14 +9,16 @@ import 'package:lar_em_dia/core/forms/error_messages.dart';
 import 'package:lar_em_dia/core/money/money.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/core/state/load_state.dart';
+import 'package:lar_em_dia/core/theme/finance_colors.dart';
 import 'package:lar_em_dia/core/widgets/form_widgets.dart';
-import 'package:lar_em_dia/features/auth/domain/auth_user.dart';
+import 'package:lar_em_dia/core/widgets/money_text.dart';
+import 'package:lar_em_dia/core/widgets/month_switcher.dart';
+import 'package:lar_em_dia/core/widgets/skeleton.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
-import 'package:lar_em_dia/features/entries/domain/entry.dart';
-import 'package:lar_em_dia/features/entries/presentation/widgets/paid_checkbox.dart';
+import 'package:lar_em_dia/features/entries/presentation/widgets/category_label.dart';
 import 'package:lar_em_dia/features/home/presentation/cubits/home_cubit.dart';
-import 'package:lar_em_dia/features/projection/domain/projection.dart';
 import 'package:lar_em_dia/features/projection/presentation/widgets/negative_months_alert.dart';
+import 'package:lar_em_dia/features/shell/presentation/finance_changes.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
 class HomePage extends StatelessWidget {
@@ -24,51 +27,41 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final user = context.select<SessionCubit, AuthUser?>(
+    final cubit = context.read<HomeCubit>();
+    final firstName = context.select<SessionCubit, String?>(
       (cubit) => switch (cubit.state) {
-        SessionAuthenticated(:final user) => user,
+        SessionAuthenticated(:final user) => user.firstName,
         _ => null,
       },
     );
-    final firstName = user?.firstName;
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.appTitle),
-        actions: [
-          IconButton(
-            tooltip: l10n.homeSecurity,
-            icon: const Icon(Icons.account_circle_outlined),
-            onPressed: () => unawaited(context.push<void>(AppRoutes.account)),
-          ),
-          IconButton(
-            tooltip: l10n.logout,
-            icon: const Icon(Icons.logout),
-            onPressed: () => unawaited(context.read<SessionCubit>().logout()),
-          ),
-        ],
+        title: Text(
+          firstName == null ? l10n.appTitle : l10n.homeGreeting(firstName),
+        ),
       ),
       body: BlocBuilder<HomeCubit, LoadState<HomeSummary>>(
         builder: (context, state) => switch (state) {
-          Loading() => const Center(child: CircularProgressIndicator()),
+          Loading() => SkeletonList(label: l10n.loadingLabel),
           LoadFailure(:final error) => RetryMessage(
             message: error.localized(l10n),
-            onRetry: () => unawaited(context.read<HomeCubit>().load()),
+            onRetry: () => unawaited(cubit.load()),
           ),
           Loaded(value: final summary) => RefreshIndicator(
-            onRefresh: () => context.read<HomeCubit>().load(),
+            onRefresh: () => cubit.load(quiet: true),
             child: ListView(
-              padding: const EdgeInsets.all(16),
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 88),
               children: [
-                if (firstName != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Text(
-                      l10n.homeGreeting(firstName),
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                  ),
-                _BalanceCard(summary: summary),
-                const SizedBox(height: 16),
+                MonthSwitcher(
+                  month: summary.month,
+                  onPrevious: () => unawaited(cubit.previous()),
+                  onNext: () => unawaited(cubit.next()),
+                ),
+                _MonthHero(summary: summary),
+                const SizedBox(height: 12),
+                _Indicators(summary: summary),
+                const SizedBox(height: 12),
                 if (summary case HomeSummary(
                   :final firstNegativeMonth?,
                   :final negativeMonthsCount,
@@ -76,26 +69,13 @@ class HomePage extends StatelessWidget {
                   NegativeMonthsAlert(
                     firstMonth: firstNegativeMonth,
                     count: negativeMonthsCount,
-                    onTap: () => unawaited(
-                      _pushAndReload(context, AppRoutes.projection),
-                    ),
+                    onTap: () => context.go(AppRoutes.projection),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                 ],
-                if (summary case HomeSummary(
-                  :final projected?,
-                  :final horizon?,
-                )) ...[
-                  _ProjectionCard(projected: projected, horizon: horizon),
-                  const SizedBox(height: 16),
-                ],
-                _UpcomingCard(entries: summary.upcoming),
-                const SizedBox(height: 16),
-                for (final kind in EntryKind.values) ...[
-                  _EntriesCard(kind: kind, summary: summary),
-                  const SizedBox(height: 16),
-                ],
-                if (user?.isAdmin ?? false) const _AdminCard(),
+                _WhereMoneyGoes(summary: summary),
+                const SizedBox(height: 12),
+                _DueShortcut(summary: summary),
               ],
             ),
           ),
@@ -105,72 +85,7 @@ class HomePage extends StatelessWidget {
   }
 }
 
-Future<void> _pushAndReload(BuildContext context, String location) async {
-  final cubit = context.read<HomeCubit>();
-  await context.push<bool>(location);
-  await cubit.load();
-}
-
-class _UpcomingCard extends StatelessWidget {
-  const new({required this.entries});
-
-  final List<Entry> entries;
-
-  Future<void> _markPaid(BuildContext context, Entry entry) async {
-    final l10n = AppLocalizations.of(context);
-    final messenger = ScaffoldMessenger.of(context);
-    final error = await context.read<HomeCubit>().markPaid(entry);
-    if (error != null) {
-      messenger.showSnackBar(SnackBar(content: Text(error.localized(l10n))));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                l10n.homeUpcomingTitle,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
-            const SizedBox(height: 8),
-            if (entries.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(l10n.homeUpcomingEmpty),
-              ),
-            for (final entry in entries)
-              ListTile(
-                title: Text(entry.description),
-                subtitle: Text(Dates.display(entry.dueOn)),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(Money.format(entry.amountCents)),
-                    PaidCheckbox(
-                      entry: entry,
-                      onChanged: (entry, {required paid}) =>
-                          unawaited(_markPaid(context, entry)),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _BalanceCard extends StatelessWidget {
+class _MonthHero extends StatelessWidget {
   const new({required this.summary});
 
   final HomeSummary summary;
@@ -178,89 +93,76 @@ class _BalanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final textTheme = Theme.of(context).textTheme;
-    final balance = summary.latestBalance;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(l10n.homeBalanceTitle, style: textTheme.titleMedium),
-            const SizedBox(height: 8),
-            if (balance == null)
-              Text(l10n.homeNoBalance)
-            else ...[
-              Text(
-                Money.format(balance.amountCents),
-                style: textTheme.headlineMedium,
-              ),
-              Text(l10n.homeBalanceAsOf(Dates.display(balance.asOf))),
+    final theme = Theme.of(context);
+    final colors = FinanceColors.of(context);
+    final localizations = MaterialLocalizations.of(context);
+    final month = localizations.formatMonthYear(summary.month);
+    final income = summary.income.totalCents;
+    final expense = summary.expenses.totalCents;
+    final result = summary.resultCents;
+    final largest = income > expense ? income : expense;
+    Widget bar(String label, int cents, Color color) => Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(child: Text(label, style: theme.textTheme.bodySmall)),
+              MoneyText(cents, style: theme.textTheme.bodySmall),
             ],
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              children: [
-                FilledButton(
-                  onPressed: () =>
-                      unawaited(_pushAndReload(context, AppRoutes.balanceForm)),
-                  child: Text(l10n.homeInformBalance),
-                ),
-                if (balance != null)
-                  OutlinedButton(
-                    onPressed: () =>
-                        unawaited(_pushAndReload(context, AppRoutes.balances)),
-                    child: Text(l10n.homeBalanceHistory),
-                  ),
-              ],
+          ),
+          const SizedBox(height: 4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: largest == 0 ? 0 : cents / largest,
+              minHeight: 8,
+              color: color,
+              backgroundColor: theme.colorScheme.surfaceContainerHighest,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
-  }
-}
-
-class _ProjectionCard extends StatelessWidget {
-  const new({required this.projected, required this.horizon});
-
-  final ProjectionMonth projected;
-  final ProjectionMonth horizon;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final textTheme = Theme.of(context).textTheme;
-    final localizations = MaterialLocalizations.of(context);
-    final month = localizations.formatMonthYear(projected.month);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(l10n.homeProjectionTitle(month), style: textTheme.titleMedium),
-            const SizedBox(height: 8),
             Text(
-              Money.format(projected.closingCents),
-              style: textTheme.headlineMedium?.copyWith(
-                color: projected.isNegative
-                    ? Theme.of(context).colorScheme.error
-                    : null,
-              ),
+              l10n.homeMonthResultTitle(month),
+              style: theme.textTheme.labelLarge,
             ),
             const SizedBox(height: 4),
-            Text(
-              l10n.homeProjectionSavings(
-                localizations.formatMonthYear(horizon.month),
-                Money.format(horizon.savingsCents),
-              ),
+            Row(
+              children: [
+                Icon(
+                  result < 0 ? Icons.trending_down : Icons.trending_up,
+                  color: result < 0 ? colors.negative : colors.positive,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: MoneyText(
+                    result,
+                    signed: true,
+                    colored: true,
+                    style: theme.textTheme.displaySmall,
+                  ),
+                ),
+              ],
             ),
+            bar(l10n.projectionWaterfallIncome, income, colors.positive),
+            bar(l10n.homeExpensesLabel, expense, colors.negative),
             const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: () =>
-                  unawaited(_pushAndReload(context, AppRoutes.projection)),
-              child: Text(l10n.homeSeeProjection),
+            Text(
+              l10n.homeMonthResultSentence(
+                '${result >= 0}',
+                Money.format(result.abs()),
+                Dates.display(Dates.lastOfMonth(summary.month)),
+              ),
+              style: theme.textTheme.bodyMedium,
             ),
           ],
         ),
@@ -269,59 +171,215 @@ class _ProjectionCard extends StatelessWidget {
   }
 }
 
-class _EntriesCard extends StatelessWidget {
-  const new({required this.kind, required this.summary});
+class _Indicators extends StatelessWidget {
+  const new({required this.summary});
 
-  final EntryKind kind;
   final HomeSummary summary;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final textTheme = Theme.of(context).textTheme;
-    final month = MaterialLocalizations.of(context)
-        .formatMonthYear(summary.month);
-    final totals = summary.totalsOf(kind);
+    final theme = Theme.of(context);
+    final changes = context.read<FinanceChanges>();
+    final balance = summary.latestBalance;
+    final projected = summary.projected;
+    Widget tile({
+      required String label,
+      required Widget value,
+      required String caption,
+      required VoidCallback onTap,
+    }) => Expanded(
+      child: Card(
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: theme.textTheme.labelMedium),
+                const SizedBox(height: 4),
+                value,
+                const SizedBox(height: 2),
+                Text(caption, style: theme.textTheme.bodySmall),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    Future<void> open(String route) async {
+      await context.push<bool>(route);
+      changes.notify();
+    }
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (balance == null)
+            tile(
+              label: l10n.homeBalanceTitle,
+              value: Text(
+                l10n.homeInformBalance,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              caption: l10n.homeNoBalance,
+              onTap: () => unawaited(open(AppRoutes.balanceForm)),
+            )
+          else
+            tile(
+              label: l10n.homeBalanceTitle,
+              value: MoneyText(
+                balance.amountCents,
+                colored: true,
+                style: theme.textTheme.titleLarge,
+              ),
+              caption: l10n.homeBalanceAsOf(Dates.display(balance.asOf)),
+              onTap: () => unawaited(open(AppRoutes.balances)),
+            ),
+          const SizedBox(width: 8),
+          tile(
+            label: l10n.homeMonthEnd,
+            value: projected == null
+                ? Text('—', style: theme.textTheme.titleLarge)
+                : MoneyText(
+                    projected.closingCents,
+                    colored: true,
+                    style: theme.textTheme.titleLarge,
+                  ),
+            caption: l10n.homeMonthEndCaption,
+            onTap: () => context.go(AppRoutes.projection),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WhereMoneyGoes extends StatelessWidget {
+  const new({required this.summary});
+
+  static const slices = 5;
+
+  final HomeSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final palette = FinanceColors.of(context).categories.values.toList();
+    final amounts = summary.expenseByCategory;
+    final total = summary.expenses.totalCents;
+    final shown = [
+      for (final amount in amounts.take(slices))
+        (
+          categoryKeyLabel(
+            l10n,
+            amount.categoryKey,
+            fallback: amount.categoryKey,
+          ),
+          amount.amountCents,
+        ),
+      if (amounts.length > slices)
+        (
+          l10n.homeOtherCategories,
+          amounts
+              .skip(slices)
+              .fold(0, (sum, amount) => sum + amount.amountCents),
+        ),
+    ];
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              l10n.homeEntriesTitle(kind.name, month),
-              style: textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              Money.format(totals.totalCents),
-              style: textTheme.headlineMedium,
-            ),
-            Text(
-              l10n.homeEntriesBreakdown(
-                kind.name,
-                Money.format(totals.settledCents),
-                Money.format(totals.pendingCents),
-              ),
-            ),
+            Text(l10n.homeWhereMoneyGoes, style: theme.textTheme.titleMedium),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              children: [
-                FilledButton(
-                  onPressed: () => unawaited(
-                    _pushAndReload(context, AppRoutes.entryForm(kind)),
+            if (total == 0)
+              Text(l10n.homeNoExpenses)
+            else ...[
+              Row(
+                children: [
+                  SizedBox(
+                    width: 112,
+                    height: 112,
+                    child: PieChart(
+                      PieChartData(
+                        centerSpaceRadius: 34,
+                        sectionsSpace: 2,
+                        startDegreeOffset: -90,
+                        sections: [
+                          for (final (index, (_, cents)) in shown.indexed)
+                            PieChartSectionData(
+                              value: cents.toDouble(),
+                              color: palette[index % palette.length],
+                              radius: 20,
+                              showTitle: false,
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
-                  child: Text(l10n.entryFormNewTitle(kind.name)),
-                ),
-                OutlinedButton(
-                  onPressed: () => unawaited(
-                    _pushAndReload(context, AppRoutes.entries(kind)),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        for (final (index, (label, cents)) in shown.indexed)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 10,
+                                  height: 10,
+                                  decoration: BoxDecoration(
+                                    color: palette[index % palette.length],
+                                    borderRadius: BorderRadius.circular(3),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    label,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Text('${(cents * 100 / total).round()}%'),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
-                  child: Text(l10n.homeSeeEntries(kind.name)),
-                ),
-              ],
-            ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                children: [
+                  Chip(
+                    label: Text(
+                      l10n.projectionMonthFixed(
+                        Money.format(summary.fixedCents),
+                      ),
+                    ),
+                  ),
+                  Chip(
+                    label: Text(
+                      l10n.projectionMonthVariable(
+                        Money.format(summary.variableCents),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
@@ -329,40 +387,23 @@ class _EntriesCard extends StatelessWidget {
   }
 }
 
-class _AdminCard extends StatelessWidget {
-  const new();
+class _DueShortcut extends StatelessWidget {
+  const new({required this.summary});
+
+  final HomeSummary summary;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final count = summary.upcoming.length;
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.adminTitle,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final (label, route) in [
-                  (l10n.adminManageUsers, AppRoutes.adminUsers),
-                  (l10n.adminMetrics, AppRoutes.adminMetrics),
-                  (l10n.adminCategories, AppRoutes.adminCategories),
-                ])
-                  OutlinedButton(
-                    onPressed: () => unawaited(context.push<void>(route)),
-                    child: Text(label),
-                  ),
-              ],
-            ),
-          ],
-        ),
+      clipBehavior: Clip.antiAlias,
+      child: ListTile(
+        leading: const Icon(Icons.event_outlined),
+        title: Text(l10n.homeDueShortcut(count)),
+        subtitle: count == 0 ? null : Text(Money.format(summary.upcomingCents)),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => context.go(AppRoutes.due),
       ),
     );
   }

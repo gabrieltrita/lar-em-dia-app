@@ -27,6 +27,7 @@ class DemoServer {
   static const pageSize = 25;
   static const maxPageSize = 100;
   static const maxSimulationEntries = 10;
+  static const allMonthsLimit = 60;
 
   static const twoFactorSecret = 'JBSWY3DPEHPK3PXP';
   static const backupCodesCount = 10;
@@ -310,11 +311,18 @@ class DemoServer {
     if (from != null && month == null) {
       throw const DemoBadRequest('invalid_month');
     }
+    final first = month ?? Dates.firstOfMonth(database.today);
+    if (query['months'] == 'all') {
+      return (
+        first,
+        database.monthsThroughLastEntry(first, limit: allMonthsLimit),
+      );
+    }
     final months = int.tryParse(query['months'] ?? '12');
     if (months == null || months < 1 || months > 24) {
       throw const DemoBadRequest('invalid_months');
     }
-    return (month ?? Dates.firstOfMonth(database.today), months);
+    return (first, months);
   }
 
   Map<String, Object?> _projectionBody(DateTime month, int months) {
@@ -332,6 +340,10 @@ class DemoServer {
       'alerts': {
         'first_negative_month': negative.firstOrNull,
         'negative_months_count': negative.length,
+      },
+      'last_entry_month': switch (database.lastEntryMonth()) {
+        final DateTime last => Dates.toMonth(last),
+        null => null,
       },
     };
   }

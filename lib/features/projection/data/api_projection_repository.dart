@@ -17,11 +17,14 @@ class ApiProjectionRepository implements ProjectionRepository {
   final ApiClient _client;
 
   @override
-  Future<Projection> fetch({required DateTime from, int months = 12}) async {
+  Future<Projection> fetch({
+    required DateTime from,
+    ProjectionPeriod period = ProjectionPeriod.year,
+  }) async {
     final response = await _client.get<Projection>(
       path,
       decode: (data) => ProjectionDto.fromJson(data! as Json).toDomain(),
-      query: {'from': Dates.toMonth(from), 'months': months},
+      query: {'from': Dates.toMonth(from), 'months': period.query},
     );
     return response.data;
   }

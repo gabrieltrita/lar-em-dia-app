@@ -33,15 +33,19 @@ import 'package:lar_em_dia/features/balance/presentation/pages/balance_form_page
 import 'package:lar_em_dia/features/balance/presentation/pages/balances_page.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/domain/entry_repository.dart';
+import 'package:lar_em_dia/features/entries/presentation/pages/due_page.dart';
 import 'package:lar_em_dia/features/entries/presentation/pages/entries_page.dart';
 import 'package:lar_em_dia/features/entries/presentation/pages/entry_form_page.dart';
 import 'package:lar_em_dia/features/home/presentation/home_page.dart';
 import 'package:lar_em_dia/features/projection/domain/projection_repository.dart';
+import 'package:lar_em_dia/features/projection/presentation/pages/projection_details_page.dart';
 import 'package:lar_em_dia/features/projection/presentation/pages/projection_page.dart';
 import 'package:lar_em_dia/features/projection/presentation/pages/simulation_page.dart';
 import 'package:lar_em_dia/features/security/domain/security_repository.dart';
 import 'package:lar_em_dia/features/security/presentation/pages/security_page.dart';
 import 'package:lar_em_dia/features/security/presentation/pages/two_factor_enrollment_page.dart';
+import 'package:lar_em_dia/features/shell/presentation/finance_changes.dart';
+import 'package:lar_em_dia/features/shell/presentation/more_page.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -137,7 +141,7 @@ void main() {
       when(
         () => projections.fetch(
           from: any(named: 'from'),
-          months: any(named: 'months'),
+          period: any(named: 'period'),
         ),
       ).thenAnswer((_) async => projection);
       when(balances.latest).thenAnswer((_) async => null);
@@ -146,6 +150,7 @@ void main() {
           .thenAnswer((_) async => []);
       when(() => entries.month(any(), kind: any(named: 'kind')))
           .thenAnswer((_) async => []);
+      when(() => entries.month(any())).thenAnswer((_) async => []);
       when(() => entries.categories(EntryKind.income))
           .thenAnswer((_) async => [salaryCategory]);
       when(() => entries.categories(EntryKind.expense))
@@ -252,10 +257,11 @@ void main() {
       final pages = {
         AppRoutes.balances: BalancesPage,
         AppRoutes.balanceForm: BalanceFormPage,
-        '${AppRoutes.income}?month=2026-02': EntriesPage,
-        AppRoutes.incomeForm: EntryFormPage,
-        '${AppRoutes.expenses}?month=2026-03': EntriesPage,
-        AppRoutes.expensesForm: EntryFormPage,
+        '${AppRoutes.entries}?month=2026-02': EntriesPage,
+        AppRoutes.entryForm(EntryKind.income): EntryFormPage,
+        AppRoutes.entryForm(EntryKind.expense): EntryFormPage,
+        AppRoutes.due: DuePage,
+        AppRoutes.more: MorePage,
         AppRoutes.projection: ProjectionPage,
         AppRoutes.simulation: SimulationPage,
         AppRoutes.simulationEntry(EntryKind.income): EntryFormPage,
@@ -266,26 +272,113 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byType(page), findsOneWidget, reason: location);
       }
-      verify(() => entries.month(DateTime(2026, 2), kind: EntryKind.income))
-          .called(1);
-      verify(() => entries.month(DateTime(2026, 3), kind: EntryKind.expense))
-          .called(1);
+      verify(() => entries.month(DateTime(2026, 2))).called(1);
 
       router.go(AppRoutes.balanceForm, extra: balance);
       await tester.pumpAndSettle();
       expect(find.text('Editar saldo'), findsOneWidget);
 
-      router.go(AppRoutes.incomeForm, extra: EntryEdit(entry: salary));
+      router.go(
+        AppRoutes.entryForm(EntryKind.income),
+        extra: EntryEdit(entry: salary),
+      );
       await tester.pumpAndSettle();
       expect(find.text('Editar receita'), findsOneWidget);
 
       router.go(
-        AppRoutes.expensesForm,
+        AppRoutes.entryForm(EntryKind.expense),
         extra: EntryEdit(entry: housing, scope: EntryScope.all),
       );
       await tester.pumpAndSettle();
       expect(find.text('Editar despesa'), findsOneWidget);
       expect(find.textContaining('todos os lançamentos'), findsOneWidget);
+    });
+
+    testWidgets('switches tabs and adds from the button', (tester) async {
+      await pumpRouter(tester);
+      session.signedIn(ana);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(NavigationBar), findsOneWidget);
+      for (final (label, page) in [
+        ('Lançamentos', EntriesPage),
+        ('Vencimentos', DuePage),
+        ('Projeção', ProjectionPage),
+        ('Mais', MorePage),
+      ]) {
+        await tester.tap(find.text(label).last);
+        await tester.pumpAndSettle();
+        expect(find.byType(page), findsOneWidget, reason: label);
+      }
+      expect(find.byType(FloatingActionButton), findsNothing);
+
+      await tester.tap(find.text('Início'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Início'));
+      await tester.pumpAndSettle();
+      expect(find.byType(HomePage), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Adicionar'));
+      await tester.pumpAndSettle();
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+      expect(find.byType(HomePage), findsOneWidget);
+
+      for (final (option, page) in [
+        ('Despesa', EntryFormPage),
+        ('Receita', EntryFormPage),
+        ('Informar saldo', BalanceFormPage),
+      ]) {
+        await tester.tap(find.byTooltip('Adicionar'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(option).last);
+        await tester.pumpAndSettle();
+        expect(find.byType(page), findsOneWidget, reason: option);
+        router.pop(option == 'Receita');
+        await tester.pumpAndSettle();
+      }
+      verify(balances.latest).called(greaterThanOrEqualTo(2));
+    });
+
+    testWidgets('reloads every tab after a change', (tester) async {
+      await pumpRouter(tester);
+      session.signedIn(ana);
+      await tester.pumpAndSettle();
+      for (final label in ['Lançamentos', 'Vencimentos', 'Projeção']) {
+        await tester.tap(find.text(label).last);
+        await tester.pumpAndSettle();
+      }
+      clearInteractions(entries);
+      clearInteractions(projections);
+
+      getIt<FinanceChanges>().notify();
+      await tester.pumpAndSettle();
+
+      verify(() => entries.month(any())).called(2);
+      verify(() => entries.between(any(), any(), kind: EntryKind.expense))
+          .called(2);
+      verify(
+        () => projections.fetch(
+          from: any(named: 'from'),
+          period: any(named: 'period'),
+        ),
+      ).called(1);
+    });
+
+    testWidgets('opens the projection details only with a projection', (
+      tester,
+    ) async {
+      await pumpRouter(tester);
+      session.signedIn(ana);
+      await tester.pumpAndSettle();
+
+      router.go(AppRoutes.projectionDetails);
+      await tester.pumpAndSettle();
+      expect(find.byType(ProjectionPage), findsOneWidget);
+
+      router.go(AppRoutes.projectionDetails, extra: projection);
+      await tester.pumpAndSettle();
+      expect(find.byType(ProjectionDetailsPage), findsOneWidget);
     });
 
     testWidgets('opens the administration only for admins', (tester) async {

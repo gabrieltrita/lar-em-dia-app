@@ -5,6 +5,7 @@ import 'package:lar_em_dia/app.dart';
 import 'package:lar_em_dia/core/di/injection.dart';
 import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
+import 'package:lar_em_dia/core/theme/finance_colors.dart';
 import 'package:lar_em_dia/features/auth/domain/auth_repository.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
 import 'package:lar_em_dia/features/balance/domain/balance_repository.dart';
@@ -12,9 +13,9 @@ import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/domain/entry_repository.dart';
 import 'package:lar_em_dia/features/home/presentation/cubits/home_cubit.dart';
 import 'package:lar_em_dia/features/home/presentation/home_page.dart';
+import 'package:lar_em_dia/features/shell/presentation/finance_changes.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../helpers/admin_fixtures.dart';
 import '../../helpers/auth_fixtures.dart';
 import '../../helpers/finance_fixtures.dart';
 import '../../helpers/pump_page.dart';
@@ -27,27 +28,31 @@ void main() {
     late MockBalanceRepository balances;
     late MockEntryRepository entries;
     late MockProjectionRepository projections;
+    late FinanceChanges changes;
+    late int notified;
 
     setUp(() {
       harness = AuthHarness()..session.signedIn(ana);
       balances = MockBalanceRepository();
       entries = MockEntryRepository();
       projections = MockProjectionRepository();
+      notified = 0;
+      changes = FinanceChanges()..addListener(() => notified++);
       when(balances.latest).thenAnswer((_) async => balance);
       when(
         () => projections.fetch(
           from: any(named: 'from'),
-          months: any(named: 'months'),
+          period: any(named: 'period'),
         ),
       ).thenAnswer(
         (_) async => projection.copyWith(months: [decemberProjection]),
       );
       when(() => entries.between(any(), any(), kind: any(named: 'kind')))
           .thenAnswer((_) async => []);
-      when(() => entries.month(any(), kind: EntryKind.income))
-          .thenAnswer((_) async => [salary, rent]);
-      when(() => entries.month(any(), kind: EntryKind.expense))
-          .thenAnswer((_) async => [housing, groceries]);
+      when(() => entries.categories(EntryKind.expense))
+          .thenAnswer((_) async => [housingCategory, groceriesCategory]);
+      when(() => entries.month(any()))
+          .thenAnswer((_) async => [salary, rent, housing, groceries]);
     });
     tearDown(() => harness.dispose());
 
@@ -59,150 +64,152 @@ void main() {
         BlocProvider(
           create: (_) => started(
             HomeCubit(balances, entries, projections),
-            (cubit) => cubit.load(),
+            (cubit) => cubit.load(today: DateTime(2026, 11, 6)),
           ),
           child: const HomePage(),
         ),
         session: harness.session,
+        changes: changes,
       );
     }
 
-    testWidgets('lists the bills of the next days and marks one as paid', (
-      tester,
-    ) async {
-      when(() => entries.between(any(), any(), kind: EntryKind.expense))
-          .thenAnswer((_) async => [housing, groceries]);
-      when(() => entries.markPaid(housing.id, paidOn: any(named: 'paidOn')))
-          .thenAnswer((_) async => housing);
-      await pump(tester);
-
-      expect(find.text('Próximos vencimentos'), findsOneWidget);
-      expect(find.text('Aluguel de casa'), findsOneWidget);
-      expect(find.text('10/11/2026'), findsOneWidget);
-      expect(find.text('Mercado do mês'), findsNothing);
-
-      when(() => entries.between(any(), any(), kind: EntryKind.expense))
-          .thenAnswer((_) async => []);
-      await tester.tap(find.bySemanticsLabel('Marcar como paga'));
-      await tester.pumpAndSettle();
-
-      verify(() => entries.markPaid(housing.id, paidOn: any(named: 'paidOn')))
-          .called(1);
-      expect(
-        find.text('Nenhuma conta a pagar nos próximos 7 dias.'),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('shows the error of a failed payment', (tester) async {
-      when(() => entries.between(any(), any(), kind: EntryKind.expense))
-          .thenAnswer((_) async => [housing]);
-      when(() => entries.markPaid(any(), paidOn: any(named: 'paidOn')))
-          .thenThrow(const ApiError(code: ApiError.networkErrorCode));
-      await pump(tester);
-
-      await tester.tap(find.bySemanticsLabel('Marcar como paga'));
-      await tester.pumpAndSettle();
-
-      expect(find.textContaining('Não foi possível conectar'), findsOneWidget);
-    });
-
-    testWidgets('shows the projected end of the month in red when negative', (
-      tester,
-    ) async {
-      await pump(tester);
-
-      expect(
-        find.text('Saldo previsto no fim de dezembro de 2026'),
-        findsOneWidget,
-      );
-      expect(
-        find.text(r'Economia acumulada até dezembro de 2026: -R$ 2.300,00'),
-        findsOneWidget,
-      );
-      final closing = tester.widget<Text>(find.text(r'-R$ 1.065,44'));
-      final context = tester.element(find.text(r'-R$ 1.065,44'));
-      expect(closing.style?.color, Theme.of(context).colorScheme.error);
-    });
-
-    testWidgets('shows a positive projection in the default color', (
-      tester,
-    ) async {
-      when(
-        () => projections.fetch(
-          from: any(named: 'from'),
-          months: any(named: 'months'),
-        ),
-      ).thenAnswer((_) async => projection);
-      await pump(tester);
-
-      final closing = tester.widget<Text>(find.text(r'R$ 4.934,56'));
-      final context = tester.element(find.text(r'R$ 4.934,56'));
-      expect(closing.style?.color, isNot(Theme.of(context).colorScheme.error));
-    });
-
-    testWidgets('hides the projection without a balance', (tester) async {
-      when(balances.latest).thenAnswer((_) async => null);
-      await pump(tester);
-
-      expect(find.text('Ver projeção'), findsNothing);
-    });
-
-    testWidgets('shows the month expenses', (tester) async {
-      await pump(tester);
-
-      expect(find.textContaining('Despesas de '), findsOneWidget);
-      expect(find.text(r'R$ 2.800,00'), findsOneWidget);
-      expect(
-        find.text(r'Pagas R$ 800,00 · A pagar R$ 2.000,00'),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('shows the balance and the month income', (tester) async {
+    testWidgets('leads with the result of the month', (tester) async {
       await pump(tester);
 
       expect(find.text('Olá, Ana!'), findsOneWidget);
+      expect(find.text('Balanço de novembro de 2026'), findsOneWidget);
+      final result = tester.widget<Text>(find.text(r'+R$ 3.700,00'));
+      final context = tester.element(find.byType(HomePage));
+      expect(result.style?.color, FinanceColors.of(context).positive);
+      expect(find.byIcon(Icons.trending_up), findsOneWidget);
+      expect(find.text(r'R$ 6.500,00'), findsOneWidget);
+      expect(find.text(r'R$ 2.800,00'), findsOneWidget);
+      expect(find.text(r'Sobram R$ 3.700,00 até 30/11/2026'), findsOneWidget);
+    });
+
+    testWidgets('says what is missing when the month spends more', (
+      tester,
+    ) async {
+      when(() => entries.month(any()))
+          .thenAnswer((_) async => [rent, housing, groceries]);
+      await pump(tester);
+
+      expect(find.text(r'-R$ 1.300,00'), findsOneWidget);
+      expect(find.byIcon(Icons.trending_down), findsOneWidget);
+      expect(find.text(r'Faltam R$ 1.300,00 até 30/11/2026'), findsOneWidget);
+    });
+
+    testWidgets('switches months', (tester) async {
+      await pump(tester);
+
+      await tester.tap(find.byTooltip('Mês anterior'));
+      await tester.pumpAndSettle();
+      expect(find.text('Balanço de outubro de 2026'), findsOneWidget);
+      verify(() => entries.month(DateTime(2026, 10))).called(1);
+
+      await tester.tap(find.byTooltip('Próximo mês'));
+      await tester.pumpAndSettle();
+      expect(find.text('Balanço de novembro de 2026'), findsOneWidget);
+    });
+
+    testWidgets('shows the balance and the projected end of the month', (
+      tester,
+    ) async {
+      await pump(tester);
+
+      expect(find.text('Saldo informado'), findsOneWidget);
       expect(find.text(r'R$ 1.234,56'), findsOneWidget);
       expect(find.text('em 03/11/2026'), findsOneWidget);
-      expect(find.text(r'R$ 6.500,00'), findsOneWidget);
-      expect(
-        find.text(r'Recebidas R$ 5.000,00 · A receber R$ 1.500,00'),
-        findsOneWidget,
-      );
+      expect(find.text('Fim do mês'), findsOneWidget);
+      expect(find.text(r'-R$ 1.065,44'), findsOneWidget);
+
+      await tester.tap(find.text(r'R$ 1.234,56'));
+      await tester.pumpAndSettle();
+      expect(find.text(routeMarker(AppRoutes.balances)), findsOneWidget);
+      await tester.tap(find.text(savedAndBack));
+      await tester.pumpAndSettle();
+      expect(notified, 1);
+
+      await tester.tap(find.text('Fim do mês'));
+      await tester.pumpAndSettle();
+      expect(find.text(routeMarker(AppRoutes.projection)), findsOneWidget);
     });
 
     testWidgets('invites to inform the first balance', (tester) async {
       when(balances.latest).thenAnswer((_) async => null);
       await pump(tester);
 
-      expect(find.textContaining('ainda não informou'), findsOneWidget);
-      expect(find.text('Histórico'), findsNothing);
+      expect(find.text('—'), findsOneWidget);
+      verifyNever(
+        () => projections.fetch(
+          from: any(named: 'from'),
+          period: any(named: 'period'),
+        ),
+      );
+      await tester.tap(find.text('Informar saldo'));
+      await tester.pumpAndSettle();
+      expect(find.text(routeMarker(AppRoutes.balanceForm)), findsOneWidget);
     });
 
-    for (final (button, route) in [
-      ('Informar saldo', AppRoutes.balanceForm),
-      ('Histórico', AppRoutes.balances),
-      ('Nova receita', AppRoutes.incomeForm),
-      ('Ver receitas', AppRoutes.income),
-      ('Nova despesa', AppRoutes.expensesForm),
-      ('Ver despesas', AppRoutes.expenses),
-      ('Ver projeção', AppRoutes.projection),
-    ]) {
-      testWidgets('$button opens $route and reloads on return', (tester) async {
-        await pump(tester);
+    testWidgets('shows where the money goes', (tester) async {
+      await pump(tester);
 
-        await tester.ensureVisible(find.text(button));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text(button));
-        await tester.pumpAndSettle();
-        expect(find.text(routeMarker(route)), findsOneWidget);
-        await tester.tap(find.text(savedAndBack));
-        await tester.pumpAndSettle();
+      expect(find.text('Para onde vai o dinheiro'), findsOneWidget);
+      expect(find.text('Moradia'), findsOneWidget);
+      expect(find.text('71%'), findsOneWidget);
+      expect(find.text('Mercado'), findsOneWidget);
+      expect(find.text('29%'), findsOneWidget);
+      expect(find.text(r'Fixas R$ 2.000,00'), findsOneWidget);
+      expect(find.text(r'Variáveis R$ 800,00'), findsOneWidget);
+      expect(find.text('Outras'), findsNothing);
+    });
 
-        verify(balances.latest).called(2);
-      });
-    }
+    testWidgets('groups the smaller categories as others', (tester) async {
+      when(() => entries.month(any())).thenAnswer(
+        (_) async => [
+          for (var index = 0; index < 7; index++)
+            housing.copyWith(
+              id: 'entry-$index',
+              categoryId: 'key_$index',
+              amountCents: 10000 * (7 - index),
+            ),
+        ],
+      );
+      await pump(tester);
+
+      expect(find.text('key_0'), findsOneWidget);
+      expect(find.text('key_5'), findsNothing);
+      expect(find.text('Outras'), findsOneWidget);
+      expect(find.text('25%'), findsOneWidget);
+    });
+
+    testWidgets('says when the month has no expenses', (tester) async {
+      when(() => entries.month(any())).thenAnswer((_) async => [salary]);
+      await pump(tester);
+
+      expect(find.text('Nenhuma despesa neste mês.'), findsOneWidget);
+    });
+
+    testWidgets('opens the bills due in the next days', (tester) async {
+      when(() => entries.between(any(), any(), kind: EntryKind.expense))
+          .thenAnswer((_) async => [housing, groceries]);
+      await pump(tester);
+
+      expect(find.text('1 conta vence nos próximos 7 dias'), findsOneWidget);
+      expect(find.text(r'R$ 2.000,00'), findsOneWidget);
+      await tester.tap(find.text('1 conta vence nos próximos 7 dias'));
+      await tester.pumpAndSettle();
+      expect(find.text(routeMarker(AppRoutes.due)), findsOneWidget);
+    });
+
+    testWidgets('says when nothing is due', (tester) async {
+      await pump(tester);
+
+      expect(
+        find.text('Nenhuma conta vence nos próximos 7 dias'),
+        findsOneWidget,
+      );
+    });
 
     testWidgets('warns about a negative month and opens the projection', (
       tester,
@@ -223,7 +230,7 @@ void main() {
       when(
         () => projections.fetch(
           from: any(named: 'from'),
-          months: any(named: 'months'),
+          period: any(named: 'period'),
         ),
       ).thenAnswer(
         (_) async => projection.copyWith(
@@ -234,44 +241,6 @@ void main() {
       await pump(tester);
 
       expect(find.textContaining('saldo fica negativo'), findsNothing);
-    });
-
-    testWidgets('shows the administration only to admins', (tester) async {
-      await pump(tester);
-      expect(find.text('Administração'), findsNothing);
-
-      harness.session.signedIn(rafaelAdmin);
-      await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(find.text('Gerenciar usuários'), 200);
-      await tester.ensureVisible(find.text('Gerenciar usuários'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Gerenciar usuários'));
-      await tester.pumpAndSettle();
-
-      expect(find.text(routeMarker(AppRoutes.adminUsers)), findsOneWidget);
-      await tester.tap(find.text(closedAndBack));
-      await tester.pumpAndSettle();
-
-      await tester.scrollUntilVisible(find.text('Métricas de uso'), 200);
-      await tester.tap(find.text('Métricas de uso'));
-      await tester.pumpAndSettle();
-      expect(find.text(routeMarker(AppRoutes.adminMetrics)), findsOneWidget);
-      await tester.tap(find.text(closedAndBack));
-      await tester.pumpAndSettle();
-
-      await tester.scrollUntilVisible(find.text('Categorias'), 200);
-      await tester.tap(find.text('Categorias'));
-      await tester.pumpAndSettle();
-      expect(find.text(routeMarker(AppRoutes.adminCategories)), findsOneWidget);
-    });
-
-    testWidgets('opens the account page', (tester) async {
-      await pump(tester);
-
-      await tester.tap(find.byTooltip('Conta'));
-      await tester.pumpAndSettle();
-
-      expect(find.text(routeMarker(AppRoutes.account)), findsOneWidget);
     });
 
     testWidgets('retries after a failure', (tester) async {
@@ -289,7 +258,7 @@ void main() {
     testWidgets('reloads on pull to refresh', (tester) async {
       await pump(tester);
 
-      await tester.fling(find.byType(ListView), const Offset(0, 400), 1000);
+      await tester.fling(find.byType(ListView), const Offset(0, 3000), 1000);
       await tester.pumpAndSettle();
 
       verify(balances.latest).called(2);
@@ -307,6 +276,7 @@ void main() {
       when(balances.latest).thenAnswer((_) async => null);
       when(() => entries.month(any(), kind: any(named: 'kind')))
           .thenAnswer((_) async => []);
+      when(() => entries.categories(any())).thenAnswer((_) async => []);
       when(() => entries.between(any(), any(), kind: any(named: 'kind')))
           .thenAnswer((_) async => []);
       getIt
@@ -316,7 +286,9 @@ void main() {
         ..registerSingleton<EntryRepository>(entries);
     });
 
-    testWidgets('greets the signed in user and logs out', (tester) async {
+    testWidgets('greets the signed in user and logs out from Mais', (
+      tester,
+    ) async {
       when(repository.logout).thenAnswer((_) async {});
       await tester.pumpWidget(const App());
       await tester.pump();
@@ -326,7 +298,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Olá, Ana!'), findsOneWidget);
 
-      await tester.tap(find.byTooltip('Sair'));
+      await tester.tap(find.text('Mais'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Sair'));
       await tester.pumpAndSettle();
 
       verify(repository.logout).called(1);

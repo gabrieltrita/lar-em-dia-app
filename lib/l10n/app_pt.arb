@@ -83,8 +83,9 @@
       }
     }
   },
-  "homeNoBalance": "Você ainda não informou seu saldo. Comece por ele para projetar os próximos meses.",
+  "homeNoBalance": "Para projetar os próximos meses",
   "homeInformBalance": "Informar saldo",
+  "loadingLabel": "Carregando",
   "homeBalanceHistory": "Histórico",
   "homeEntriesTitle": "{kind, select, income{Receitas de {month}} other{Despesas de {month}}}",
   "@homeEntriesTitle": {
@@ -196,7 +197,15 @@
       }
     }
   },
-  "entriesEmptyFilter": "Nenhuma despesa deste tipo neste mês.",
+  "entriesEmptyMessage": "{kind, select, income{Cadastre o que você recebe para ver quanto sobra no fim do mês.} other{Cadastre suas contas para ver para onde vai o dinheiro.}}",
+  "@entriesEmptyMessage": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "entriesEmptyFilter": "Nenhum lançamento com este filtro.",
   "entriesTotal": "Total do mês: {total}",
   "@entriesTotal": {
     "placeholders": {
@@ -305,6 +314,7 @@
   "entryRecurring": "Lançamento repetido",
   "balancesTitle": "Saldos",
   "balancesEmpty": "Nenhum saldo informado ainda.",
+  "balancesEmptyMessage": "Informe quanto tem na conta hoje ou numa data passada para a projeção começar dali.",
   "balanceFormNewTitle": "Informar saldo",
   "balanceFormEditTitle": "Editar saldo",
   "balanceAmountHelper": "Pode ser negativo: digite - antes do valor",
@@ -709,5 +719,190 @@
   "homeUpcomingTitle": "Próximos vencimentos",
   "homeUpcomingEmpty": "Nenhuma conta a pagar nos próximos 7 dias.",
   "errorOnlyForSingleEntry": "O pagamento só pode ser alterado em um lançamento por vez.",
-  "errorInstallmentAmountLocked": "O valor de uma parcela só pode ser alterado nela mesma."
+  "errorInstallmentAmountLocked": "O valor de uma parcela só pode ser alterado nela mesma.",
+  "projectionPeriodThreeMonths": "3M",
+  "projectionPeriodSixMonths": "6M",
+  "projectionPeriodYear": "1A",
+  "projectionPeriodAll": "Tudo",
+  "projectionPeriodLabel": "Período",
+  "projectionHeroTitle": "{saving, select, true{Até {month} você vai guardar} other{Até {month} você vai perder}}",
+  "@projectionHeroTitle": {
+    "placeholders": {
+      "saving": {
+        "type": "String"
+      },
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "projectionHeroClosing": "Saldo previsto em {month}: {amount}",
+  "@projectionHeroClosing": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "projectionSeeMore": "Ver mais",
+  "projectionSeriesBalance": "Saldo",
+  "projectionSeriesFlow": "Entradas e saídas",
+  "projectionReadoutIncome": "Entrou",
+  "projectionReadoutExpense": "Saiu",
+  "projectionCashFlowLabel": "Gráfico de entradas, saídas e saldo de cada mês",
+  "projectionMonthsTitle": "Mês a mês",
+  "projectionMonthIn": "Entrou {amount}",
+  "@projectionMonthIn": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "projectionMonthOut": "Saiu {amount}",
+  "@projectionMonthOut": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "projectionMonthFixed": "Fixas {amount}",
+  "@projectionMonthFixed": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "projectionMonthVariable": "Variáveis {amount}",
+  "@projectionMonthVariable": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "projectionMonthSaved": "Juntado até aqui",
+  "projectionDetailsTitle": "Sua economia",
+  "projectionWaterfallTitle": "Como chegamos aqui",
+  "projectionWaterfallHint": "Do saldo do início, somamos o que entra e tiramos as contas fixas e as variáveis do período.",
+  "projectionWaterfallStart": "Início",
+  "projectionWaterfallIncome": "Entradas",
+  "projectionWaterfallFixed": "Fixas",
+  "projectionWaterfallVariable": "Variáveis",
+  "projectionWaterfallEnd": "Fim",
+  "projectionResultsTitle": "Resultado de cada mês",
+  "projectionResultsHint": "Verde: o mês sobrou. Vermelho: faltou. A linha é o que você juntou até ali.",
+  "projectionNatureTitle": "Fixas e variáveis",
+  "projectionNatureShare": "fixas",
+  "projectionPerMonth": "{amount}/mês",
+  "@projectionPerMonth": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "projectionNatureTotal": "Total no período",
+  "projectionTopTitle": "O que mais pesa",
+  "projectionAttentionTitle": "Meses de atenção",
+  "projectionTopEmpty": "Nenhuma despesa neste período.",
+  "projectionAttentionEmpty": "Nenhum mês gasta mais do que entra neste período.",
+  "projectionAttentionReason": "Pesaram: {categories}",
+  "@projectionAttentionReason": {
+    "placeholders": {
+      "categories": {
+        "type": "String"
+      }
+    }
+  },
+  "shellAdd": "Adicionar",
+  "shellHome": "Início",
+  "shellEntries": "Lançamentos",
+  "shellDue": "Vencimentos",
+  "shellProjection": "Projeção",
+  "shellMore": "Mais",
+  "entryKindExpense": "Despesa",
+  "entryKindIncome": "Receita",
+  "moreFinances": "Finanças",
+  "moreBalances": "Saldo e histórico",
+  "moreAccount": "Conta",
+  "dueTitle": "Vencimentos",
+  "dueEmpty": "Nenhuma conta a pagar",
+  "dueEmptyMessage": "As despesas pendentes deste mês e as atrasadas aparecem aqui.",
+  "dueOverdue": "Atrasadas",
+  "dueThisWeek": "Próximos 7 dias",
+  "dueLater": "Ainda este mês",
+  "duePaid": "{description} marcada como paga.",
+  "@duePaid": {
+    "placeholders": {
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "dueWhen": "{days, plural, =0{Vence hoje} =1{Vence amanhã} other{Vence em {date}}}",
+  "@dueWhen": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "entriesKindAll": "Tudo",
+  "entriesEmptyMonth": "Nada lançado neste mês",
+  "entriesEmptyMonthMessage": "Cadastre receitas e despesas para ver para onde vai o dinheiro.",
+  "entriesResult": "Resultado",
+  "homeMonthResultTitle": "Balanço de {month}",
+  "@homeMonthResultTitle": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "homeExpensesLabel": "Saídas",
+  "homeMonthResultSentence": "{saving, select, true{Sobram {amount} até {date}} other{Faltam {amount} até {date}}}",
+  "@homeMonthResultSentence": {
+    "placeholders": {
+      "saving": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "homeMonthEnd": "Fim do mês",
+  "homeMonthEndCaption": "saldo previsto",
+  "homeOtherCategories": "Outras",
+  "homeWhereMoneyGoes": "Para onde vai o dinheiro",
+  "homeNoExpenses": "Nenhuma despesa neste mês.",
+  "homeDueShortcut": "{count, plural, =0{Nenhuma conta vence nos próximos 7 dias} =1{1 conta vence nos próximos 7 dias} other{{count} contas vencem nos próximos 7 dias}}",
+  "@homeDueShortcut": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dueLate": "Venceu em {date}",
+  "@dueLate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "moreSecurity": "Segurança"
 }
