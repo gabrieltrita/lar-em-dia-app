@@ -23,8 +23,10 @@ class ProjectionCubit extends Cubit<ProjectionState> {
 
   final ProjectionRepository _repository;
 
-  Future<void> load({DateTime? today}) async {
-    emit(state.copyWith(data: const LoadState<Projection>.loading()));
+  Future<void> load({DateTime? today, bool quiet = false}) async {
+    if (!quiet) {
+      emit(state.copyWith(data: const LoadState<Projection>.loading()));
+    }
     try {
       final projection = await _repository.fetch(
         from: Dates.firstOfMonth(today ?? DateTime.now()),

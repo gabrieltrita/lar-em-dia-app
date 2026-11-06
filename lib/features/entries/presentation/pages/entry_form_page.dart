@@ -16,7 +16,7 @@ import 'package:lar_em_dia/core/widgets/form_widgets.dart';
 import 'package:lar_em_dia/features/entries/domain/category.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/presentation/cubits/entry_cubits.dart';
-import 'package:lar_em_dia/features/entries/presentation/widgets/category_label.dart';
+import 'package:lar_em_dia/features/entries/presentation/widgets/category_grid.dart';
 import 'package:lar_em_dia/features/entries/presentation/widgets/nature_label.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
@@ -56,13 +56,14 @@ class _EntryFormPageState extends State<EntryFormPage> {
   late DateTime _dueOn =
       widget.existing?.dueOn ?? Dates.dateOnly(widget.today ?? DateTime.now());
   late bool _settled = widget.existing?.isPaid ?? false;
+  late EntryKind _kind = widget.kind;
   bool _repeat = false;
   int _repeatCount = Recurrence.defaultCount;
   RecurrenceDirection _repeatDirection = RecurrenceDirection.forward;
   bool _installments = false;
   int _installmentsCount = Installments.defaultCount;
 
-  bool get _isExpense => widget.kind == EntryKind.expense;
+  bool get _isExpense => _kind == EntryKind.expense;
 
   bool get _isNew => widget.existing == null;
 
@@ -79,11 +80,12 @@ class _EntryFormPageState extends State<EntryFormPage> {
   }
 
   void _submit() {
-    if (!_formKey.currentState!.validate()) {
+    final categoryId = _categoryId;
+    if (!_formKey.currentState!.validate() || categoryId == null) {
       return;
     }
     final draft = EntryDraft(
-      categoryId: _categoryId!,
+      categoryId: categoryId,
       description: _description.text.trim(),
       amountCents: Money.parse(_amount.text)!,
       dueOn: _dueOn,
@@ -99,7 +101,7 @@ class _EntryFormPageState extends State<EntryFormPage> {
     if (widget.simulation) {
       context.pop(
         EntryPlan(
-          kind: widget.kind,
+          kind: _kind,
           draft: draft,
           recurrence: recurrence,
           installments: installments,
@@ -119,14 +121,38 @@ class _EntryFormPageState extends State<EntryFormPage> {
   }
 
   String _title(AppLocalizations l10n) => switch ((widget.simulation, _isNew)) {
-    (true, _) => l10n.simulationEntryTitle(widget.kind.name),
-    (false, true) => l10n.entryFormNewTitle(widget.kind.name),
-    (false, false) => l10n.entryFormEditTitle(widget.kind.name),
+    (true, _) => l10n.simulationEntryTitle(_kind.name),
+    (false, true) => l10n.entryFormNewTitle(_kind.name),
+    (false, false) => l10n.entryFormEditTitle(_kind.name),
   };
+
+  void _switchKind(EntryKind kind) {
+    setState(() {
+      _kind = kind;
+      _categoryId = null;
+      _nature = null;
+      _installments = false;
+    });
+    unawaited(context.read<CategoriesCubit>().load(kind));
+  }
+
+  Widget _kindField(AppLocalizations l10n) => SegmentedButton<EntryKind>(
+    key: const Key('entry_kind'),
+    showSelectedIcon: false,
+    segments: [
+      ButtonSegment(
+        value: EntryKind.expense,
+        label: Text(l10n.entryKindExpense),
+      ),
+      ButtonSegment(value: EntryKind.income, label: Text(l10n.entryKindIncome)),
+    ],
+    selected: {_kind},
+    onSelectionChanged: (selection) => _switchKind(selection.single),
+  );
 
   List<String> _failureMessages(AppLocalizations l10n, ApiError error) {
     final labels = {
-      'category': l10n.entryCategoryLabel(widget.kind.name),
+      'category': l10n.entryCategoryLabel(_kind.name),
       'nature': l10n.entryNatureLabel,
       'description': l10n.entryDescriptionLabel,
       'amount_cents': l10n.amountLabel,
@@ -145,26 +171,28 @@ class _EntryFormPageState extends State<EntryFormPage> {
   }
 
   Widget _categoryField(AppLocalizations l10n, List<Category> categories) {
-    return DropdownButtonFormField<String>(
+    return FormField<String>(
       key: const Key('entry_category'),
       initialValue: _categoryId,
-      decoration: InputDecoration(
-        labelText: l10n.entryCategoryLabel(widget.kind.name),
+      validator: (_) => Validators.required(_categoryId)?.localized(l10n),
+      builder: (field) => InputDecorator(
+        decoration: InputDecoration(
+          labelText: l10n.entryCategoryLabel(_kind.name),
+          border: InputBorder.none,
+          errorText: field.errorText,
+        ),
+        child: CategoryGrid(
+          categories: categories,
+          selected: _categoryId,
+          onSelected: (category) {
+            setState(() {
+              _categoryId = category.id;
+              _nature = category.defaultNature;
+            });
+            field.didChange(category.id);
+          },
+        ),
       ),
-      items: [
-        for (final category in categories)
-          DropdownMenuItem(
-            value: category.id,
-            child: Text(categoryLabel(l10n, category)),
-          ),
-      ],
-      onChanged: (value) => setState(() {
-        _categoryId = value;
-        _nature = categories
-            .firstWhere((category) => category.id == value)
-            .defaultNature;
-      }),
-      validator: (value) => Validators.required(value)?.localized(l10n),
     );
   }
 
@@ -305,95 +333,101 @@ class _EntryFormPageState extends State<EntryFormPage> {
       },
       builder: (context, state) => Scaffold(
         appBar: AppBar(title: Text(_title(l10n))),
-        body: switch (categories) {
-          Loading() => const Center(child: CircularProgressIndicator()),
-          LoadFailure(:final error) => RetryMessage(
-            message: error.localized(l10n),
-            onRetry: () =>
-                unawaited(context.read<CategoriesCubit>().load(widget.kind)),
-          ),
-          Loaded(value: final options) => SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (_scoped) ...[
-                    InfoMessage(l10n.entryScopeNotice(widget.scope.name)),
-                    const SizedBox(height: 16),
-                  ],
-                  if (options.isEmpty) ...[
-                    InfoMessage(l10n.entryNoCategories),
-                    const SizedBox(height: 16),
-                  ],
-                  _categoryField(l10n, options),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (_isNew) ...[_kindField(l10n), const SizedBox(height: 16)],
+                if (_scoped) ...[
+                  InfoMessage(l10n.entryScopeNotice(widget.scope.name)),
                   const SizedBox(height: 16),
-                  if (_isExpense) ...[
-                    _natureField(l10n),
-                    const SizedBox(height: 8),
-                  ],
-                  TextFormField(
-                    key: const Key('entry_description'),
-                    controller: _description,
-                    decoration: InputDecoration(
-                      labelText: l10n.entryDescriptionLabel,
-                    ),
-                    maxLength: 200,
-                    validator: validateWith(l10n, Validators.required),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    key: const Key('entry_amount'),
-                    controller: _amount,
-                    enabled: !_amountLocked,
-                    decoration: InputDecoration(
-                      labelText: _installments
-                          ? l10n.entryTotalAmountLabel
-                          : l10n.amountLabel,
-                      prefixText: r'R$ ',
-                      helperText: _amountLocked ? l10n.entryAmountLocked : null,
-                      helperMaxLines: 2,
-                    ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [MoneyInputFormatter()],
-                    validator: validateWith(l10n, Validators.positiveAmount),
-                  ),
-                  const SizedBox(height: 16),
-                  DateField(
-                    key: const Key('entry_due_on'),
-                    label: l10n.entryDueOnLabel,
-                    value: _dueOn,
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                    onChanged: (value) => setState(() => _dueOn = value),
-                  ),
-                  const SizedBox(height: 8),
-                  if (!widget.simulation && !_scoped)
-                    SwitchListTile(
-                      key: const Key('entry_settled'),
-                      title: Text(l10n.entrySettledLabel(widget.kind.name)),
-                      value: _settled,
-                      contentPadding: EdgeInsets.zero,
-                      onChanged: (value) => setState(() => _settled = value),
-                    ),
-                  if (_isNew) ..._repeatFields(l10n),
-                  if (_isNew && _isExpense) ..._installmentsFields(l10n),
-                  if (state case SubmissionFailure(:final error)) ...[
-                    const SizedBox(height: 16),
-                    ErrorBanner(_failureMessages(l10n, error)),
-                  ],
-                  const SizedBox(height: 24),
-                  SubmitButton(
-                    label: widget.simulation ? l10n.simulationAdd : l10n.save,
-                    busy: state is SubmissionInProgress,
-                    onPressed: _submit,
-                  ),
                 ],
-              ),
+                TextFormField(
+                  key: const Key('entry_amount'),
+                  controller: _amount,
+                  enabled: !_amountLocked,
+                  autofocus: _isNew,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.displaySmall,
+                  decoration: InputDecoration(
+                    labelText: _installments
+                        ? l10n.entryTotalAmountLabel
+                        : l10n.amountLabel,
+                    prefixText: r'R$ ',
+                    hintText: '0,00',
+                    helperText: _amountLocked ? l10n.entryAmountLocked : null,
+                    helperMaxLines: 2,
+                  ),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [MoneyInputFormatter()],
+                  validator: validateWith(l10n, Validators.positiveAmount),
+                ),
+                const SizedBox(height: 16),
+                switch (categories) {
+                  Loading() => const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                  LoadFailure(:final error) => RetryMessage(
+                    message: error.localized(l10n),
+                    onRetry: () =>
+                        unawaited(context.read<CategoriesCubit>().load(_kind)),
+                  ),
+                  Loaded(value: final options) when options.isEmpty =>
+                    InfoMessage(l10n.entryNoCategories),
+                  Loaded(value: final options) => _categoryField(l10n, options),
+                },
+                const SizedBox(height: 8),
+                if (_isExpense) ...[
+                  _natureField(l10n),
+                  const SizedBox(height: 8),
+                ],
+                TextFormField(
+                  key: const Key('entry_description'),
+                  controller: _description,
+                  decoration: InputDecoration(
+                    labelText: l10n.entryDescriptionLabel,
+                  ),
+                  maxLength: 200,
+                  validator: validateWith(l10n, Validators.required),
+                ),
+                const SizedBox(height: 8),
+                DateField(
+                  key: const Key('entry_due_on'),
+                  label: l10n.entryDueOnLabel,
+                  value: _dueOn,
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                  onChanged: (value) => setState(() => _dueOn = value),
+                ),
+                const SizedBox(height: 8),
+                if (!widget.simulation && !_scoped)
+                  SwitchListTile(
+                    key: const Key('entry_settled'),
+                    title: Text(l10n.entrySettledLabel(_kind.name)),
+                    value: _settled,
+                    contentPadding: EdgeInsets.zero,
+                    onChanged: (value) => setState(() => _settled = value),
+                  ),
+                if (_isNew) ..._repeatFields(l10n),
+                if (_isNew && _isExpense) ..._installmentsFields(l10n),
+                if (state case SubmissionFailure(:final error)) ...[
+                  const SizedBox(height: 16),
+                  ErrorBanner(_failureMessages(l10n, error)),
+                ],
+                const SizedBox(height: 24),
+                SubmitButton(
+                  label: widget.simulation ? l10n.simulationAdd : l10n.save,
+                  busy: state is SubmissionInProgress,
+                  onPressed: _submit,
+                ),
+              ],
             ),
           ),
-        },
+        ),
       ),
     );
   }

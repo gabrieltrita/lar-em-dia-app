@@ -4,6 +4,7 @@ import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/core/state/load_state.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/home/presentation/cubits/home_cubit.dart';
+import 'package:lar_em_dia/features/projection/domain/projection.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/finance_fixtures.dart';
@@ -31,10 +32,10 @@ void main() {
           kind: EntryKind.expense,
         ),
       ).thenAnswer((_) async => [housing, groceries]);
-      when(() => entries.month(november, kind: EntryKind.income))
-          .thenAnswer((_) async => [salary, rent]);
-      when(() => entries.month(november, kind: EntryKind.expense))
-          .thenAnswer((_) async => [housing, groceries]);
+      when(() => entries.month(november))
+          .thenAnswer((_) async => [salary, rent, housing, groceries]);
+      when(() => entries.categories(EntryKind.expense))
+          .thenAnswer((_) async => [housingCategory]);
       when(() => projections.fetch(from: november))
           .thenAnswer((_) async => projection);
     },
@@ -52,25 +53,82 @@ void main() {
             pendingCents: 200000,
           ),
           projected: novemberProjection,
-          horizon: decemberProjection,
           firstNegativeMonth: DateTime(2026, 12),
           negativeMonthsCount: 1,
           upcoming: [housing],
+          expenseByCategory: [
+            const CategoryAmount(categoryKey: 'housing', amountCents: 200000),
+            CategoryAmount(
+              categoryKey: groceries.categoryId,
+              amountCents: 80000,
+            ),
+          ],
+          fixedCents: 200000,
+          variableCents: 80000,
         ),
       ),
     ],
     verify: (cubit) {
       final summary = (cubit.state as Loaded<HomeSummary>).value;
-      expect(summary.totalsOf(EntryKind.income).totalCents, 650000);
-      expect(summary.totalsOf(EntryKind.expense).totalCents, 280000);
+      expect(summary.resultCents, 370000);
+      expect(summary.upcomingCents, 200000);
     },
+  );
+
+  blocTest<HomeCubit, LoadState<HomeSummary>>(
+    'moves between months and reloads quietly',
+    setUp: () {
+      when(balances.latest).thenAnswer((_) async => null);
+      when(() => entries.month(any())).thenAnswer((_) async => []);
+      when(() => entries.categories(EntryKind.expense))
+          .thenAnswer((_) async => []);
+      when(() => entries.between(any(), any(), kind: any(named: 'kind')))
+          .thenAnswer((_) async => []);
+    },
+    build: () => HomeCubit(balances, entries, projections),
+    act: (cubit) async {
+      await cubit.load(today: DateTime(2026, 11, 3));
+      await cubit.previous();
+      await cubit.next();
+      await cubit.next();
+      await cubit.load(quiet: true);
+    },
+    verify: (cubit) {
+      expect(
+        (cubit.state as Loaded<HomeSummary>).value.month,
+        DateTime(2026, 12),
+      );
+      verify(() => entries.month(DateTime(2026, 10))).called(1);
+      verify(() => entries.month(DateTime(2026, 12))).called(2);
+    },
+  );
+
+  blocTest<HomeCubit, LoadState<HomeSummary>>(
+    'ignores a month that is no longer selected',
+    setUp: () {
+      when(balances.latest).thenAnswer((_) async => null);
+      when(() => entries.month(any())).thenAnswer((_) async => []);
+      when(() => entries.categories(EntryKind.expense))
+          .thenAnswer((_) async => []);
+      when(() => entries.between(any(), any(), kind: any(named: 'kind')))
+          .thenAnswer((_) async => []);
+    },
+    build: () => HomeCubit(balances, entries, projections),
+    act: (cubit) async {
+      final first = cubit.load(month: DateTime(2026, 10));
+      await cubit.load(month: november);
+      await first;
+    },
+    verify: (cubit) =>
+        expect((cubit.state as Loaded<HomeSummary>).value.month, november),
   );
 
   blocTest<HomeCubit, LoadState<HomeSummary>>(
     'skips the projection without a balance',
     setUp: () {
       when(balances.latest).thenAnswer((_) async => null);
-      when(() => entries.month(november, kind: any(named: 'kind')))
+      when(() => entries.month(november)).thenAnswer((_) async => []);
+      when(() => entries.categories(EntryKind.expense))
           .thenAnswer((_) async => []);
       when(() => entries.between(any(), any(), kind: any(named: 'kind')))
           .thenAnswer((_) async => []);
@@ -101,48 +159,4 @@ void main() {
       LoadState<HomeSummary>.failure(ApiError(code: 'network_error')),
     ],
   );
-
-  group('markPaid', () {
-    final today = DateTime(2026, 11, 3);
-
-    setUp(() {
-      when(balances.latest).thenAnswer((_) async => null);
-      when(() => entries.month(any(), kind: any(named: 'kind')))
-          .thenAnswer((_) async => []);
-      when(() => entries.between(any(), any(), kind: any(named: 'kind')))
-          .thenAnswer((_) async => []);
-    });
-
-    blocTest<HomeCubit, LoadState<HomeSummary>>(
-      'marks a bill as paid today and reloads',
-      setUp: () =>
-          when(() => entries.markPaid(housing.id, paidOn: today))
-              .thenAnswer((_) async => housing),
-      build: () => HomeCubit(balances, entries, projections),
-      act: (cubit) async {
-        expect(await cubit.markPaid(housing, today: today), isNull);
-      },
-      expect: () => [
-        const LoadState<HomeSummary>.loading(),
-        isA<Loaded<HomeSummary>>(),
-      ],
-      verify: (_) =>
-          verify(() => entries.markPaid(housing.id, paidOn: today)).called(1),
-    );
-
-    blocTest<HomeCubit, LoadState<HomeSummary>>(
-      'returns the error without reloading',
-      setUp: () =>
-          when(() => entries.markPaid(any(), paidOn: any(named: 'paidOn')))
-              .thenThrow(const ApiError(code: 'network_error')),
-      build: () => HomeCubit(balances, entries, projections),
-      act: (cubit) async {
-        expect(
-          await cubit.markPaid(housing),
-          const ApiError(code: 'network_error'),
-        );
-      },
-      expect: () => const <LoadState<HomeSummary>>[],
-    );
-  });
 }

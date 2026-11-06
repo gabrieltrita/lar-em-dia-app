@@ -29,14 +29,14 @@ class ApiEntryRepository implements EntryRepository {
   }
 
   @override
-  Future<List<Entry>> month(DateTime month, {required EntryKind kind}) =>
+  Future<List<Entry>> month(DateTime month, {EntryKind? kind}) =>
       between(Dates.firstOfMonth(month), Dates.lastOfMonth(month), kind: kind);
 
   @override
   Future<List<Entry>> between(
     DateTime from,
     DateTime to, {
-    required EntryKind kind,
+    EntryKind? kind,
   }) async {
     final entries = <Entry>[];
     int? page = 1;
@@ -47,7 +47,7 @@ class ApiEntryRepository implements EntryRepository {
         query: {
           'from': Dates.toIso(from),
           'to': Dates.toIso(to),
-          'kind': kind.name,
+          'kind': ?kind?.name,
           'limit': pageSize,
           'page': page,
         },
