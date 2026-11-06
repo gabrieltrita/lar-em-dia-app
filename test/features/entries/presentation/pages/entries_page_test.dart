@@ -10,6 +10,7 @@ import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/presentation/cubits/entry_cubits.dart';
 import 'package:lar_em_dia/features/entries/presentation/pages/entries_page.dart';
 import 'package:lar_em_dia/features/entries/presentation/widgets/category_visuals.dart';
+import 'package:lar_em_dia/features/shell/presentation/finance_changes.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/auth_fixtures.dart';
@@ -19,30 +20,63 @@ import '../../../../helpers/pump_page.dart';
 void main() {
   late AuthHarness harness;
   late MockEntryRepository repository;
+  late FinanceChanges changes;
+  late int notified;
 
   setUpAll(registerFinanceFallbacks);
   setUp(() {
     harness = AuthHarness();
     repository = MockEntryRepository();
+    notified = 0;
+    changes = FinanceChanges()..addListener(() => notified++);
+    when(() => repository.categories(EntryKind.expense))
+        .thenAnswer((_) async => [housingCategory, groceriesCategory]);
     when(() => repository.categories(EntryKind.income))
         .thenAnswer((_) async => [salaryCategory, rentCategory]);
-    when(() => repository.month(any(), kind: EntryKind.income))
-        .thenAnswer((_) async => [salary, rent]);
+    when(() => repository.month(any())).thenAnswer((_) async => [salary, rent]);
   });
   tearDown(() => harness.dispose());
 
-  Future<void> pump(WidgetTester tester, {EntryKind kind = EntryKind.income}) =>
-      pumpPage(
-        tester,
-        BlocProvider(
-          create: (_) => started(
-            MonthEntriesCubit(repository, kind),
-            (cubit) => cubit.load(november),
-          ),
-          child: const EntriesPage(),
-        ),
-        session: harness.session,
-      );
+  Future<void> pump(
+    WidgetTester tester, {
+    EntryKind? kind = EntryKind.income,
+  }) => pumpPage(
+    tester,
+    BlocProvider(
+      create: (_) => started(MonthEntriesCubit(repository), (cubit) async {
+        await cubit.load(month: november);
+        cubit.filterKind(kind);
+      }),
+      child: const EntriesPage(),
+    ),
+    session: harness.session,
+    changes: changes,
+  );
+
+  testWidgets('shows income and expenses together with the result', (
+    tester,
+  ) async {
+    when(() => repository.month(any()))
+        .thenAnswer((_) async => [salary, rent, housing, groceries]);
+    await pump(tester, kind: null);
+
+    expect(find.text('Lançamentos'), findsOneWidget);
+    expect(find.text(r'R$ 6.500,00'), findsOneWidget);
+    expect(find.text(r'R$ 2.800,00'), findsOneWidget);
+    expect(find.text(r'+R$ 3.700,00'), findsOneWidget);
+    expect(find.text('Aluguel de casa'), findsOneWidget);
+    expect(find.text('Fixas'), findsNothing);
+
+    await tester.tap(find.text('Despesas'));
+    await tester.pumpAndSettle();
+    expect(find.text('Salário ACME'), findsNothing);
+    expect(find.text('Fixas'), findsOneWidget);
+
+    await tester.tap(find.text('Receitas'));
+    await tester.pumpAndSettle();
+    expect(find.text('Aluguel de casa'), findsNothing);
+    expect(find.text(r'Total do mês: R$ 6.500,00'), findsOneWidget);
+  });
 
   testWidgets('lists the month with its total', (tester) async {
     await pump(tester);
@@ -60,7 +94,7 @@ void main() {
   });
 
   testWidgets('marks the entries of a series', (tester) async {
-    when(() => repository.month(any(), kind: EntryKind.income)).thenAnswer(
+    when(() => repository.month(any())).thenAnswer(
       (_) async => [salary.copyWith(seriesId: 'series-1', seriesPosition: 1)],
     );
     await pump(tester);
@@ -73,7 +107,7 @@ void main() {
   });
 
   testWidgets('labels installments with their position', (tester) async {
-    when(() => repository.month(any(), kind: EntryKind.income)).thenAnswer(
+    when(() => repository.month(any())).thenAnswer(
       (_) async => [
         salary.copyWith(
           seriesId: 'series-2',
@@ -93,9 +127,7 @@ void main() {
 
   group('expenses', () {
     setUp(() {
-      when(() => repository.categories(EntryKind.expense))
-          .thenAnswer((_) async => [housingCategory, groceriesCategory]);
-      when(() => repository.month(any(), kind: EntryKind.expense))
+      when(() => repository.month(any()))
           .thenAnswer((_) async => [housing, groceries]);
     });
 
@@ -104,7 +136,6 @@ void main() {
     ) async {
       await pump(tester, kind: EntryKind.expense);
 
-      expect(find.text('Despesas'), findsOneWidget);
       expect(find.text(r'Total do mês: R$ 2.800,00'), findsOneWidget);
       expect(
         find.text(r'Fixas R$ 2.000,00 · Variáveis R$ 800,00'),
@@ -135,26 +166,13 @@ void main() {
     });
 
     testWidgets('says when no expense has the chosen nature', (tester) async {
-      when(() => repository.month(any(), kind: EntryKind.expense))
-          .thenAnswer((_) async => [groceries]);
+      when(() => repository.month(any())).thenAnswer((_) async => [groceries]);
       await pump(tester, kind: EntryKind.expense);
 
       await tester.tap(find.text('Fixas'));
       await tester.pumpAndSettle();
 
-      expect(
-        find.text('Nenhuma despesa deste tipo neste mês.'),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('opens the expense form', (tester) async {
-      await pump(tester, kind: EntryKind.expense);
-
-      await tester.tap(find.byTooltip('Nova despesa'));
-      await tester.pumpAndSettle();
-
-      expect(find.text(routeMarker(AppRoutes.expensesForm)), findsOneWidget);
+      expect(find.text('Nenhum lançamento com este filtro.'), findsOneWidget);
     });
 
     testWidgets('confirms the deletion of an expense', (tester) async {
@@ -181,19 +199,14 @@ void main() {
   });
 
   testWidgets('says when the month is empty', (tester) async {
-    when(() => repository.month(any(), kind: EntryKind.income))
-        .thenAnswer((_) async => []);
+    when(() => repository.month(any())).thenAnswer((_) async => []);
     await pump(tester);
 
-    expect(find.text('Nenhuma receita neste mês.'), findsOneWidget);
-    expect(
-      find.text(
-        'Cadastre o que você recebe para ver quanto sobra no fim do mês.',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('Nada lançado neste mês'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Nova receita'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Adicionar'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Receita'));
     await tester.pumpAndSettle();
 
     expect(
@@ -204,14 +217,13 @@ void main() {
 
   testWidgets('shows placeholders while loading', (tester) async {
     final pending = Completer<List<Entry>>();
-    when(() => repository.month(any(), kind: EntryKind.income))
-        .thenAnswer((_) => pending.future);
+    when(() => repository.month(any())).thenAnswer((_) => pending.future);
     await pumpPage(
       tester,
       BlocProvider(
         create: (_) => started(
-          MonthEntriesCubit(repository, EntryKind.income),
-          (cubit) => cubit.load(november),
+          MonthEntriesCubit(repository),
+          (cubit) => cubit.load(month: november),
         ),
         child: const EntriesPage(),
       ),
@@ -225,12 +237,11 @@ void main() {
   });
 
   testWidgets('retries a failed load', (tester) async {
-    when(() => repository.month(any(), kind: EntryKind.income))
+    when(() => repository.month(any()))
         .thenThrow(const ApiError(code: 'network_error'));
     await pump(tester);
 
-    when(() => repository.month(any(), kind: EntryKind.income))
-        .thenAnswer((_) async => [salary]);
+    when(() => repository.month(any())).thenAnswer((_) async => [salary]);
     await tester.tap(find.text('Tentar de novo'));
     await tester.pumpAndSettle();
 
@@ -243,24 +254,29 @@ void main() {
     await tester.tap(find.text('Salário ACME'));
     await tester.pumpAndSettle();
     expect(
-      find.text(routeMarker(AppRoutes.incomeForm, EntryEdit(entry: salary))),
+      find.text(
+        routeMarker(
+          AppRoutes.entryForm(EntryKind.income),
+          EntryEdit(entry: salary),
+        ),
+      ),
       findsOneWidget,
     );
     await tester.tap(find.text(savedAndBack));
     await tester.pumpAndSettle();
 
-    verify(() => repository.month(november, kind: EntryKind.income)).called(2);
+    expect(notified, 1);
   });
 
-  testWidgets('does not reload when the form is closed', (tester) async {
+  testWidgets('does not notify when the form is closed', (tester) async {
     await pump(tester);
 
-    await tester.tap(find.byTooltip('Nova receita'));
+    await tester.tap(find.text('Salário ACME'));
     await tester.pumpAndSettle();
     await tester.tap(find.text(closedAndBack));
     await tester.pumpAndSettle();
 
-    verify(() => repository.month(november, kind: EntryKind.income)).called(1);
+    expect(notified, 0);
   });
 
   Future<void> swipe(WidgetTester tester, String description) async {
@@ -272,8 +288,7 @@ void main() {
     when(() => repository.delete('entry-2')).thenAnswer((_) async {});
     await pump(tester);
 
-    when(() => repository.month(any(), kind: EntryKind.income))
-        .thenAnswer((_) async => [salary]);
+    when(() => repository.month(any())).thenAnswer((_) async => [salary]);
     await swipe(tester, 'Aluguel apto 12');
     expect(find.text('"Aluguel apto 12" será apagada.'), findsOneWidget);
     await tester.tap(find.widgetWithText(FilledButton, 'Apagar'));
@@ -315,7 +330,7 @@ void main() {
 
     setUp(
       () =>
-          when(() => repository.month(any(), kind: EntryKind.income))
+          when(() => repository.month(any()))
               .thenAnswer((_) async => [salary, seriesRent]),
     );
 
@@ -337,7 +352,7 @@ void main() {
       expect(
         find.text(
           routeMarker(
-            AppRoutes.incomeForm,
+            AppRoutes.entryForm(EntryKind.income),
             EntryEdit(entry: seriesRent, scope: EntryScope.following),
           ),
         ),
@@ -364,8 +379,7 @@ void main() {
           .thenAnswer((_) async {});
       await pump(tester);
 
-      when(() => repository.month(any(), kind: EntryKind.income))
-          .thenAnswer((_) async => [salary]);
+      when(() => repository.month(any())).thenAnswer((_) async => [salary]);
       await swipe(tester, 'Aluguel apto 12');
       expect(find.text('Apagar receita da série'), findsOneWidget);
       await tester.tap(find.text('Todos da série'));

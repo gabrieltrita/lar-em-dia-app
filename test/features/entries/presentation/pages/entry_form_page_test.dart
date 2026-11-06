@@ -70,7 +70,7 @@ void main() {
       ],
     );
     addTearDown(router.dispose);
-    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.physicalSize = const Size(1200, 6000);
     addTearDown(tester.view.resetPhysicalSize);
     await tester.pumpWidget(
       MaterialApp.router(
@@ -87,9 +87,7 @@ void main() {
   final save = find.text('Salvar');
 
   Future<void> fillIn(WidgetTester tester) async {
-    await tester.tap(find.byKey(const Key('entry_category')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Salário').last);
+    await tester.tap(find.byKey(const ValueKey('category_salary')));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const Key('entry_description')),
@@ -256,9 +254,12 @@ void main() {
 
   group('expenses', () {
     Future<void> pickCategory(WidgetTester tester, String label) async {
-      await tester.tap(find.byKey(const Key('entry_category')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(label).last);
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const Key('entry_category')),
+          matching: find.text(label),
+        ),
+      );
       await tester.pumpAndSettle();
     }
 
@@ -481,6 +482,47 @@ void main() {
     );
     await tester.tap(save);
     await tester.pumpAndSettle();
+    expect(popped, isEmpty);
+  });
+
+  testWidgets('switches between expense and income in a new entry', (
+    tester,
+  ) async {
+    await pump(tester, kind: EntryKind.expense);
+
+    expect(find.text('Nova despesa'), findsOneWidget);
+    await tester.tap(find.text('Moradia'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('entry_nature')), findsOneWidget);
+
+    await tester.tap(find.text('Receita'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nova receita'), findsOneWidget);
+    expect(find.text('Moradia'), findsNothing);
+    expect(find.text('Salário'), findsOneWidget);
+    expect(find.byKey(const Key('entry_nature')), findsNothing);
+    expect(find.byKey(const Key('entry_installments')), findsNothing);
+    verify(() => repository.categories(EntryKind.income)).called(1);
+  });
+
+  testWidgets('keeps the kind of an existing entry', (tester) async {
+    await pump(tester, existing: salary);
+
+    expect(find.byKey(const Key('entry_kind')), findsNothing);
+  });
+
+  testWidgets('does not save before the categories load', (tester) async {
+    when(() => repository.categories(EntryKind.income))
+        .thenThrow(const ApiError(code: 'network_error'));
+    await pump(tester);
+
+    await tester.enterText(find.byKey(const Key('entry_description')), 'Bico');
+    await tester.enterText(find.byKey(const Key('entry_amount')), '1000');
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+
+    verifyNever(() => repository.create(any()));
     expect(popped, isEmpty);
   });
 

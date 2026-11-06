@@ -13,6 +13,7 @@ import 'package:lar_em_dia/core/widgets/confirm_dialog.dart';
 import 'package:lar_em_dia/core/widgets/empty_state.dart';
 import 'package:lar_em_dia/core/widgets/form_widgets.dart';
 import 'package:lar_em_dia/core/widgets/money_text.dart';
+import 'package:lar_em_dia/core/widgets/month_switcher.dart';
 import 'package:lar_em_dia/core/widgets/skeleton.dart';
 import 'package:lar_em_dia/features/entries/domain/category.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
@@ -22,30 +23,32 @@ import 'package:lar_em_dia/features/entries/presentation/widgets/category_visual
 import 'package:lar_em_dia/features/entries/presentation/widgets/entry_scope_dialog.dart';
 import 'package:lar_em_dia/features/entries/presentation/widgets/nature_label.dart';
 import 'package:lar_em_dia/features/entries/presentation/widgets/paid_checkbox.dart';
+import 'package:lar_em_dia/features/shell/presentation/app_shell.dart';
+import 'package:lar_em_dia/features/shell/presentation/finance_changes.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
 class EntriesPage extends StatelessWidget {
   const new({super.key});
 
-  Future<void> _open(BuildContext context, [Entry? entry]) async {
+  Future<void> _open(BuildContext context, Entry entry) async {
     final l10n = AppLocalizations.of(context);
-    final cubit = context.read<MonthEntriesCubit>();
-    final scope = entry?.seriesId == null
+    final changes = context.read<FinanceChanges>();
+    final scope = entry.seriesId == null
         ? EntryScope.one
         : await askEntryScope(
             context,
-            title: l10n.entryScopeEditTitle(cubit.kind.name),
-            entry: entry!,
+            title: l10n.entryScopeEditTitle(entry.kind.name),
+            entry: entry,
           );
     if (scope == null || !context.mounted) {
       return;
     }
     final saved = await context.push<bool>(
-      AppRoutes.entryForm(cubit.kind),
-      extra: entry == null ? null : EntryEdit(entry: entry, scope: scope),
+      AppRoutes.entryForm(entry.kind),
+      extra: EntryEdit(entry: entry, scope: scope),
     );
     if (saved ?? false) {
-      await cubit.load();
+      changes.notify();
     }
   }
 
@@ -70,13 +73,14 @@ class EntriesPage extends StatelessWidget {
   Future<bool> _delete(BuildContext context, Entry entry) async {
     final l10n = AppLocalizations.of(context);
     final cubit = context.read<MonthEntriesCubit>();
+    final changes = context.read<FinanceChanges>();
     final messenger = ScaffoldMessenger.of(context);
     final scope = await _deletionScope(context, entry);
     if (scope == null) {
       return false;
     }
     final error = await cubit.delete(entry, scope: scope);
-    _report(messenger, l10n, error);
+    _report(messenger, l10n, error, changes);
     return error == null;
   }
 
@@ -87,19 +91,23 @@ class EntriesPage extends StatelessWidget {
   }) async {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
+    final changes = context.read<FinanceChanges>();
     final error = await context.read<MonthEntriesCubit>().setPaid(
       entry,
       paid: paid,
     );
-    _report(messenger, l10n, error);
+    _report(messenger, l10n, error, changes);
   }
 
   void _report(
     ScaffoldMessengerState messenger,
     AppLocalizations l10n,
     ApiError? error,
+    FinanceChanges changes,
   ) {
-    if (error != null) {
+    if (error == null) {
+      changes.notify();
+    } else {
       messenger.showSnackBar(SnackBar(content: Text(error.localized(l10n))));
     }
   }
@@ -108,21 +116,21 @@ class EntriesPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final cubit = context.read<MonthEntriesCubit>();
-    final kind = cubit.kind.name;
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.entriesTitle(kind))),
-      floatingActionButton: FloatingActionButton(
-        tooltip: l10n.entryFormNewTitle(kind),
-        onPressed: () => unawaited(_open(context)),
-        child: const Icon(Icons.add),
-      ),
+      appBar: AppBar(title: Text(l10n.shellEntries)),
       body: BlocBuilder<MonthEntriesCubit, MonthEntriesState>(
         builder: (context, state) => Column(
           children: [
-            _MonthSwitcher(
+            MonthSwitcher(
               month: state.month,
               onPrevious: () => unawaited(cubit.previous()),
               onNext: () => unawaited(cubit.next()),
+            ),
+            _Filters(
+              kind: state.kind,
+              nature: state.nature,
+              onKind: cubit.filterKind,
+              onNature: cubit.filterNature,
             ),
             Expanded(
               child: switch (state.data) {
@@ -132,11 +140,12 @@ class EntriesPage extends StatelessWidget {
                   onRetry: () => unawaited(cubit.load()),
                 ),
                 Loaded(:final value) => _EntryList(
-                  kind: cubit.kind,
                   data: value,
+                  kind: state.kind,
                   nature: state.nature,
-                  onFilter: cubit.filter,
-                  onCreate: () => unawaited(_open(context)),
+                  onCreate: () => unawaited(
+                    showAddSheet(context, context.read<FinanceChanges>()),
+                  ),
                   onOpen: (entry) => unawaited(_open(context, entry)),
                   onDelete: (entry) => _delete(context, entry),
                   onPaid: (entry, {required paid}) =>
@@ -151,92 +160,85 @@ class EntriesPage extends StatelessWidget {
   }
 }
 
-class _MonthSwitcher extends StatelessWidget {
+class _Filters extends StatelessWidget {
   const new({
-    required this.month,
-    required this.onPrevious,
-    required this.onNext,
+    required this.kind,
+    required this.nature,
+    required this.onKind,
+    required this.onNature,
   });
 
-  final DateTime month;
-  final VoidCallback onPrevious;
-  final VoidCallback onNext;
+  final EntryKind? kind;
+  final EntryNature? nature;
+  final ValueChanged<EntryKind?> onKind;
+  final ValueChanged<EntryNature?> onNature;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final kinds = {
+      null: l10n.entriesKindAll,
+      EntryKind.income: l10n.entriesTitle(EntryKind.income.name),
+      EntryKind.expense: l10n.entriesTitle(EntryKind.expense.name),
+    };
+    final natures = {
+      null: l10n.entriesFilterAll,
+      EntryNature.fixed: l10n.entriesFilterFixed,
+      EntryNature.variable: l10n.entriesFilterVariable,
+    };
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Row(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
         children: [
-          IconButton(
-            tooltip: l10n.previousMonth,
-            icon: const Icon(Icons.chevron_left),
-            onPressed: onPrevious,
-          ),
-          Expanded(
-            child: Text(
-              MaterialLocalizations.of(context).formatMonthYear(month),
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleMedium,
+          SizedBox(
+            width: double.infinity,
+            child: SegmentedButton<EntryKind?>(
+              key: const Key('entries_kind'),
+              showSelectedIcon: false,
+              segments: [
+                for (final MapEntry(key: value, value: label) in kinds.entries)
+                  ButtonSegment(value: value, label: Text(label)),
+              ],
+              selected: {kind},
+              onSelectionChanged: (selection) => onKind(selection.single),
             ),
           ),
-          IconButton(
-            tooltip: l10n.nextMonth,
-            icon: const Icon(Icons.chevron_right),
-            onPressed: onNext,
-          ),
+          if (kind == EntryKind.expense) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: [
+                for (final MapEntry(key: value, value: label)
+                    in natures.entries)
+                  ChoiceChip(
+                    label: Text(label),
+                    selected: nature == value,
+                    onSelected: (_) => onNature(value),
+                  ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 8),
         ],
       ),
     );
   }
 }
 
-class _NatureFilter extends StatelessWidget {
-  const new({required this.selected, required this.onSelected});
-
-  final EntryNature? selected;
-  final ValueChanged<EntryNature?> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final options = {
-      null: l10n.entriesFilterAll,
-      EntryNature.fixed: l10n.entriesFilterFixed,
-      EntryNature.variable: l10n.entriesFilterVariable,
-    };
-    return Wrap(
-      spacing: 8,
-      alignment: WrapAlignment.center,
-      children: [
-        for (final MapEntry(key: nature, value: label) in options.entries)
-          ChoiceChip(
-            label: Text(label),
-            selected: selected == nature,
-            onSelected: (_) => onSelected(nature),
-          ),
-      ],
-    );
-  }
-}
-
 class _EntryList extends StatelessWidget {
   const new({
-    required this.kind,
     required this.data,
+    required this.kind,
     required this.nature,
-    required this.onFilter,
     required this.onCreate,
     required this.onOpen,
     required this.onDelete,
     required this.onPaid,
   });
 
-  final EntryKind kind;
   final MonthEntries data;
+  final EntryKind? kind;
   final EntryNature? nature;
-  final ValueChanged<EntryNature?> onFilter;
   final VoidCallback onCreate;
   final ValueChanged<Entry> onOpen;
   final Future<bool> Function(Entry entry) onDelete;
@@ -245,35 +247,20 @@ class _EntryList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final textTheme = Theme.of(context).textTheme;
     if (data.entries.isEmpty) {
       return EmptyState(
         icon: Icons.receipt_long_outlined,
-        title: l10n.entriesEmpty(kind.name),
-        message: l10n.entriesEmptyMessage(kind.name),
-        actionLabel: l10n.entryFormNewTitle(kind.name),
+        title: l10n.entriesEmptyMonth,
+        message: l10n.entriesEmptyMonthMessage,
+        actionLabel: l10n.shellAdd,
         onAction: onCreate,
       );
     }
-    final isExpense = kind == EntryKind.expense;
-    final entries = data.withNature(nature);
+    final entries = data.filtered(kind: kind, nature: nature);
     return Column(
       children: [
-        Text(
-          l10n.entriesTotal(Money.format(data.totalCents(nature))),
-          style: textTheme.titleLarge,
-        ),
-        if (isExpense) ...[
-          Text(
-            l10n.entriesNatureBreakdown(
-              Money.format(data.totalCents(EntryNature.fixed)),
-              Money.format(data.totalCents(EntryNature.variable)),
-            ),
-          ),
-          const SizedBox(height: 8),
-          _NatureFilter(selected: nature, onSelected: onFilter),
-        ],
-        const SizedBox(height: 8),
+        _MonthTotals(data: data, kind: kind, nature: nature),
+        const Divider(height: 1),
         Expanded(
           child: entries.isEmpty
               ? Center(child: Text(l10n.entriesEmptyFilter))
@@ -291,6 +278,75 @@ class _EntryList extends StatelessWidget {
                 ),
         ),
       ],
+    );
+  }
+}
+
+class _MonthTotals extends StatelessWidget {
+  const new({required this.data, required this.kind, required this.nature});
+
+  final MonthEntries data;
+  final EntryKind? kind;
+  final EntryNature? nature;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    Widget figure(String label, Widget value) => Expanded(
+      child: Column(
+        children: [
+          Text(label, style: textTheme.labelSmall),
+          const SizedBox(height: 2),
+          value,
+        ],
+      ),
+    );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+      child: switch (kind) {
+        null => Row(
+          children: [
+            figure(
+              l10n.projectionReadoutIncome,
+              MoneyText(data.totalCents(kind: EntryKind.income)),
+            ),
+            figure(
+              l10n.projectionReadoutExpense,
+              MoneyText(data.totalCents(kind: EntryKind.expense)),
+            ),
+            figure(
+              l10n.entriesResult,
+              MoneyText(data.resultCents, signed: true, colored: true),
+            ),
+          ],
+        ),
+        EntryKind.income => Text(
+          l10n.entriesTotal(Money.format(data.totalCents(kind: kind))),
+          style: textTheme.titleMedium,
+        ),
+        EntryKind.expense => Column(
+          children: [
+            Text(
+              l10n.entriesTotal(
+                Money.format(data.totalCents(kind: kind, nature: nature)),
+              ),
+              style: textTheme.titleMedium,
+            ),
+            Text(
+              l10n.entriesNatureBreakdown(
+                Money.format(
+                  data.totalCents(kind: kind, nature: EntryNature.fixed),
+                ),
+                Money.format(
+                  data.totalCents(kind: kind, nature: EntryNature.variable),
+                ),
+              ),
+              style: textTheme.bodySmall,
+            ),
+          ],
+        ),
+      },
     );
   }
 }

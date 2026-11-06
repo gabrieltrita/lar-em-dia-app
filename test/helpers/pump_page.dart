@@ -6,6 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
+import 'package:lar_em_dia/features/entries/domain/entry.dart';
+import 'package:lar_em_dia/features/shell/presentation/finance_changes.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
 const savedAndBack = 'saved and back';
@@ -17,6 +19,7 @@ Future<void> pumpPage(
   WidgetTester tester,
   Widget page, {
   required SessionCubit session,
+  FinanceChanges? changes,
   bool settle = true,
 }) async {
   final router = GoRouter(
@@ -26,10 +29,11 @@ Future<void> pumpPage(
         ...AppRoutes.public,
         AppRoutes.balances,
         AppRoutes.balanceForm,
-        AppRoutes.income,
-        AppRoutes.incomeForm,
-        AppRoutes.expenses,
-        AppRoutes.expensesForm,
+        AppRoutes.entries,
+        AppRoutes.entryForm(EntryKind.income),
+        AppRoutes.entryForm(EntryKind.expense),
+        AppRoutes.due,
+        AppRoutes.more,
         AppRoutes.projection,
         AppRoutes.simulation,
         AppRoutes.projectionDetails,
@@ -64,13 +68,16 @@ Future<void> pumpPage(
   );
   addTearDown(router.dispose);
   await tester.pumpWidget(
-    BlocProvider.value(
-      value: session,
-      child: MaterialApp.router(
-        routerConfig: router,
-        locale: const Locale('pt', 'BR'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
+    RepositoryProvider.value(
+      value: changes ?? FinanceChanges(),
+      child: BlocProvider.value(
+        value: session,
+        child: MaterialApp.router(
+          routerConfig: router,
+          locale: const Locale('pt', 'BR'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
       ),
     ),
   );

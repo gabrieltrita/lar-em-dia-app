@@ -41,18 +41,20 @@ abstract class HomeSummary with _$HomeSummary {
     required MonthTotals expenses,
     Balance? latestBalance,
     ProjectionMonth? projected,
-    ProjectionMonth? horizon,
     DateTime? firstNegativeMonth,
     @Default(0) int negativeMonthsCount,
     @Default([]) List<Entry> upcoming,
+    @Default([]) List<CategoryAmount> expenseByCategory,
+    @Default(0) int fixedCents,
+    @Default(0) int variableCents,
   }) = _HomeSummary;
 
   const new _();
 
-  MonthTotals totalsOf(EntryKind kind) => switch (kind) {
-    EntryKind.income => income,
-    EntryKind.expense => expenses,
-  };
+  int get resultCents => income.totalCents - expenses.totalCents;
+
+  int get upcomingCents =>
+      upcoming.fold(0, (sum, entry) => sum + entry.amountCents);
 }
 
 @injectable
@@ -66,14 +68,23 @@ class HomeCubit extends Cubit<LoadState<HomeSummary>> {
 
   static const upcomingDays = 7;
 
-  Future<void> load({DateTime? today}) async {
-    emit(const LoadState<HomeSummary>.loading());
+  DateTime? _month;
+
+  Future<void> load({
+    DateTime? month,
+    DateTime? today,
+    bool quiet = false,
+  }) async {
+    if (!quiet) {
+      emit(const LoadState<HomeSummary>.loading());
+    }
     final day = Dates.dateOnly(today ?? DateTime.now());
-    final month = Dates.firstOfMonth(day);
+    final target = Dates.firstOfMonth(month ?? _month ?? day);
+    _month = target;
     try {
       final latest = await _balances.latest();
-      final income = await _entries.month(month, kind: EntryKind.income);
-      final expenses = await _entries.month(month, kind: EntryKind.expense);
+      final entries = await _entries.month(target);
+      final categories = await _entries.categories(EntryKind.expense);
       final upcoming = await _entries.between(
         day,
         day.add(const Duration(days: upcomingDays)),
@@ -81,22 +92,39 @@ class HomeCubit extends Cubit<LoadState<HomeSummary>> {
       );
       final projection = latest == null
           ? null
-          : await _projections.fetch(from: month);
+          : await _projections.fetch(from: target);
+      if (target != _month) {
+        return;
+      }
+      final expenses = [
+        for (final entry in entries)
+          if (entry.kind == EntryKind.expense) entry,
+      ];
+      int natureCents(EntryNature nature) => expenses
+          .where((entry) => entry.nature == nature)
+          .fold(0, (sum, entry) => sum + entry.amountCents);
       emit(
         LoadState.loaded(
           HomeSummary(
-            month: month,
+            month: target,
             latestBalance: latest,
-            income: MonthTotals.of(income),
+            income: MonthTotals.of([
+              for (final entry in entries)
+                if (entry.kind == EntryKind.income) entry,
+            ]),
             expenses: MonthTotals.of(expenses),
             projected: projection?.months.first,
-            horizon: projection?.months.last,
             firstNegativeMonth: projection?.firstNegativeMonth,
             negativeMonthsCount: projection?.negativeMonthsCount ?? 0,
             upcoming: [
               for (final entry in upcoming)
                 if (!entry.isPaid) entry,
             ],
+            expenseByCategory: _byCategory(expenses, {
+              for (final category in categories) category.id: category.key,
+            }),
+            fixedCents: natureCents(EntryNature.fixed),
+            variableCents: natureCents(EntryNature.variable),
           ),
         ),
       );
@@ -105,16 +133,26 @@ class HomeCubit extends Cubit<LoadState<HomeSummary>> {
     }
   }
 
-  Future<ApiError?> markPaid(Entry entry, {DateTime? today}) async {
-    try {
-      await _entries.markPaid(
-        entry.id,
-        paidOn: Dates.dateOnly(today ?? DateTime.now()),
-      );
-      await load(today: today);
-      return null;
-    } on ApiError catch (error) {
-      return error;
+  Future<void> previous() =>
+      load(month: Dates.addMonths(_month ?? DateTime.now(), -1));
+
+  Future<void> next() =>
+      load(month: Dates.addMonths(_month ?? DateTime.now(), 1));
+
+  static List<CategoryAmount> _byCategory(
+    List<Entry> expenses,
+    Map<String, String> keys,
+  ) {
+    final totals = <String, int>{};
+    for (final entry in expenses) {
+      final key = keys[entry.categoryId] ?? entry.categoryId;
+      totals[key] = (totals[key] ?? 0) + entry.amountCents;
     }
+    return [
+      for (final MapEntry(:key, :value)
+          in totals.entries.toList()
+            ..sort((a, b) => b.value.compareTo(a.value)))
+        CategoryAmount(categoryKey: key, amountCents: value),
+    ];
   }
 }

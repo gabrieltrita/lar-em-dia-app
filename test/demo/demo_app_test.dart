@@ -59,7 +59,12 @@ void main() {
     expect(find.text('Olá, Ana!'), findsOneWidget);
     expect(find.text(r'R$ 3.500,00'), findsOneWidget);
 
-    await tester.tap(find.text('Ver projeção'));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.text('Projeção'),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(
       find.textContaining(RegExp('você vai (guardar|perder)')),

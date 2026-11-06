@@ -4,13 +4,9 @@ import 'package:lar_em_dia/features/entries/domain/entry.dart';
 abstract interface class EntryRepository {
   Future<List<Category>> categories(EntryKind kind);
 
-  Future<List<Entry>> month(DateTime month, {required EntryKind kind});
+  Future<List<Entry>> month(DateTime month, {EntryKind? kind});
 
-  Future<List<Entry>> between(
-    DateTime from,
-    DateTime to, {
-    required EntryKind kind,
-  });
+  Future<List<Entry>> between(DateTime from, DateTime to, {EntryKind? kind});
 
   Future<Entry> create(EntryDraft draft);
 
