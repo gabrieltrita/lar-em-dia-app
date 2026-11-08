@@ -123,7 +123,7 @@ void main() {
       final run = '${actionStep('Deploy')['run']}';
       expect(
         run,
-        contains('if [ "\$SETUP" = "true" ]; then command=setup; fi'),
+        contains(r'if [ "$SETUP" = "true" ]; then command=setup; fi'),
       );
       expect(
         run,
