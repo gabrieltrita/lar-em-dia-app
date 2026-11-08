@@ -1,7 +1,11 @@
 {
+    "id": "/",
     "name": "Lar em Dia",
     "short_name": "Lar em Dia",
-    "description": "Orçamento da família e projeção do saldo mês a mês.",
+    "description": "Orçamento familiar com projeção do saldo mês a mês.",
+    "categories": [
+        "finance"
+    ],
     "lang": "pt-BR",
     "start_url": ".",
     "scope": ".",

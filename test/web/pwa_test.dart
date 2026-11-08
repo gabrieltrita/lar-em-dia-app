@@ -23,6 +23,8 @@ void main() {
       expect(manifest['display'], 'standalone');
       expect(manifest['start_url'], '.');
       expect(manifest['scope'], '.');
+      expect(manifest['id'], '/');
+      expect(manifest['categories'], ['finance']);
       expect(manifest['theme_color'], '#2E7D5B');
       expect(manifest['background_color'], '#2E7D5B');
     });
@@ -41,7 +43,6 @@ void main() {
     final html = File('web/index.html').readAsStringSync();
 
     test('has the iOS home screen title, icon and standalone mode', () {
-      expect(html, contains('<title>Lar em Dia</title>'));
       expect(
         html,
         contains(

@@ -3,7 +3,13 @@ name: Deploy
 on:
   push:
     branches: [ main ]
+    tags: [ "[0-9]+.[0-9]+.[0-9]+" ]
   workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to set up with kamal setup
+        type: choice
+        options: [ staging, production ]
 
 permissions:
   contents: read
@@ -13,7 +19,10 @@ jobs:
     uses: ./.github/workflows/ci.yml
 
   staging:
-    if: vars.STAGING_DEPLOY_HOST != '' && github.ref == 'refs/heads/main'
+    if: >-
+      vars.STAGING_DEPLOY_HOST != '' &&
+      ((github.event_name == 'push' && github.ref_type == 'branch') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.environment == 'staging'))
     needs: ci
     runs-on: ubuntu-latest
     permissions:
@@ -29,55 +38,54 @@ jobs:
       DEPLOY_SSH_USER: ${{ vars.STAGING_DEPLOY_SSH_USER || 'root' }}
       DEPLOY_ARCH: ${{ vars.STAGING_DEPLOY_ARCH || 'amd64' }}
       APP_HOST: ${{ vars.STAGING_APP_HOST }}
-      API_BASE_URL: ${{ vars.STAGING_API_BASE_URL }}
-      KAMAL_COMMAND: ${{ github.event_name == 'workflow_dispatch' && 'setup' || 'deploy' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
+      - uses: ./.github/actions/web-deploy
         with:
-          flutter-version: 3.47.9
-          channel: stable
-          cache: true
+          destination: staging
+          setup: ${{ github.event_name == 'workflow_dispatch' }}
+          app-host: ${{ vars.STAGING_APP_HOST }}
+          api-base-url: ${{ vars.STAGING_API_BASE_URL }}
+          indexable: "false"
+          ssh-private-key: ${{ secrets.STAGING_DEPLOY_SSH_PRIVATE_KEY }}
+          ssh-known-hosts: ${{ secrets.STAGING_DEPLOY_SSH_KNOWN_HOSTS }}
 
-      - name: Build web
-        run: |
-          flutter pub get
-          dart run build_runner build --delete-conflicting-outputs
-          flutter build web --release --no-web-resources-cdn --dart-define=API_BASE_URL="$API_BASE_URL"
-
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
+  production:
+    if: >-
+      vars.DEPLOY_HOST != '' &&
+      ((github.event_name == 'push' && github.ref_type == 'tag') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.environment == 'production'))
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    env:
+      KAMAL_REGISTRY_USERNAME: ${{ github.repository_owner }}
+      KAMAL_REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+      DEPLOY_SSH_USER: ${{ vars.DEPLOY_SSH_USER || 'root' }}
+      DEPLOY_ARCH: ${{ vars.DEPLOY_ARCH || 'amd64' }}
+      APP_HOST: ${{ vars.APP_HOST }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
         with:
-          ruby-version: "3.3"
+          fetch-depth: 0
 
-      - name: Install Kamal
-        run: gem install kamal -v 2.12.0 --no-document
+      - name: Require the tagged commit to be on main
+        run: git merge-base --is-ancestor "$GITHUB_SHA" origin/main
 
-      - name: Set up QEMU for arm64 images
-        if: env.DEPLOY_ARCH == 'arm64'
-        uses: docker/setup-qemu-action@v3
+      - uses: ./.github/actions/web-deploy
         with:
-          platforms: arm64
-
-      - name: Set up Buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Configure SSH
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.STAGING_DEPLOY_SSH_PRIVATE_KEY }}
-          SSH_KNOWN_HOSTS: ${{ secrets.STAGING_DEPLOY_SSH_KNOWN_HOSTS }}
-        run: |
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_deploy
-          chmod 600 ~/.ssh/id_deploy
-          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          printf 'Host *\n  IdentityFile ~/.ssh/id_deploy\n  IdentitiesOnly yes\n  StrictHostKeyChecking yes\n' > ~/.ssh/config
-
-      - name: Deploy
-        run: kamal "$KAMAL_COMMAND" -d staging
-
-      - name: Check health
-        run: curl --fail --silent --show-error --retry 10 --retry-delay 3 --retry-connrefused "https://$APP_HOST/up"
+          setup: ${{ github.event_name == 'workflow_dispatch' }}
+          app-host: ${{ vars.APP_HOST }}
+          api-base-url: ${{ vars.API_BASE_URL }}
+          indexable: "true"
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          ssh-known-hosts: ${{ secrets.DEPLOY_SSH_KNOWN_HOSTS }}
