@@ -6,8 +6,37 @@
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Orçamento da família e projeção do saldo mês a mês.">
+  <title>Lar em Dia: orçamento familiar e projeção do saldo</title>
+  <meta name="description" content="Orçamento familiar com projeção do saldo mês a mês: receitas, despesas fixas e variáveis, parcelas e os meses que vão ficar no vermelho.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="__SITE_URL__/">
   <meta name="theme-color" content="#2E7D5B">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Lar em Dia">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:title" content="Lar em Dia: orçamento familiar e projeção do saldo">
+  <meta property="og:description" content="Veja hoje quanto dinheiro a família vai ter no fim do mês e nos próximos meses.">
+  <meta property="og:url" content="__SITE_URL__/">
+  <meta property="og:image" content="__SITE_URL__/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Lar em Dia: orçamento da família e projeção do saldo mês a mês">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Lar em Dia",
+    "url": "__SITE_URL__/",
+    "description": "Orçamento familiar com projeção do saldo mês a mês.",
+    "applicationCategory": "FinanceApplication",
+    "operatingSystem": "Web, Android, iOS",
+    "inLanguage": "pt-BR",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "BRL" }
+  }
+  </script>
 
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -16,11 +45,46 @@
   <link rel="apple-touch-icon" sizes="180x180" href="icons/Icon-180.png">
 
   <link rel="icon" type="image/png" href="favicon.png"/>
-
-  <title>Lar em Dia</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    #landing {
+      box-sizing: border-box;
+      max-width: 32rem;
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+      color: #FFFFFF;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.5;
+    }
+    #landing h1 { font-size: 2rem; margin: 1rem 0 0.5rem; }
+    #landing p, #landing li { color: #E3F2EA; }
+    #landing ul { padding-left: 1.25rem; }
+  </style>
 </head>
 <body style="background-color: #2E7D5B;">
+  <main id="landing">
+    <img src="icons/Icon-192.png" alt="" width="72" height="72">
+    <h1>Lar em Dia</h1>
+    <p>Orçamento da família e projeção do saldo mês a mês. Veja hoje quanto dinheiro vai sobrar no fim do mês e nos próximos meses.</p>
+    <ul>
+      <li>Saldo atual e de meses passados</li>
+      <li>Receitas e despesas pagas e a pagar</li>
+      <li>Contas fixas e variáveis, recorrentes e parceladas</li>
+      <li>Projeção do saldo e alerta dos meses no vermelho</li>
+      <li>Simulação antes de assumir um gasto novo</li>
+      <li>Lembretes das contas a vencer</li>
+    </ul>
+    <noscript><p>Ative o JavaScript para usar o Lar em Dia.</p></noscript>
+  </main>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      var landing = document.getElementById('landing');
+      if (landing) {
+        landing.remove();
+      }
+    });
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
