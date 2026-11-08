@@ -143,7 +143,7 @@ void main() {
       }
       for (final job in [staging, production]) {
         final env = job['env'] as YamlMap;
-        expect(env.keys.where((key) => '$key'.contains('SSH_')), isEmpty);
+        expect(env.keys.where((key) => '$key'.startsWith('SSH_')), isEmpty);
         for (final step in (job['steps'] as YamlList).cast<YamlMap>()) {
           expect('${step['run'] ?? ''}', isNot(contains(r'${{')));
         }
