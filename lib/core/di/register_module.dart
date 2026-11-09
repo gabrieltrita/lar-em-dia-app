@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:injectable/injectable.dart';
 import 'package:lar_em_dia/core/config/env.dart';
 import 'package:lar_em_dia/core/network/auth_interceptor.dart';
@@ -20,6 +21,9 @@ abstract class RegisterModule {
   @lazySingleton
   FlutterLocalNotificationsPlugin get notifications =>
       FlutterLocalNotificationsPlugin();
+
+  @lazySingleton
+  GoogleSignIn get googleSignIn => GoogleSignIn.instance;
 
   @lazySingleton
   TokenTransport get tokenTransport => TokenTransport.platform;

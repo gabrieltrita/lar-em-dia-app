@@ -16,14 +16,19 @@ import '../../../../helpers/security_fixtures.dart';
 void main() {
   late AuthHarness harness;
   late MockSecurityRepository repository;
+  late FakeGoogleAuth google;
 
   setUpAll(registerSecurityFallbacks);
 
   setUp(() {
     harness = AuthHarness()..session.signedIn(ana);
     repository = MockSecurityRepository();
+    google = FakeGoogleAuth();
   });
-  tearDown(() => harness.dispose());
+  tearDown(() async {
+    await harness.dispose();
+    await google.dispose();
+  });
 
   bool sessionTwoFactor() => switch (harness.session.state) {
     SessionAuthenticated(:final user) => user.twoFactorEnabled,
@@ -34,7 +39,7 @@ void main() {
     tester,
     BlocProvider(
       create: (_) =>
-          started(SecurityCubit(repository), (cubit) => cubit.load()),
+          started(SecurityCubit(repository, google), (cubit) => cubit.load()),
       child: const SecurityPage(),
     ),
     session: harness.session,
@@ -217,5 +222,127 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Ativar'), findsOneWidget);
+  });
+
+  group('deleting the account', () {
+    Future<void> startDeletion(WidgetTester tester) async {
+      when(() => repository.twoFactorStatus())
+          .thenAnswer((_) async => twoFactorOff);
+      await pump(tester);
+      await tester.scrollUntilVisible(find.text('Excluir conta'), 100);
+      await tester.tap(find.text('Excluir conta'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('warns, reauthenticates, deletes and signs out', (
+      tester,
+    ) async {
+      when(() => repository.deleteAccount(any())).thenAnswer((_) async {});
+      when(() => harness.repository.logout()).thenAnswer((_) async {});
+      await startDeletion(tester);
+
+      expect(find.textContaining('apagados para sempre'), findsOneWidget);
+      await reauthenticate(tester, 'Continuar');
+
+      verify(() => repository.deleteAccount(passwordAndCode)).called(1);
+      verify(() => harness.repository.logout()).called(1);
+      expect(harness.session.state, const SessionState.unauthenticated());
+      expect(find.text('Sua conta foi excluída.'), findsOneWidget);
+    });
+
+    testWidgets('keeps the session when the deletion fails', (tester) async {
+      when(() => repository.deleteAccount(any()))
+          .thenThrow(const ApiError(code: 'invalid_current_password'));
+      await startDeletion(tester);
+
+      await reauthenticate(tester, 'Continuar');
+
+      expect(find.text('Senha atual incorreta.'), findsOneWidget);
+      expect(harness.session.state, isA<SessionAuthenticated>());
+      verifyNever(() => harness.repository.logout());
+    });
+
+    testWidgets('does nothing when the warning is cancelled', (tester) async {
+      await startDeletion(tester);
+
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AlertDialog), findsNothing);
+      verifyNever(() => repository.deleteAccount(any()));
+    });
+
+    testWidgets('does nothing when the reauthentication is cancelled', (
+      tester,
+    ) async {
+      await startDeletion(tester);
+
+      await tester.tap(find.text('Continuar'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
+
+      verifyNever(() => repository.deleteAccount(any()));
+    });
+  });
+
+  group('an account without a password', () {
+    const googleOnly = TwoFactorStatus(
+      enabled: false,
+      mandatory: false,
+      backupCodesRemaining: 0,
+      passwordSet: false,
+    );
+
+    Future<void> startDeletion(WidgetTester tester) async {
+      when(() => repository.twoFactorStatus())
+          .thenAnswer((_) async => googleOnly);
+      await pump(tester);
+      await tester.scrollUntilVisible(find.text('Excluir conta'), 100);
+      await tester.tap(find.text('Excluir conta'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continuar'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('cannot enable two-factor', (tester) async {
+      when(() => repository.twoFactorStatus())
+          .thenAnswer((_) async => googleOnly);
+      await pump(tester);
+
+      expect(find.text('Disponível para contas com senha.'), findsOneWidget);
+      expect(find.text('Ativar'), findsNothing);
+    });
+
+    testWidgets('confirms the deletion with Google', (tester) async {
+      when(() => repository.deleteAccount(any())).thenAnswer((_) async {});
+      when(() => harness.repository.logout()).thenAnswer((_) async {});
+      await startDeletion(tester);
+
+      expect(find.text('Confirme com a sua conta Google.'), findsOneWidget);
+      expect(find.byKey(const Key('reauth_password')), findsNothing);
+      await tester.tap(find.text('Continuar com o Google'));
+      await tester.pump();
+      google.emit('g1');
+      await tester.pumpAndSettle();
+
+      expect(google.signIns, 1);
+      verify(
+        () => repository.deleteAccount(const Reauthentication(idToken: 'g1')),
+      ).called(1);
+      expect(harness.session.state, const SessionState.unauthenticated());
+    });
+
+    testWidgets('keeps the dialog quiet when Google fails', (tester) async {
+      google.failure = const ApiError(code: 'google_sign_in_failed');
+      await startDeletion(tester);
+
+      await tester.tap(find.text('Continuar com o Google'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
+
+      verifyNever(() => repository.deleteAccount(any()));
+    });
   });
 }

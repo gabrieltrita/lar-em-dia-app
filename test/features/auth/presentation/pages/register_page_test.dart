@@ -8,6 +8,7 @@ import 'package:lar_em_dia/features/auth/presentation/pages/register_page.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/auth_fixtures.dart';
+import '../../../../helpers/fake_url_launcher.dart';
 import '../../../../helpers/pump_page.dart';
 
 void main() {
@@ -24,8 +25,11 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     await pumpPage(
       tester,
-      BlocProvider(
-        create: (_) => RegisterCubit(harness.repository),
+      MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => RegisterCubit(harness.repository)),
+          BlocProvider(create: (_) => harness.googleCubit()),
+        ],
         child: const RegisterPage(),
       ),
       session: harness.session,
@@ -133,9 +137,23 @@ void main() {
     );
   });
 
+  testWidgets('opens the terms and the privacy policy', (tester) async {
+    final launcher = FakeUrlLauncher.install();
+    await pump(tester);
+
+    await tester.tap(find.byTooltip('Ler os termos de uso'));
+    await tester.tap(find.byTooltip('Ler a política de privacidade'));
+
+    expect(launcher.launched.map((launch) => Uri.parse(launch.$1).path), [
+      '/terms.html',
+      '/privacy.html',
+    ]);
+  });
+
   testWidgets('links back to the login', (tester) async {
     await pump(tester);
 
+    await tester.ensureVisible(find.text('Já tenho conta'));
     await tester.tap(find.text('Já tenho conta'));
     await tester.pumpAndSettle();
 

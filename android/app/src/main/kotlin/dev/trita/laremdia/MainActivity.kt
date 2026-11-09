@@ -1,4 +1,4 @@
-package dev.laremdia.lar_em_dia
+package dev.trita.laremdia
 
 import io.flutter.embedding.android.FlutterActivity
 

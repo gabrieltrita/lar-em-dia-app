@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:lar_em_dia/core/config/env.dart';
 import 'package:lar_em_dia/core/di/injection.dart';
 import 'package:lar_em_dia/core/network/api_client.dart';
@@ -34,6 +35,7 @@ void main() {
     expect(getIt<AuthRepository>(), isA<ApiAuthRepository>());
     expect(getIt<SessionCubit>(), same(getIt<SessionCubit>()));
     expect(getIt<GoRouter>(), same(getIt<GoRouter>()));
+    expect(getIt<GoogleSignIn>(), same(GoogleSignIn.instance));
   });
 
   test('registers the local notifications for the due reminders', () {

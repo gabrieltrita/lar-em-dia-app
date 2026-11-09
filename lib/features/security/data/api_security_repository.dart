@@ -9,14 +9,24 @@ class ApiSecurityRepository implements SecurityRepository {
   new(this._client);
 
   static const path = '/me/two_factor';
+  static const accountPath = '/me';
 
   final ApiClient _client;
 
   @override
-  Future<TwoFactorStatus> twoFactorStatus() async => (await _client.get(
-    path,
-    decode: (data) => TwoFactorStatusDto.fromJson(data! as Json).toDomain(),
-  )).data;
+  Future<TwoFactorStatus> twoFactorStatus() async {
+    final (status, passwordSet) = await (
+      _client.get(
+        path,
+        decode: (data) => TwoFactorStatusDto.fromJson(data! as Json).toDomain(),
+      ),
+      _client.get(
+        accountPath,
+        decode: (data) => (data! as Json)['password_set'] as bool? ?? true,
+      ),
+    ).wait;
+    return status.data.copyWith(passwordSet: passwordSet.data);
+  }
 
   @override
   Future<TwoFactorSetup> setupTwoFactor(
@@ -48,11 +58,16 @@ class ApiSecurityRepository implements SecurityRepository {
     body: _body(reauthentication),
   )).data;
 
+  @override
+  Future<void> deleteAccount(Reauthentication reauthentication) =>
+      _client.delete(accountPath, body: _body(reauthentication));
+
   static List<String> _codes(Object? data) =>
       BackupCodesDto.fromJson(data! as Json).backupCodes;
 
   static Json _body(Reauthentication reauthentication) => {
-    'current_password': reauthentication.password,
+    'current_password': ?reauthentication.password,
     'code': ?reauthentication.code,
+    'id_token': ?reauthentication.idToken,
   };
 }

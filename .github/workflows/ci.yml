@@ -44,6 +44,25 @@ jobs:
       - name: Build web
         run: flutter build web --dart-define=API_BASE_URL=https://example.invalid/api/v1
 
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Build Android release with a throwaway key
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/ci.jks
+          ANDROID_KEYSTORE_PASSWORD: ci-only-password
+          ANDROID_KEY_ALIAS: ci
+          ANDROID_KEY_PASSWORD: ci-only-password
+        run: |
+          keytool -genkeypair -keystore "$ANDROID_KEYSTORE_PATH" -alias ci -keyalg RSA -keysize 2048 -validity 1 \
+            -storepass:env ANDROID_KEYSTORE_PASSWORD -keypass:env ANDROID_KEY_PASSWORD -dname "CN=CI"
+          flutter build appbundle --release --dart-define=API_BASE_URL=https://example.invalid/api/v1
+          unzip -p build/app/outputs/bundle/release/app-release.aab base/manifest/AndroidManifest.xml \
+            | grep -aq android.permission.INTERNET
+
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v7

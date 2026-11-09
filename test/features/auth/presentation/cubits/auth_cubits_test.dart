@@ -121,4 +121,102 @@ void main() {
       isA<SubmissionSuccess<void>>(),
     ],
   );
+
+  group('GoogleSignInCubit', () {
+    late FakeGoogleAuth google;
+
+    setUp(() => google = FakeGoogleAuth());
+    tearDown(() => google.dispose());
+
+    test('exposes the gateway', () async {
+      final cubit = GoogleSignInCubit(repository, google);
+
+      expect(cubit.enabled, isTrue);
+      expect(cubit.rendersOwnButton, isFalse);
+      expect(cubit.idTokens, emits('token'));
+      google.emit('token');
+      await cubit.close();
+    });
+
+    blocTest<GoogleSignInCubit, Submission<LoginResult>>(
+      'starts the Google sign-in without changing the state',
+      build: () => GoogleSignInCubit(repository, google),
+      act: (cubit) => cubit.start(),
+      expect: () => const <Submission<LoginResult>>[],
+      verify: (_) => expect(google.signIns, 1),
+    );
+
+    blocTest<GoogleSignInCubit, Submission<LoginResult>>(
+      'reports a failed Google sign-in',
+      setUp: () =>
+          google.failure = const ApiError(code: 'google_sign_in_failed'),
+      build: () => GoogleSignInCubit(repository, google),
+      act: (cubit) => cubit.start(),
+      expect: () => const [
+        Submission<LoginResult>.failure(
+          ApiError(code: 'google_sign_in_failed'),
+        ),
+      ],
+    );
+
+    blocTest<GoogleSignInCubit, Submission<LoginResult>>(
+      'sends the token, then accepts the consents with the same token',
+      setUp: () {
+        when(() => repository.signInWithGoogle('token')).thenThrow(
+          const ApiError(
+            code: 'validation_failed',
+            details: {
+              'accept_terms': [FieldError(code: 'required')],
+            },
+          ),
+        );
+        when(() => repository.signInWithGoogle('token', acceptConsents: true))
+            .thenAnswer((_) async => const LoginResult.authenticated(ana));
+      },
+      build: () => GoogleSignInCubit(repository, google),
+      act: (cubit) async {
+        await cubit.submit('token');
+        await cubit.acceptConsents();
+      },
+      expect: () => const [
+        Submission<LoginResult>.inProgress(),
+        Submission<LoginResult>.failure(
+          ApiError(
+            code: 'validation_failed',
+            details: {
+              'accept_terms': [FieldError(code: 'required')],
+            },
+          ),
+        ),
+        Submission<LoginResult>.inProgress(),
+        Submission.success(LoginResult.authenticated(ana)),
+      ],
+    );
+
+    test('needs the consents only for a missing accept_terms', () {
+      expect(
+        GoogleSignInCubit.needsConsents(
+          const ApiError(
+            code: 'validation_failed',
+            details: {
+              'accept_terms': [FieldError(code: 'required')],
+            },
+          ),
+        ),
+        isTrue,
+      );
+      expect(
+        GoogleSignInCubit.needsConsents(
+          const ApiError(code: 'validation_failed'),
+        ),
+        isFalse,
+      );
+      expect(
+        GoogleSignInCubit.needsConsents(
+          const ApiError(code: 'oauth_token_invalid'),
+        ),
+        isFalse,
+      );
+    });
+  });
 }

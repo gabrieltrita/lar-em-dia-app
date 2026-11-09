@@ -16,6 +16,10 @@ inputs:
   api-base-url:
     description: Base URL of the API, ending in /api/v1
     required: true
+  google-client-id:
+    description: Google OAuth web client id; empty hides the Google sign-in
+    required: false
+    default: ""
   indexable:
     description: Let search engines index the app (true only in production)
     required: true
@@ -47,10 +51,12 @@ runs:
       shell: bash
       env:
         API_BASE_URL: ${{ inputs.api-base-url }}
+        APP_HOST: ${{ inputs.app-host }}
+        GOOGLE_CLIENT_ID: ${{ inputs.google-client-id }}
       run: |
         flutter pub get
         dart run build_runner build --delete-conflicting-outputs
-        flutter build web --release --no-web-resources-cdn --dart-define=API_BASE_URL="$API_BASE_URL"
+        flutter build web --release --no-web-resources-cdn --dart-define=API_BASE_URL="$API_BASE_URL" --dart-define=SITE_URL="https://$APP_HOST" --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID"
 
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1

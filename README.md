@@ -120,11 +120,19 @@ Amounts are integer cents end to end (`amount_cents` in the API, `int` in the ap
 
 The API email links point to the web routes above (`FRONTEND_URL` in the API). Deep links for the mobile apps come later.
 
+### Sign in with Google
+
+When the build gets `--dart-define=GOOGLE_CLIENT_ID=<web client id>`, the login and sign-up pages show "Continuar com o Google" (`GoogleSignInSection`); without it nothing changes. `GoogleSignInGateway` wraps `google_sign_in` 7: on the web it passes the id as `clientId` and shows Google's own button (`renderButton`, the only way to get an ID token there); on Android and iOS it passes it as `serverClientId`, so the ID token's audience is the same web client, and opens the system account picker. Every sign-in event's ID token goes to `POST /auth/oauth/google`. When the API answers `validation_failed` on `accept_terms` (a new account), the app asks for the terms and privacy consents and retries with the same token. A 2FA account continues to the code page. The API must list the same web client id in `GOOGLE_CLIENT_IDS`.
+
+The deploy passes `STAGING_GOOGLE_CLIENT_ID` or `GOOGLE_CLIENT_ID` (repository variables) to the web build, and the Android workflow passes `GOOGLE_CLIENT_ID`. In Google Cloud, the web client lists the staging and production origins, and an Android client registers `dev.trita.laremdia` with the SHA-1 of the Play app signing key and of the upload key.
+
+Accounts created with Google have no password: "Conta" reads `password_set` from `GET /me`, hides enabling 2FA for them and confirms "Excluir conta" with a fresh Google ID token (`id_token` in `DELETE /me`). With 2FA on, the code is used, as before.
+
 ## Account
 
 | Route | Page |
 |---|---|
-| `/account` | "Conta": two-step verification status and remaining backup codes, with enable, disable and "new backup codes". Disabling and new codes ask for the current password and, when 2FA is on, a code (`DELETE /me/two_factor`, `POST /me/two_factor/backup_codes`). Disabling is hidden when 2FA is mandatory (admins) |
+| `/account` | "Conta": two-step verification status and remaining backup codes, with enable, disable and "new backup codes". Disabling and new codes ask for the current password and, when 2FA is on, a code (`DELETE /me/two_factor`, `POST /me/two_factor/backup_codes`). Disabling is hidden when 2FA is mandatory (admins). "Excluir conta" warns that the data is gone for good, asks for the password and, when 2FA is on, a code, sends `DELETE /me` (the API anonymizes the account) and signs out |
 | `/account/two-factor` | Enrollment: the current password (`POST /me/two_factor/setup`), then a QR code and the secret to copy, then the 6-digit code (`POST /me/two_factor/enable`), and finally the 10 backup codes, shown once, with a copy button |
 
 | `/account/notifications` | Due-date email alerts (`GET/PATCH /me/notification_settings`): on or off, and when to warn, from the due date itself to 7 days before. Changes save right away |
@@ -173,11 +181,23 @@ Repository variables for staging: `STAGING_DEPLOY_HOST`, `STAGING_DEPLOY_SSH_USE
 
 Repository secrets: `STAGING_DEPLOY_SSH_PRIVATE_KEY` and `STAGING_DEPLOY_SSH_KNOWN_HOSTS`, and `DEPLOY_SSH_PRIVATE_KEY` and `DEPLOY_SSH_KNOWN_HOSTS` for production. `tool/deploy_key.sh staging|production HOST` (OpenSSH and `gh` logged in) generates a deploy key just for this repository, stores both secrets without printing the private key, and prints the public key to append to `~/.ssh/authorized_keys` of the deploy user and the host key fingerprint to compare with `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` on the server. The server itself (Docker, firewall, kamal-proxy) is prepared by the API's setup run, so set the API up first. Staging and production can share a server: their services (`laremdia-web-staging`, `laremdia-web`) sit behind the same kamal-proxy under different hosts.
 
+## Publishing on Google Play
+
+The Android application id is `dev.trita.laremdia` (permanent once published). Release builds are signed with the upload key from `android/key.properties` (`storeFile`, relative to `android/`, `storePassword`, `keyAlias`, `keyPassword`; git-ignored) or, when it is absent, from `ANDROID_KEYSTORE_PATH`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD`. Without either, a release build fails instead of falling back to the debug key, so use `flutter run` (debug) on devices. Google Play App Signing re-signs the bundle with Google's key, so a lost upload key can be reset in the Play Console.
+
+`tool/android_keystore.sh [KEYSTORE_PATH] [OWNER/REPO]` (needs `keytool` and `gh` logged in) generates the upload key at `~/lar-em-dia-upload.jks` by default, asks for its password without echoing it, stores `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD` as repository secrets and prints the key's SHA-1 (for the Android OAuth client). It never overwrites an existing file. Keep the `.jks` and its password outside the machine.
+
+The `Android` workflow (`.github/workflows/android.yml`) runs on a version tag on `main` (the same tag that deploys the web app to production) or by hand on `main`. After the CI it builds a release app bundle against the production API (`API_BASE_URL` and `APP_HOST` variables), with the tag as the version name and the run number as the version code, so codes never repeat, and keeps `app-release.aab` as a build artifact to upload in the Play Console. The CI also builds a release bundle with a throwaway key on every pull request, so signing and the manifest (the `INTERNET` permission lives in the main manifest, not only in debug) are checked before a release.
+
 ## Search engines and link previews
 
 Flutter draws the app on a canvas, so search engines only read what `web/index.html` carries outside it: the title and description, a canonical URL, Open Graph and Twitter Card tags for link previews (`web/og-image.png`, 1200x630), JSON-LD describing the app as a free `WebApplication` in `FinanceApplication`, and a short `<main id="landing">` text about the app that is removed on Flutter's `flutter-first-frame` event, so it doubles as the splash screen. `web/robots.txt` and `web/sitemap.xml` list the home page.
 
 These files hold the placeholder `__SITE_URL__`. Before the build, the deploy action runs `tool/prepare_web_build.sh web https://APP_HOST true|false`, which replaces it with the environment's URL. Production passes `true`. Staging passes `false`, which turns the robots meta tag into `noindex, nofollow`, drops the sitemap and its `robots.txt` line, and keeps crawling allowed so search engines can see the `noindex`. Local and CI builds keep the placeholder.
+
+### Legal pages
+
+`web/privacy.html`, `web/terms.html` and `web/account-deletion.html` are plain HTML (no Flutter), so stores, Google's OAuth consent screen and search engines read them. They are listed in the sitemap and linked from each other. The sign-up consents open them through `openSitePage` (`lib/core/links/site_pages.dart`, `url_launcher`), which resolves the page against `SITE_URL` (passed by the deploy action as `https://APP_HOST`) or, when it is empty, against the current web origin. Builds for Android must pass `--dart-define=SITE_URL=https://APP_HOST`. The policy describes what the API actually stores; update it together with any change to the personal data the API keeps or to the services it uses.
 
 After the first production deploy, add the app's domain to Google Search Console and submit `https://APP_HOST/sitemap.xml`.
 

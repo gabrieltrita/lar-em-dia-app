@@ -6,6 +6,7 @@ import 'package:lar_em_dia/features/security/domain/two_factor.dart';
 import 'package:lar_em_dia/features/security/presentation/cubits/security_cubits.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/auth_fixtures.dart';
 import '../../../../helpers/security_fixtures.dart';
 
 void main() {
@@ -21,7 +22,7 @@ void main() {
       'loads the status',
       setUp: () =>
           when(repository.twoFactorStatus).thenAnswer((_) async => twoFactorOn),
-      build: () => SecurityCubit(repository),
+      build: () => SecurityCubit(repository, FakeGoogleAuth()),
       act: (cubit) => cubit.load(),
       expect: () => const [
         LoadState<TwoFactorStatus>.loading(),
@@ -32,7 +33,7 @@ void main() {
     blocTest<SecurityCubit, LoadState<TwoFactorStatus>>(
       'reports a failed load',
       setUp: () => when(repository.twoFactorStatus).thenThrow(wrongPassword),
-      build: () => SecurityCubit(repository),
+      build: () => SecurityCubit(repository, FakeGoogleAuth()),
       act: (cubit) => cubit.load(),
       expect: () => const [
         LoadState<TwoFactorStatus>.loading(),
@@ -44,7 +45,7 @@ void main() {
       when(repository.twoFactorStatus).thenAnswer((_) async => twoFactorOff);
       when(() => repository.disableTwoFactor(passwordAndCode))
           .thenAnswer((_) async {});
-      final cubit = SecurityCubit(repository);
+      final cubit = SecurityCubit(repository, FakeGoogleAuth());
 
       expect(await cubit.disable(passwordAndCode), isNull);
       expect(cubit.state, const LoadState.loaded(twoFactorOff));
@@ -54,11 +55,23 @@ void main() {
       await cubit.close();
     });
 
+    test('deletes the account or returns the error', () async {
+      when(() => repository.deleteAccount(passwordAndCode))
+          .thenAnswer((_) async {});
+      final cubit = SecurityCubit(repository, FakeGoogleAuth());
+
+      expect(await cubit.deleteAccount(passwordAndCode), isNull);
+
+      when(() => repository.deleteAccount(any())).thenThrow(wrongPassword);
+      expect(await cubit.deleteAccount(passwordAndCode), wrongPassword);
+      await cubit.close();
+    });
+
     test('regenerates the backup codes or returns the error', () async {
       when(repository.twoFactorStatus).thenAnswer((_) async => twoFactorOn);
       when(() => repository.regenerateBackupCodes(passwordAndCode))
           .thenAnswer((_) async => backupCodes);
-      final cubit = SecurityCubit(repository);
+      final cubit = SecurityCubit(repository, FakeGoogleAuth());
 
       expect(await cubit.regenerateBackupCodes(passwordAndCode), (
         codes: backupCodes,

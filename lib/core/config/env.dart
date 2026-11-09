@@ -4,5 +4,9 @@ abstract final class Env {
     defaultValue: 'http://localhost:3000/api/v1',
   );
 
+  static const siteUrl = String.fromEnvironment('SITE_URL');
+
+  static const googleClientId = String.fromEnvironment('GOOGLE_CLIENT_ID');
+
   static const demo = bool.fromEnvironment('DEMO');
 }

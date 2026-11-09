@@ -3,4 +3,13 @@
   <url>
     <loc>__SITE_URL__/</loc>
   </url>
+  <url>
+    <loc>__SITE_URL__/privacy.html</loc>
+  </url>
+  <url>
+    <loc>__SITE_URL__/terms.html</loc>
+  </url>
+  <url>
+    <loc>__SITE_URL__/account-deletion.html</loc>
+  </url>
 </urlset>
