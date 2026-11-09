@@ -9,6 +9,7 @@ class ApiSecurityRepository implements SecurityRepository {
   new(this._client);
 
   static const path = '/me/two_factor';
+  static const accountPath = '/me';
 
   final ApiClient _client;
 
@@ -47,6 +48,10 @@ class ApiSecurityRepository implements SecurityRepository {
     decode: _codes,
     body: _body(reauthentication),
   )).data;
+
+  @override
+  Future<void> deleteAccount(Reauthentication reauthentication) =>
+      _client.delete(accountPath, body: _body(reauthentication));
 
   static List<String> _codes(Object? data) =>
       BackupCodesDto.fromJson(data! as Json).backupCodes;

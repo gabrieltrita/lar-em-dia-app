@@ -72,26 +72,37 @@ class InfoMessage extends StatelessWidget {
 }
 
 class ConsentField extends FormField<bool> {
-  new({required String label, required String requiredMessage, super.key})
-    : super(
-        initialValue: false,
-        validator: (value) => value! ? null : requiredMessage,
-        builder: (field) => CheckboxListTile(
-          value: field.value,
-          onChanged: field.didChange,
-          title: Text(label),
-          subtitle: field.errorText == null
-              ? null
-              : Text(
-                  field.errorText!,
-                  style: TextStyle(
-                    color: Theme.of(field.context).colorScheme.error,
-                  ),
-                ),
-          controlAffinity: ListTileControlAffinity.leading,
-          contentPadding: EdgeInsets.zero,
-        ),
-      );
+  new({
+    required String label,
+    required String requiredMessage,
+    ({String tooltip, VoidCallback onPressed})? readMore,
+    super.key,
+  }) : super(
+         initialValue: false,
+         validator: (value) => value! ? null : requiredMessage,
+         builder: (field) => CheckboxListTile(
+           value: field.value,
+           onChanged: field.didChange,
+           title: Text(label),
+           subtitle: field.errorText == null
+               ? null
+               : Text(
+                   field.errorText!,
+                   style: TextStyle(
+                     color: Theme.of(field.context).colorScheme.error,
+                   ),
+                 ),
+           secondary: readMore == null
+               ? null
+               : IconButton(
+                   icon: const Icon(Icons.open_in_new),
+                   tooltip: readMore.tooltip,
+                   onPressed: readMore.onPressed,
+                 ),
+           controlAffinity: ListTileControlAffinity.leading,
+           contentPadding: EdgeInsets.zero,
+         ),
+       );
 }
 
 class RetryMessage extends StatelessWidget {

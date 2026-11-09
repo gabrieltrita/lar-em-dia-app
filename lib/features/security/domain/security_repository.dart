@@ -10,4 +10,6 @@ abstract interface class SecurityRepository {
   Future<void> disableTwoFactor(Reauthentication reauthentication);
 
   Future<List<String>> regenerateBackupCodes(Reauthentication reauthentication);
+
+  Future<void> deleteAccount(Reauthentication reauthentication);
 }

@@ -54,6 +54,18 @@ void main() {
       await cubit.close();
     });
 
+    test('deletes the account or returns the error', () async {
+      when(() => repository.deleteAccount(passwordAndCode))
+          .thenAnswer((_) async {});
+      final cubit = SecurityCubit(repository);
+
+      expect(await cubit.deleteAccount(passwordAndCode), isNull);
+
+      when(() => repository.deleteAccount(any())).thenThrow(wrongPassword);
+      expect(await cubit.deleteAccount(passwordAndCode), wrongPassword);
+      await cubit.close();
+    });
+
     test('regenerates the backup codes or returns the error', () async {
       when(repository.twoFactorStatus).thenAnswer((_) async => twoFactorOn);
       when(() => repository.regenerateBackupCodes(passwordAndCode))

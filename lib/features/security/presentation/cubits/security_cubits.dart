@@ -46,6 +46,15 @@ class SecurityCubit extends Cubit<LoadState<TwoFactorStatus>> {
       return (codes: null, error: error);
     }
   }
+
+  Future<ApiError?> deleteAccount(Reauthentication reauthentication) async {
+    try {
+      await _repository.deleteAccount(reauthentication);
+      return null;
+    } on ApiError catch (error) {
+      return error;
+    }
+  }
 }
 
 @freezed

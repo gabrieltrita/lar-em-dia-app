@@ -124,7 +124,7 @@ The API email links point to the web routes above (`FRONTEND_URL` in the API). D
 
 | Route | Page |
 |---|---|
-| `/account` | "Conta": two-step verification status and remaining backup codes, with enable, disable and "new backup codes". Disabling and new codes ask for the current password and, when 2FA is on, a code (`DELETE /me/two_factor`, `POST /me/two_factor/backup_codes`). Disabling is hidden when 2FA is mandatory (admins) |
+| `/account` | "Conta": two-step verification status and remaining backup codes, with enable, disable and "new backup codes". Disabling and new codes ask for the current password and, when 2FA is on, a code (`DELETE /me/two_factor`, `POST /me/two_factor/backup_codes`). Disabling is hidden when 2FA is mandatory (admins). "Excluir conta" warns that the data is gone for good, asks for the password and, when 2FA is on, a code, sends `DELETE /me` (the API anonymizes the account) and signs out |
 | `/account/two-factor` | Enrollment: the current password (`POST /me/two_factor/setup`), then a QR code and the secret to copy, then the 6-digit code (`POST /me/two_factor/enable`), and finally the 10 backup codes, shown once, with a copy button |
 
 | `/account/notifications` | Due-date email alerts (`GET/PATCH /me/notification_settings`): on or off, and when to warn, from the due date itself to 7 days before. Changes save right away |
@@ -178,6 +178,10 @@ Repository secrets: `STAGING_DEPLOY_SSH_PRIVATE_KEY` and `STAGING_DEPLOY_SSH_KNO
 Flutter draws the app on a canvas, so search engines only read what `web/index.html` carries outside it: the title and description, a canonical URL, Open Graph and Twitter Card tags for link previews (`web/og-image.png`, 1200x630), JSON-LD describing the app as a free `WebApplication` in `FinanceApplication`, and a short `<main id="landing">` text about the app that is removed on Flutter's `flutter-first-frame` event, so it doubles as the splash screen. `web/robots.txt` and `web/sitemap.xml` list the home page.
 
 These files hold the placeholder `__SITE_URL__`. Before the build, the deploy action runs `tool/prepare_web_build.sh web https://APP_HOST true|false`, which replaces it with the environment's URL. Production passes `true`. Staging passes `false`, which turns the robots meta tag into `noindex, nofollow`, drops the sitemap and its `robots.txt` line, and keeps crawling allowed so search engines can see the `noindex`. Local and CI builds keep the placeholder.
+
+### Legal pages
+
+`web/privacy.html`, `web/terms.html` and `web/account-deletion.html` are plain HTML (no Flutter), so stores, Google's OAuth consent screen and search engines read them. They are listed in the sitemap and linked from each other. The sign-up consents open them through `openSitePage` (`lib/core/links/site_pages.dart`, `url_launcher`), which resolves the page against `SITE_URL` (passed by the deploy action as `https://APP_HOST`) or, when it is empty, against the current web origin. Builds for Android must pass `--dart-define=SITE_URL=https://APP_HOST`. The policy describes what the API actually stores; update it together with any change to the personal data the API keeps or to the services it uses.
 
 After the first production deploy, add the app's domain to Google Search Console and submit `https://APP_HOST/sitemap.xml`.
 

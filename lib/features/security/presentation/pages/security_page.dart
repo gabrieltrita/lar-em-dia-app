@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lar_em_dia/core/forms/error_messages.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/core/state/load_state.dart';
+import 'package:lar_em_dia/core/widgets/confirm_dialog.dart';
 import 'package:lar_em_dia/core/widgets/form_widgets.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
 import 'package:lar_em_dia/features/security/domain/two_factor.dart';
@@ -36,6 +37,8 @@ class SecurityPage extends StatelessWidget {
               _TwoFactorCard(status: status),
               const SizedBox(height: 16),
               const _NotificationsCard(),
+              const SizedBox(height: 16),
+              const _DeleteAccountCard(),
             ],
           ),
         },
@@ -181,6 +184,54 @@ class _NotificationsCard extends StatelessWidget {
         subtitle: Text(l10n.notificationsHint),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => unawaited(context.push(AppRoutes.notificationSettings)),
+      ),
+    );
+  }
+}
+
+class _DeleteAccountCard extends StatelessWidget {
+  const new();
+
+  Future<void> _delete(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    final cubit = context.read<SecurityCubit>();
+    final session = context.read<SessionCubit>();
+    final messenger = ScaffoldMessenger.of(context);
+    final confirmed = await confirmAction(
+      context,
+      title: l10n.deleteAccountTitle,
+      message: l10n.deleteAccountWarning,
+      confirmLabel: l10n.deleteAccountContinue,
+    );
+    if (!confirmed || !context.mounted) {
+      return;
+    }
+    final reauthentication = await askReauthentication(
+      context,
+      title: l10n.deleteAccountTitle,
+    );
+    if (reauthentication == null) {
+      return;
+    }
+    final error = await cubit.deleteAccount(reauthentication);
+    if (error != null) {
+      messenger.showSnackBar(SnackBar(content: Text(error.localized(l10n))));
+      return;
+    }
+    messenger.showSnackBar(SnackBar(content: Text(l10n.deleteAccountDone)));
+    await session.logout();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final error = Theme.of(context).colorScheme.error;
+    return Card(
+      child: ListTile(
+        leading: Icon(Icons.delete_forever_outlined, color: error),
+        title: Text(l10n.deleteAccountTitle, style: TextStyle(color: error)),
+        subtitle: Text(l10n.deleteAccountHint),
+        onTap: () => unawaited(_delete(context)),
       ),
     );
   }
