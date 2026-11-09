@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:intl/intl.dart';
 
 abstract final class Dates {
@@ -29,6 +31,15 @@ abstract final class Dates {
 
   static DateTime addMonths(DateTime month, int months) =>
       DateTime(month.year, month.month + months);
+
+  static DateTime shiftMonths(DateTime date, int months) {
+    final month = addMonths(firstOfMonth(date), months);
+    return DateTime(
+      month.year,
+      month.month,
+      min(date.day, lastOfMonth(month).day),
+    );
+  }
 
   static DateTime? parseMonth(String? value) {
     final match = RegExp(r'^(\d{4})-(\d{2})$').firstMatch(value ?? '');

@@ -258,6 +258,21 @@ void main() {
         );
       });
 
+      test('move the following entries of a series by its interval', () {
+        final created = series('2026-03-10', 3, 'forward', {
+          'interval_months': 6,
+        });
+
+        database.updateEntry(idAt(created, 2), {
+          'due_on': '2026-09-20',
+        }, scope: 'following');
+
+        expect(
+          [for (final row in rowsOf(created)) row['due_on']],
+          ['2026-03-10', '2026-09-20', '2027-03-20'],
+        );
+      });
+
       test('edit every entry and keep the month end', () {
         final created = series('2026-01-31', 3, 'forward');
 
@@ -370,6 +385,26 @@ void main() {
       ]);
     });
 
+    test('repeat in fixed months forwards and backwards', () {
+      final yearly = series('2027-05-10', 3, 'forward', {
+        'interval_months': 12,
+      });
+
+      expect(yearly, containsPair('interval_months', 12));
+      expect(fieldOf(yearly, 'due_on'), [
+        '2027-05-10',
+        '2028-05-10',
+        '2029-05-10',
+      ]);
+      expect(
+        fieldOf(
+          series('2026-08-31', 3, 'backward', {'interval_months': 3}),
+          'due_on',
+        ),
+        ['2026-02-28', '2026-05-31', '2026-08-31'],
+      );
+    });
+
     test('pay the copies due up to today and leave the later ones pending', () {
       final created = series('2026-11-05', 3, 'forward', {
         'status': 'paid',
@@ -386,10 +421,16 @@ void main() {
 
     test('validate the count, the direction and the entry together', () {
       expect(
-        errorsOf(() => series('2026-11-05', 1, 'up', {'amount_cents': 0})),
+        errorsOf(
+          () => series('2026-11-05', 1, 'up', {
+            'amount_cents': 0,
+            'interval_months': 2,
+          }),
+        ),
         {
           'entries_count': ['greater_than_or_equal_to'],
           'direction': ['inclusion'],
+          'interval_months': ['inclusion'],
           'amount_cents': ['greater_than'],
         },
       );
@@ -428,10 +469,11 @@ void main() {
         });
 
     test('split the total forwards with the leftover on the first', () {
-      final created = installments(10000, 3);
+      final created = installments(10000, 3, {'interval_months': 12});
       final rows = created['entries']! as List<Row>;
 
       expect(created, containsPair('kind', 'installments'));
+      expect(created, containsPair('interval_months', 1));
       expect(created, containsPair('total_cents', 10000));
       expect([for (final row in rows) row['amount_cents']], [3334, 3333, 3333]);
       expect(

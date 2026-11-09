@@ -33,6 +33,7 @@ class DemoDatabase {
 
   static const minSeriesCount = 2;
   static const maxSeriesCount = 36;
+  static const seriesIntervals = [1, 3, 6, 12];
   static const maxInstallmentsCount = 48;
 
   String nextId(String prefix) => '$prefix-${++_sequence}';
@@ -109,6 +110,7 @@ class DemoDatabase {
     final installments = kind == 'installments';
     final count = input['entries_count'];
     final direction = installments ? 'forward' : input['direction'];
+    final interval = installments ? 1 : input['interval_months'] ?? 1;
     final total = input['total_cents'];
     final errors = <String, List<String>>{
       if (kind != 'recurring' && !installments) 'kind': ['inclusion'],
@@ -118,6 +120,7 @@ class DemoDatabase {
       ),
       if (direction != 'forward' && direction != 'backward')
         'direction': ['inclusion'],
+      if (!seriesIntervals.contains(interval)) 'interval_months': ['inclusion'],
       ..._totalErrors(total, count, installments: installments),
     };
     final amounts = installments && errors.isEmpty
@@ -140,15 +143,16 @@ class DemoDatabase {
     final row = {
       'id': nextId('series'),
       'kind': kind,
+      'interval_months': interval,
       'entries_count': size,
       'total_cents': installments ? total : null,
     };
     series.add(row);
     final baseDueOn = _date(base, 'due_on');
-    final step = direction == 'forward' ? 1 : -1;
+    final step = (direction == 'forward' ? 1 : -1) * (interval as int);
     final dueDates = [
       for (var offset = 0; offset < size; offset++)
-        _shift(baseDueOn, offset * step),
+        Dates.shiftMonths(baseDueOn, offset * step),
     ]..sort();
     final created = [
       for (final (index, dueOn) in dueDates.indexed)
@@ -209,15 +213,6 @@ class DemoDatabase {
     };
   }
 
-  static DateTime _shift(DateTime date, int months) {
-    final month = Dates.addMonths(Dates.firstOfMonth(date), months);
-    return DateTime(
-      month.year,
-      month.month,
-      min(date.day, Dates.lastOfMonth(month).day),
-    );
-  }
-
   static const sharedFields = [
     'category_id',
     'nature',
@@ -246,6 +241,8 @@ class DemoDatabase {
         ? _parseDate(input['due_on'])
         : null;
     final position = entry['series_position']! as int;
+    final interval =
+        _find(series, entry['series_id']! as String)['interval_months']! as int;
     final updates = [
       for (final row in scoped)
         (
@@ -257,9 +254,10 @@ class DemoDatabase {
               'due_on': dueOn == null
                   ? null
                   : Dates.toIso(
-                      _shift(
+                      Dates.shiftMonths(
                         dueOn,
-                        (row['series_position']! as int) - position,
+                        ((row['series_position']! as int) - position) *
+                            interval,
                       ),
                     ),
           }),

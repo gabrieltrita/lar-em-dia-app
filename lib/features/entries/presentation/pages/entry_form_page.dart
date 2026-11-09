@@ -60,6 +60,7 @@ class _EntryFormPageState extends State<EntryFormPage> {
   bool _repeat = false;
   int _repeatCount = Recurrence.defaultCount;
   RecurrenceDirection _repeatDirection = RecurrenceDirection.forward;
+  RecurrenceInterval _repeatInterval = RecurrenceInterval.monthly;
   bool _installments = false;
   int _installmentsCount = Installments.defaultCount;
 
@@ -68,6 +69,12 @@ class _EntryFormPageState extends State<EntryFormPage> {
   bool get _isNew => widget.existing == null;
 
   bool get _scoped => widget.scope != EntryScope.one;
+
+  Recurrence get _recurrence => Recurrence(
+    count: _repeatCount,
+    direction: _repeatDirection,
+    interval: _repeatInterval,
+  );
 
   bool get _amountLocked =>
       _scoped && (widget.existing?.isInstallment ?? false);
@@ -92,9 +99,7 @@ class _EntryFormPageState extends State<EntryFormPage> {
       status: _settled ? EntryStatus.paid : EntryStatus.pending,
       nature: _isExpense ? _nature : null,
     );
-    final recurrence = _repeat
-        ? Recurrence(count: _repeatCount, direction: _repeatDirection)
-        : null;
+    final recurrence = _repeat ? _recurrence : null;
     final installments = _installments
         ? Installments(count: _installmentsCount)
         : null;
@@ -160,6 +165,7 @@ class _EntryFormPageState extends State<EntryFormPage> {
       'kind': l10n.entryInstallmentsLabel,
       'due_on': l10n.entryDueOnLabel,
       'entries_count': l10n.entryRepeatCountLabel,
+      'interval_months': l10n.entryRepeatIntervalLabel,
       'direction': l10n.entryRepeatDirectionLabel,
     };
     return [
@@ -233,6 +239,20 @@ class _EntryFormPageState extends State<EntryFormPage> {
       ),
       if (_repeat) ...[
         const SizedBox(height: 8),
+        DropdownButtonFormField<RecurrenceInterval>(
+          key: const Key('entry_repeat_interval'),
+          initialValue: _repeatInterval,
+          decoration: InputDecoration(labelText: l10n.entryRepeatIntervalLabel),
+          items: [
+            for (final interval in RecurrenceInterval.values)
+              DropdownMenuItem(
+                value: interval,
+                child: Text(l10n.entryRepeatInterval(interval.name)),
+              ),
+          ],
+          onChanged: (value) => setState(() => _repeatInterval = value!),
+        ),
+        const SizedBox(height: 16),
         DropdownButtonFormField<int>(
           key: const Key('entry_repeat_count'),
           initialValue: _repeatCount,
@@ -245,7 +265,7 @@ class _EntryFormPageState extends State<EntryFormPage> {
             )
               DropdownMenuItem(
                 value: count,
-                child: Text(l10n.entryRepeatMonths(count)),
+                child: Text(l10n.entryRepeatTimes(count)),
               ),
           ],
           onChanged: (value) => setState(() => _repeatCount = value!),
@@ -273,6 +293,7 @@ class _EntryFormPageState extends State<EntryFormPage> {
                 setState(() => _repeatDirection = selection.single),
           ),
         ),
+        _RecurrencePreview(dueDates: _recurrence.dueDates(_dueOn)),
       ],
     ];
   }
@@ -428,6 +449,30 @@ class _EntryFormPageState extends State<EntryFormPage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _RecurrencePreview extends StatelessWidget {
+  const new({required this.dueDates});
+
+  static const shownBeforeLast = 3;
+
+  final List<DateTime> dueDates;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final labels = dueDates.map(Dates.display).toList();
+    final shown = labels.length > shownBeforeLast + 1
+        ? '${labels.take(shownBeforeLast).join(', ')} … ${labels.last}'
+        : labels.join(', ');
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Text(
+        l10n.entryRepeatPreview(shown),
+        key: const Key('entry_repeat_preview'),
       ),
     );
   }

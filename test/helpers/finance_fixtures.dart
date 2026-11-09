@@ -152,6 +152,7 @@ final freelancePlan = EntryPlan(
   recurrence: const Recurrence(
     count: 3,
     direction: RecurrenceDirection.forward,
+    interval: RecurrenceInterval.quarterly,
   ),
 );
 

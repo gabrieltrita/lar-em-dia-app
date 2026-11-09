@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lar_em_dia/core/dates/dates.dart';
 
 part 'entry.freezed.dart';
 
@@ -10,18 +11,44 @@ enum EntryNature { fixed, variable }
 
 enum RecurrenceDirection { forward, backward }
 
+enum RecurrenceInterval {
+  monthly(1),
+  quarterly(3),
+  semiannual(6),
+  yearly(12);
+
+  new(this.months);
+
+  final int months;
+}
+
 enum SeriesKind { recurring, installments }
 
 enum EntryScope { one, following, all }
 
 @freezed
 abstract class Recurrence with _$Recurrence {
-  const factory({required int count, required RecurrenceDirection direction}) =
-      _Recurrence;
+  const factory({
+    required int count,
+    required RecurrenceDirection direction,
+    @Default(RecurrenceInterval.monthly) RecurrenceInterval interval,
+  }) = _Recurrence;
+
+  const new _();
 
   static const minCount = 2;
   static const maxCount = 36;
   static const defaultCount = 12;
+
+  List<DateTime> dueDates(DateTime first) {
+    final step = direction == RecurrenceDirection.forward
+        ? interval.months
+        : -interval.months;
+    return [
+      for (var index = 0; index < count; index++)
+        Dates.shiftMonths(first, index * step),
+    ]..sort();
+  }
 }
 
 @freezed

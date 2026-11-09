@@ -173,10 +173,11 @@ void main() {
     expect(find.byKey(const Key('entry_repeat_count')), findsNothing);
     await tester.tap(find.byKey(const Key('entry_repeat')));
     await tester.pumpAndSettle();
-    expect(find.text('12 meses'), findsOneWidget);
+    expect(find.text('12 vezes'), findsOneWidget);
+    expect(find.text('Todo mês'), findsOneWidget);
     await tester.tap(find.byKey(const Key('entry_repeat_count')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('6 meses').last);
+    await tester.tap(find.text('6 vezes').last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Meses anteriores'));
     await tester.pumpAndSettle();
@@ -193,6 +194,46 @@ void main() {
     expect(popped, [true]);
   });
 
+  testWidgets('repeats in fixed months and previews the dates', (tester) async {
+    when(
+      () => repository.createSeries(any(), any()),
+    ).thenAnswer((_) async => [salary.copyWith(dueOn: DateTime(2026, 11, 3))]);
+    await pump(tester);
+
+    await fillIn(tester);
+    await tester.tap(find.byKey(const Key('entry_repeat')));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Datas: 03/11/2026, 03/12/2026, 03/01/2027 … 03/10/2027'),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const Key('entry_repeat_interval')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Todo ano').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('entry_repeat_count')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('3 vezes').last);
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Datas: 03/11/2026, 03/11/2027, 03/11/2028'),
+      findsOneWidget,
+    );
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+
+    verify(
+      () => repository.createSeries(
+        any(),
+        const Recurrence(
+          count: 3,
+          direction: RecurrenceDirection.forward,
+          interval: RecurrenceInterval.yearly,
+        ),
+      ),
+    ).called(1);
+  });
+
   testWidgets('offers installments only on expenses', (tester) async {
     await pump(tester);
 
@@ -206,6 +247,7 @@ void main() {
         details: {
           'entries_count': [FieldError(code: 'less_than_or_equal_to')],
           'direction': [FieldError(code: 'inclusion')],
+          'interval_months': [FieldError(code: 'inclusion')],
         },
       ),
     );
@@ -218,9 +260,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Quantidade de meses, contando este: Valor inválido'),
+      find.text('Quantas vezes, contando esta: Valor inválido'),
       findsOneWidget,
     );
+    expect(find.text('Frequência: Valor inválido'), findsOneWidget);
     expect(find.text('Repetir nos: Valor inválido'), findsOneWidget);
   });
 

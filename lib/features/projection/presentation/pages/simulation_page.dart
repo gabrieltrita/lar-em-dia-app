@@ -73,7 +73,8 @@ class _PlanTile extends StatelessWidget {
     );
     return switch (plan) {
       EntryPlan(recurrence: final recurrence?) =>
-        '$base · ${l10n.entryRepeatMonths(recurrence.count)}',
+        '$base · ${l10n.entryRepeatTimes(recurrence.count)} · '
+            '${l10n.entryRepeatInterval(recurrence.interval.name)}',
       EntryPlan(installments: final installments?) =>
         '$base · ${l10n.entryInstallmentsCount(installments.count)}',
       _ => base,
