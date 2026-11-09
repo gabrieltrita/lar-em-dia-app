@@ -38,7 +38,9 @@ class SecurityPage extends StatelessWidget {
               const SizedBox(height: 16),
               const _NotificationsCard(),
               const SizedBox(height: 16),
-              const _DeleteAccountCard(),
+              _DeleteAccountCard(
+                usesGoogle: !status.passwordSet && !status.enabled,
+              ),
             ],
           ),
         },
@@ -137,6 +139,10 @@ class _TwoFactorCard extends StatelessWidget {
                   ? l10n.securityTwoFactorOn(status.backupCodesRemaining)
                   : l10n.securityTwoFactorOff,
             ),
+            if (!status.enabled && !status.passwordSet) ...[
+              const SizedBox(height: 4),
+              Text(l10n.securityTwoFactorNeedsPassword),
+            ],
             if (status.mandatory) ...[
               const SizedBox(height: 4),
               Text(l10n.securityTwoFactorRequired),
@@ -146,7 +152,7 @@ class _TwoFactorCard extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                if (!status.enabled)
+                if (!status.enabled && status.passwordSet)
                   FilledButton(
                     onPressed: () => unawaited(_enable(context)),
                     child: Text(l10n.securityEnable),
@@ -190,7 +196,9 @@ class _NotificationsCard extends StatelessWidget {
 }
 
 class _DeleteAccountCard extends StatelessWidget {
-  const new();
+  const new({required this.usesGoogle});
+
+  final bool usesGoogle;
 
   Future<void> _delete(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
@@ -209,6 +217,7 @@ class _DeleteAccountCard extends StatelessWidget {
     final reauthentication = await askReauthentication(
       context,
       title: l10n.deleteAccountTitle,
+      google: usesGoogle ? cubit.google : null,
     );
     if (reauthentication == null) {
       return;

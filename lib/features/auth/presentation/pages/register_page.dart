@@ -13,6 +13,7 @@ import 'package:lar_em_dia/core/widgets/form_widgets.dart';
 import 'package:lar_em_dia/features/auth/domain/registration.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/auth_cubits.dart';
 import 'package:lar_em_dia/features/auth/presentation/widgets/auth_scaffold.dart';
+import 'package:lar_em_dia/features/auth/presentation/widgets/google_sign_in_section.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -183,6 +184,7 @@ class _RegisterPageState extends State<RegisterPage> {
             busy: state is SubmissionInProgress,
             onPressed: _submit,
           ),
+          const GoogleSignInSection(),
           const SizedBox(height: 8),
           TextButton(
             onPressed: () => context.go(AppRoutes.login),

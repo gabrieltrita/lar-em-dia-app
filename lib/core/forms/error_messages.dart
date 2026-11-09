@@ -21,6 +21,12 @@ extension ApiErrorMessages on ApiError {
     'reauthentication_unavailable' => l10n.errorReauthenticationUnavailable,
     'only_for_single_entry' => l10n.errorOnlyForSingleEntry,
     'installment_amount_locked' => l10n.errorInstallmentAmountLocked,
+    'google_sign_in_failed' => l10n.errorGoogleSignInFailed,
+    'oauth_token_invalid' => l10n.errorOauthTokenInvalid,
+    'oauth_email_unverified' => l10n.errorOauthEmailUnverified,
+    'oauth_provider_unavailable' ||
+    'provider_unavailable' => l10n.errorOauthProviderUnavailable,
+    'invalid_provider_token' => l10n.errorInvalidProviderToken,
     ApiError.networkErrorCode => l10n.errorNetwork,
     _ => l10n.errorUnknown,
   };

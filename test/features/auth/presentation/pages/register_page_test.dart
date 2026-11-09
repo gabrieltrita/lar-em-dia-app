@@ -25,8 +25,11 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     await pumpPage(
       tester,
-      BlocProvider(
-        create: (_) => RegisterCubit(harness.repository),
+      MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => RegisterCubit(harness.repository)),
+          BlocProvider(create: (_) => harness.googleCubit()),
+        ],
         child: const RegisterPage(),
       ),
       session: harness.session,
@@ -150,6 +153,7 @@ void main() {
   testWidgets('links back to the login', (tester) async {
     await pump(tester);
 
+    await tester.ensureVisible(find.text('Já tenho conta'));
     await tester.tap(find.text('Já tenho conta'));
     await tester.pumpAndSettle();
 

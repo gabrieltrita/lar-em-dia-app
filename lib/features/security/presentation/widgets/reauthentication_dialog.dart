@@ -1,14 +1,57 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:lar_em_dia/features/auth/presentation/widgets/google_account_button.dart';
 import 'package:lar_em_dia/features/security/domain/two_factor.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
 Future<Reauthentication?> askReauthentication(
   BuildContext context, {
   required String title,
+  GoogleReauthentication? google,
 }) => showDialog<Reauthentication>(
   context: context,
-  builder: (_) => _ReauthenticationDialog(title: title),
+  builder: (_) => google == null
+      ? _ReauthenticationDialog(title: title)
+      : _GoogleReauthenticationDialog(title: title, google: google),
 );
+
+class _GoogleReauthenticationDialog extends StatelessWidget {
+  const new({required this.title, required this.google});
+
+  final String title;
+  final GoogleReauthentication google;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return AlertDialog(
+      title: Text(title),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(l10n.googleConfirmIdentity),
+          const SizedBox(height: 16),
+          GoogleAccountButton(
+            label: l10n.googleContinue,
+            rendersOwnButton: google.rendersOwnButton,
+            idTokens: google.idTokens,
+            onPressed: () => unawaited(google.start()),
+            onIdToken: (token) =>
+                Navigator.of(context).pop(Reauthentication(idToken: token)),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.cancel),
+        ),
+      ],
+    );
+  }
+}
 
 class _ReauthenticationDialog extends StatefulWidget {
   const new({required this.title});

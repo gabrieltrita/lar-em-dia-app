@@ -27,7 +27,26 @@ class ApiAuthRepository implements AuthRepository {
       decode: _json,
       body: {'email': email, 'password': password},
     );
-    final data = response.data;
+    return await _loginResult(response.data);
+  }
+
+  @override
+  Future<LoginResult> signInWithGoogle(
+    String idToken, {
+    bool acceptConsents = false,
+  }) async {
+    final response = await _client.post<Json>(
+      '/auth/oauth/google',
+      decode: _json,
+      body: {
+        'id_token': idToken,
+        if (acceptConsents) ...{'accept_terms': true, 'accept_privacy': true},
+      },
+    );
+    return await _loginResult(response.data);
+  }
+
+  Future<LoginResult> _loginResult(Json data) async {
     if (data['two_factor_required'] == true) {
       return LoginResult.twoFactorRequired(data['challenge_token'] as String);
     }

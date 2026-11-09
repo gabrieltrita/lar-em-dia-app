@@ -50,6 +50,7 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           API_BASE_URL: ${{ vars.API_BASE_URL }}
           APP_HOST: ${{ vars.APP_HOST }}
+          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
           BUILD_NAME: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
           BUILD_NUMBER: ${{ github.run_number }}
         run: |
@@ -58,6 +59,7 @@ jobs:
           flutter build appbundle --release \
             --dart-define=API_BASE_URL="$API_BASE_URL" \
             --dart-define=SITE_URL="https://$APP_HOST" \
+            --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" \
             --build-number="$BUILD_NUMBER" \
             ${BUILD_NAME:+--build-name="$BUILD_NAME"}
 

@@ -48,6 +48,7 @@ jobs:
           setup: ${{ github.event_name == 'workflow_dispatch' }}
           app-host: ${{ vars.STAGING_APP_HOST }}
           api-base-url: ${{ vars.STAGING_API_BASE_URL }}
+          google-client-id: ${{ vars.STAGING_GOOGLE_CLIENT_ID }}
           indexable: "false"
           ssh-private-key: ${{ secrets.STAGING_DEPLOY_SSH_PRIVATE_KEY }}
           ssh-known-hosts: ${{ secrets.STAGING_DEPLOY_SSH_KNOWN_HOSTS }}
@@ -86,6 +87,7 @@ jobs:
           setup: ${{ github.event_name == 'workflow_dispatch' }}
           app-host: ${{ vars.APP_HOST }}
           api-base-url: ${{ vars.API_BASE_URL }}
+          google-client-id: ${{ vars.GOOGLE_CLIENT_ID }}
           indexable: "true"
           ssh-private-key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
           ssh-known-hosts: ${{ secrets.DEPLOY_SSH_KNOWN_HOSTS }}

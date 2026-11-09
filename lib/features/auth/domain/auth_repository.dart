@@ -5,6 +5,11 @@ import 'package:lar_em_dia/features/auth/domain/registration.dart';
 abstract interface class AuthRepository {
   Future<LoginResult> login({required String email, required String password});
 
+  Future<LoginResult> signInWithGoogle(
+    String idToken, {
+    bool acceptConsents = false,
+  });
+
   Future<AuthUser> verifyTwoFactor({
     required String challengeToken,
     required String code,

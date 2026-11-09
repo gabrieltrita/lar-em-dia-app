@@ -81,6 +81,37 @@ void main() {
     expect(storage.refreshToken, 'r2');
   });
 
+  test('signs in with a Google ID token', () async {
+    final repository = build((_) => session());
+
+    final result = await repository.signInWithGoogle('google-token');
+
+    expect(result, isA<LoginAuthenticated>());
+    expect(lastRequest().path, '/auth/oauth/google');
+    expect(lastRequest().data, {'id_token': 'google-token'});
+    expect(storage.refreshToken, 'r2');
+  });
+
+  test('accepts the consents when Google creates the account', () async {
+    final repository = build(
+      (_) => FakeAdapter.json(200, {
+        'data': {'two_factor_required': true, 'challenge_token': 'c1'},
+      }),
+    );
+
+    final result = await repository.signInWithGoogle(
+      'google-token',
+      acceptConsents: true,
+    );
+
+    expect(result, const LoginResult.twoFactorRequired('c1'));
+    expect(lastRequest().data, {
+      'id_token': 'google-token',
+      'accept_terms': true,
+      'accept_privacy': true,
+    });
+  });
+
   test('login reads the role and falls back to user', () async {
     for (final (role, expected) in [
       ('admin', UserRole.admin),
