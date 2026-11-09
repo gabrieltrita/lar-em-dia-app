@@ -86,6 +86,10 @@ void main() {
       expect(run, contains('flutter build appbundle --release'));
       expect(run, contains(r'--dart-define=API_BASE_URL="$API_BASE_URL"'));
       expect(run, contains(r'--dart-define=SITE_URL="https://$APP_HOST"'));
+      expect(
+        run,
+        contains(r'--dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID"'),
+      );
       final upload = stepNamed(bundle, 'Upload the app bundle');
       expect(
         (upload['with'] as YamlMap)['path'],

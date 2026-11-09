@@ -68,6 +68,10 @@ void main() {
       expect(stagingWith['destination'], 'staging');
       expect(stagingWith['app-host'], r'${{ vars.STAGING_APP_HOST }}');
       expect(stagingWith['api-base-url'], r'${{ vars.STAGING_API_BASE_URL }}');
+      expect(
+        stagingWith['google-client-id'],
+        r'${{ vars.STAGING_GOOGLE_CLIENT_ID }}',
+      );
       expect(stagingWith['indexable'], 'false');
       expect(
         stagingWith['ssh-private-key'],
@@ -77,6 +81,10 @@ void main() {
       expect(productionWith.containsKey('destination'), isFalse);
       expect(productionWith['app-host'], r'${{ vars.APP_HOST }}');
       expect(productionWith['api-base-url'], r'${{ vars.API_BASE_URL }}');
+      expect(
+        productionWith['google-client-id'],
+        r'${{ vars.GOOGLE_CLIENT_ID }}',
+      );
       expect(productionWith['indexable'], 'true');
       expect(
         productionWith['ssh-private-key'],
@@ -116,6 +124,14 @@ void main() {
       expect(
         actionStep('Build web')['run'],
         contains(r'--dart-define=API_BASE_URL="$API_BASE_URL"'),
+      );
+      expect(
+        (actionStep('Build web')['env'] as YamlMap)['GOOGLE_CLIENT_ID'],
+        r'${{ inputs.google-client-id }}',
+      );
+      expect(
+        actionStep('Build web')['run'],
+        contains(r'--dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID"'),
       );
     });
 

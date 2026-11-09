@@ -343,8 +343,11 @@ GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
     ),
     GoRoute(
       path: AppRoutes.login,
-      builder: (context, state) => BlocProvider(
-        create: (_) => getIt<LoginCubit>(),
+      builder: (context, state) => MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => getIt<LoginCubit>()),
+          BlocProvider(create: (_) => getIt<GoogleSignInCubit>()),
+        ],
         child: const LoginPage(),
       ),
     ),
@@ -359,8 +362,11 @@ GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
     ),
     GoRoute(
       path: AppRoutes.register,
-      builder: (context, state) => BlocProvider(
-        create: (_) => getIt<RegisterCubit>(),
+      builder: (context, state) => MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => getIt<RegisterCubit>()),
+          BlocProvider(create: (_) => getIt<GoogleSignInCubit>()),
+        ],
         child: const RegisterPage(),
       ),
     ),

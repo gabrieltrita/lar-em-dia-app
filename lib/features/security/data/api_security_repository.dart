@@ -14,10 +14,19 @@ class ApiSecurityRepository implements SecurityRepository {
   final ApiClient _client;
 
   @override
-  Future<TwoFactorStatus> twoFactorStatus() async => (await _client.get(
-    path,
-    decode: (data) => TwoFactorStatusDto.fromJson(data! as Json).toDomain(),
-  )).data;
+  Future<TwoFactorStatus> twoFactorStatus() async {
+    final (status, passwordSet) = await (
+      _client.get(
+        path,
+        decode: (data) => TwoFactorStatusDto.fromJson(data! as Json).toDomain(),
+      ),
+      _client.get(
+        accountPath,
+        decode: (data) => (data! as Json)['password_set'] as bool? ?? true,
+      ),
+    ).wait;
+    return status.data.copyWith(passwordSet: passwordSet.data);
+  }
 
   @override
   Future<TwoFactorSetup> setupTwoFactor(
@@ -57,7 +66,8 @@ class ApiSecurityRepository implements SecurityRepository {
       BackupCodesDto.fromJson(data! as Json).backupCodes;
 
   static Json _body(Reauthentication reauthentication) => {
-    'current_password': reauthentication.password,
+    'current_password': ?reauthentication.password,
     'code': ?reauthentication.code,
+    'id_token': ?reauthentication.idToken,
   };
 }

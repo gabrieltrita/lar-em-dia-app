@@ -14,6 +14,7 @@ import 'package:lar_em_dia/features/auth/domain/login_result.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/auth_cubits.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
 import 'package:lar_em_dia/features/auth/presentation/widgets/auth_scaffold.dart';
+import 'package:lar_em_dia/features/auth/presentation/widgets/google_sign_in_section.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
 class LoginPage extends StatefulWidget {
@@ -126,6 +127,7 @@ class _LoginPageState extends State<LoginPage> {
             busy: state is SubmissionInProgress,
             onPressed: _submit,
           ),
+          if (!widget.demo) const GoogleSignInSection(),
           const SizedBox(height: 8),
           TextButton(
             onPressed: () => context.go(AppRoutes.forgotPassword),

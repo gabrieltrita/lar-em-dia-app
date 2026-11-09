@@ -120,6 +120,14 @@ Amounts are integer cents end to end (`amount_cents` in the API, `int` in the ap
 
 The API email links point to the web routes above (`FRONTEND_URL` in the API). Deep links for the mobile apps come later.
 
+### Sign in with Google
+
+When the build gets `--dart-define=GOOGLE_CLIENT_ID=<web client id>`, the login and sign-up pages show "Continuar com o Google" (`GoogleSignInSection`); without it nothing changes. `GoogleSignInGateway` wraps `google_sign_in` 7: on the web it passes the id as `clientId` and shows Google's own button (`renderButton`, the only way to get an ID token there); on Android and iOS it passes it as `serverClientId`, so the ID token's audience is the same web client, and opens the system account picker. Every sign-in event's ID token goes to `POST /auth/oauth/google`. When the API answers `validation_failed` on `accept_terms` (a new account), the app asks for the terms and privacy consents and retries with the same token. A 2FA account continues to the code page. The API must list the same web client id in `GOOGLE_CLIENT_IDS`.
+
+The deploy passes `STAGING_GOOGLE_CLIENT_ID` or `GOOGLE_CLIENT_ID` (repository variables) to the web build, and the Android workflow passes `GOOGLE_CLIENT_ID`. In Google Cloud, the web client lists the staging and production origins, and an Android client registers `dev.trita.laremdia` with the SHA-1 of the Play app signing key and of the upload key.
+
+Accounts created with Google have no password: "Conta" reads `password_set` from `GET /me`, hides enabling 2FA for them and confirms "Excluir conta" with a fresh Google ID token (`id_token` in `DELETE /me`). With 2FA on, the code is used, as before.
+
 ## Account
 
 | Route | Page |

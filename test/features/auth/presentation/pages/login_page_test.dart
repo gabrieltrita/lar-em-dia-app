@@ -25,8 +25,11 @@ void main() {
 
   Future<void> pump(WidgetTester tester, {bool demo = false}) => pumpPage(
     tester,
-    BlocProvider(
-      create: (_) => LoginCubit(harness.repository),
+    MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => LoginCubit(harness.repository)),
+        BlocProvider(create: (_) => harness.googleCubit()),
+      ],
       child: LoginPage(demo: demo),
     ),
     session: harness.session,

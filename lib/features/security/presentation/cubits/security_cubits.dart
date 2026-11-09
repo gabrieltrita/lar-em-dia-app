@@ -3,6 +3,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:injectable/injectable.dart';
 import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/core/state/load_state.dart';
+import 'package:lar_em_dia/features/auth/domain/google_auth_gateway.dart';
 import 'package:lar_em_dia/features/security/domain/security_repository.dart';
 import 'package:lar_em_dia/features/security/domain/two_factor.dart';
 
@@ -12,9 +13,25 @@ typedef BackupCodesResult = ({List<String>? codes, ApiError? error});
 
 @injectable
 class SecurityCubit extends Cubit<LoadState<TwoFactorStatus>> {
-  new(this._repository) : super(const LoadState<TwoFactorStatus>.loading());
+  new(this._repository, this._google)
+    : super(const LoadState<TwoFactorStatus>.loading());
 
   final SecurityRepository _repository;
+  final GoogleAuthGateway _google;
+
+  GoogleReauthentication get google => (
+    rendersOwnButton: _google.rendersOwnButton,
+    idTokens: _google.idTokens,
+    start: _startGoogle,
+  );
+
+  Future<void> _startGoogle() async {
+    try {
+      await _google.signIn();
+    } on ApiError {
+      return;
+    }
+  }
 
   Future<void> load() async {
     emit(const LoadState<TwoFactorStatus>.loading());

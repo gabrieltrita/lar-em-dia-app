@@ -6,5 +6,7 @@ abstract final class Env {
 
   static const siteUrl = String.fromEnvironment('SITE_URL');
 
+  static const googleClientId = String.fromEnvironment('GOOGLE_CLIENT_ID');
+
   static const demo = bool.fromEnvironment('DEMO');
 }

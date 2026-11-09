@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lar_em_dia/core/network/api_client.dart';
 import 'package:lar_em_dia/features/security/data/api_security_repository.dart';
+import 'package:lar_em_dia/features/security/domain/two_factor.dart';
 
 import '../../../helpers/fake_adapter.dart';
 import '../../../helpers/security_fixtures.dart';
@@ -34,7 +35,11 @@ void main() {
     expect(status.enabled, isTrue);
     expect(status.mandatory, isTrue);
     expect(status.backupCodesRemaining, 8);
-    expect(lastRequest().path, '/me/two_factor');
+    expect(status.passwordSet, isTrue);
+    expect(adapter.requests.map((request) => request.path), [
+      '/me/two_factor',
+      '/me',
+    ]);
   });
 
   test('reads a status with missing fields as off', () async {
@@ -104,5 +109,27 @@ void main() {
       'current_password': 'Secret123',
       'code': '123456',
     });
+  });
+
+  test('knows when the account has no password', () async {
+    final repository = build(
+      (options) => options.path == '/me'
+          ? FakeAdapter.json(200, {
+              'data': {'password_set': false},
+            })
+          : FakeAdapter.json(200, {'data': <String, Object?>{}}),
+    );
+
+    final status = await repository.twoFactorStatus();
+
+    expect(status.passwordSet, isFalse);
+  });
+
+  test('re-authenticates with a Google ID token alone', () async {
+    final repository = build((_) => FakeAdapter.json(204, null));
+
+    await repository.deleteAccount(const Reauthentication(idToken: 'g1'));
+
+    expect(lastRequest().data, {'id_token': 'g1'});
   });
 }
