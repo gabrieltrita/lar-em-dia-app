@@ -92,4 +92,17 @@ void main() {
     );
     expect(lastRequest().path, '/me/two_factor/backup_codes');
   });
+
+  test('deletes the account with the password and the code', () async {
+    final repository = build((_) => FakeAdapter.json(204, null));
+
+    await repository.deleteAccount(passwordAndCode);
+
+    expect(lastRequest().method, 'DELETE');
+    expect(lastRequest().path, '/me');
+    expect(lastRequest().data, {
+      'current_password': 'Secret123',
+      'code': '123456',
+    });
+  });
 }

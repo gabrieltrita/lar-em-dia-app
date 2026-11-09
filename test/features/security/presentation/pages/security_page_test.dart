@@ -218,4 +218,66 @@ void main() {
 
     expect(find.text('Ativar'), findsOneWidget);
   });
+
+  group('deleting the account', () {
+    Future<void> startDeletion(WidgetTester tester) async {
+      when(() => repository.twoFactorStatus())
+          .thenAnswer((_) async => twoFactorOff);
+      await pump(tester);
+      await tester.scrollUntilVisible(find.text('Excluir conta'), 100);
+      await tester.tap(find.text('Excluir conta'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('warns, reauthenticates, deletes and signs out', (
+      tester,
+    ) async {
+      when(() => repository.deleteAccount(any())).thenAnswer((_) async {});
+      when(() => harness.repository.logout()).thenAnswer((_) async {});
+      await startDeletion(tester);
+
+      expect(find.textContaining('apagados para sempre'), findsOneWidget);
+      await reauthenticate(tester, 'Continuar');
+
+      verify(() => repository.deleteAccount(passwordAndCode)).called(1);
+      verify(() => harness.repository.logout()).called(1);
+      expect(harness.session.state, const SessionState.unauthenticated());
+      expect(find.text('Sua conta foi excluída.'), findsOneWidget);
+    });
+
+    testWidgets('keeps the session when the deletion fails', (tester) async {
+      when(() => repository.deleteAccount(any()))
+          .thenThrow(const ApiError(code: 'invalid_current_password'));
+      await startDeletion(tester);
+
+      await reauthenticate(tester, 'Continuar');
+
+      expect(find.text('Senha atual incorreta.'), findsOneWidget);
+      expect(harness.session.state, isA<SessionAuthenticated>());
+      verifyNever(() => harness.repository.logout());
+    });
+
+    testWidgets('does nothing when the warning is cancelled', (tester) async {
+      await startDeletion(tester);
+
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AlertDialog), findsNothing);
+      verifyNever(() => repository.deleteAccount(any()));
+    });
+
+    testWidgets('does nothing when the reauthentication is cancelled', (
+      tester,
+    ) async {
+      await startDeletion(tester);
+
+      await tester.tap(find.text('Continuar'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
+
+      verifyNever(() => repository.deleteAccount(any()));
+    });
+  });
 }
