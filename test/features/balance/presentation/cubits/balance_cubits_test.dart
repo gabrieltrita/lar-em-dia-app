@@ -51,6 +51,23 @@ void main() {
     await cubit.close();
   });
 
+  blocTest<LatestBalanceCubit, Balance?>(
+    'loads the latest balance',
+    setUp: () => when(repository.latest).thenAnswer((_) async => balance),
+    build: () => LatestBalanceCubit(repository),
+    act: (cubit) => cubit.load(),
+    expect: () => [balance],
+  );
+
+  blocTest<LatestBalanceCubit, Balance?>(
+    'stays empty when the latest balance fails to load',
+    setUp: () => when(repository.latest).thenThrow(failure),
+    build: () => LatestBalanceCubit(repository),
+    seed: () => balance,
+    act: (cubit) => cubit.load(),
+    expect: () => const <Balance?>[null],
+  );
+
   blocTest<BalanceFormCubit, Submission<Balance>>(
     'creates a new balance',
     setUp: () =>

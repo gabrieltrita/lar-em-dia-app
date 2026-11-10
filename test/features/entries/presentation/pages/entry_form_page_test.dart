@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lar_em_dia/core/network/api_error.dart';
+import 'package:lar_em_dia/features/balance/domain/balance.dart';
+import 'package:lar_em_dia/features/balance/presentation/cubits/balance_cubits.dart';
 import 'package:lar_em_dia/features/entries/domain/category.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/presentation/cubits/entry_cubits.dart';
@@ -17,11 +19,14 @@ import '../../../../helpers/pump_page.dart';
 
 void main() {
   late MockEntryRepository repository;
+  late MockBalanceRepository balances;
   late List<Object?> popped;
 
   setUpAll(registerFinanceFallbacks);
   setUp(() {
     repository = MockEntryRepository();
+    balances = MockBalanceRepository();
+    when(balances.latest).thenAnswer((_) async => null);
     popped = [];
     when(() => repository.categories(EntryKind.income))
         .thenAnswer((_) async => [salaryCategory, rentCategory]);
@@ -55,6 +60,12 @@ void main() {
                 create: (_) => started(
                   CategoriesCubit(repository),
                   (cubit) => cubit.load(kind),
+                ),
+              ),
+              BlocProvider(
+                create: (_) => started(
+                  LatestBalanceCubit(balances),
+                  (cubit) => cubit.load(),
                 ),
               ),
             ],
@@ -95,6 +106,45 @@ void main() {
     );
     await tester.enterText(find.byKey(const Key('entry_amount')), '500000');
   }
+
+  group('balance notice', () {
+    final notice = find.byKey(const Key('entry_before_balance'));
+
+    testWidgets('explains that entries up to the balance date are in it', (
+      tester,
+    ) async {
+      when(balances.latest).thenAnswer((_) async => balance);
+      await pump(tester);
+
+      expect(notice, findsOneWidget);
+      expect(
+        find.text(
+          'Este lançamento vence até 03/11/2026, data do seu saldo informado. '
+          'O saldo já o inclui, então ele não altera o fim do mês.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('hides the notice for dates after the balance', (tester) async {
+      when(balances.latest).thenAnswer(
+        (_) async => Balance(
+          id: 'balance-2',
+          amountCents: 100,
+          asOf: DateTime(2026, 11, 2),
+        ),
+      );
+      await pump(tester);
+
+      expect(notice, findsNothing);
+    });
+
+    testWidgets('hides the notice without a balance', (tester) async {
+      await pump(tester);
+
+      expect(notice, findsNothing);
+    });
+  });
 
   testWidgets('validates the fields', (tester) async {
     await pump(tester);

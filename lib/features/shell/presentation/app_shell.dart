@@ -12,8 +12,6 @@ import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 class AppShell extends StatelessWidget {
   const new({required this.shell, required this.changes, super.key});
 
-  static const tabsWithAdd = {0, 1, 2};
-
   final StatefulNavigationShell shell;
   final FinanceChanges changes;
 
@@ -22,13 +20,6 @@ class AppShell extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: RepositoryProvider.value(value: changes, child: shell),
-      floatingActionButton: tabsWithAdd.contains(shell.currentIndex)
-          ? FloatingActionButton(
-              tooltip: l10n.shellAdd,
-              onPressed: () => unawaited(showAddSheet(context, changes)),
-              child: const Icon(Icons.add),
-            )
-          : null,
       bottomNavigationBar: NavigationBarTheme(
         data: NavigationBarTheme.of(context).copyWith(
           labelTextStyle: WidgetStatePropertyAll(
@@ -70,6 +61,19 @@ class AppShell extends StatelessWidget {
       ),
     );
   }
+}
+
+class AddButton extends StatelessWidget {
+  const new({super.key});
+
+  @override
+  Widget build(BuildContext context) => FloatingActionButton(
+    heroTag: null,
+    tooltip: AppLocalizations.of(context).shellAdd,
+    onPressed: () =>
+        unawaited(showAddSheet(context, context.read<FinanceChanges>())),
+    child: const Icon(Icons.add),
+  );
 }
 
 Future<void> showAddSheet(BuildContext context, FinanceChanges changes) async {
