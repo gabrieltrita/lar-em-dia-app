@@ -41,6 +41,14 @@ jobs:
       - name: Enforce lib/core coverage
         run: tool/check_core_coverage.sh
 
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Test web content scripts
+        run: node --test 'test/web/*.test.mjs'
+
       - name: Build web
         run: flutter build web --dart-define=API_BASE_URL=https://example.invalid/api/v1
 

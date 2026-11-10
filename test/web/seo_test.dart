@@ -11,6 +11,7 @@ Directory copyWeb() {
   final target = Directory.systemTemp.createTempSync('web_');
   for (final file in [
     'index.html',
+    'guias.html',
     'robots.txt',
     'sitemap.xml',
     'manifest.json',
@@ -122,7 +123,18 @@ void main() {
         read(web, 'sitemap.xml'),
         contains('<loc>https://app.example.com/</loc>'),
       );
-      for (final file in ['index.html', 'robots.txt', 'sitemap.xml']) {
+      expect(
+        read(web, 'guias.html'),
+        contains(
+          '<link rel="canonical" href="https://app.example.com/guias.html">',
+        ),
+      );
+      for (final file in [
+        'index.html',
+        'guias.html',
+        'robots.txt',
+        'sitemap.xml',
+      ]) {
         expect(read(web, file), isNot(contains(placeholder)));
       }
     });
@@ -142,6 +154,10 @@ void main() {
       expect(
         html,
         contains('<link rel="canonical" href="https://staging.example.com/">'),
+      );
+      expect(
+        read(web, 'guias.html'),
+        contains('<meta name="robots" content="noindex, nofollow">'),
       );
       expect(read(web, 'robots.txt'), 'User-agent: *\nAllow: /\n');
       expect(File('${web.path}/sitemap.xml').existsSync(), isFalse);
