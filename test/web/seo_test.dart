@@ -88,10 +88,13 @@ void main() {
     test('shows readable text until the first Flutter frame', () {
       expect(html, contains('<main id="landing">'));
       expect(html, contains('<h1>Lar em Dia</h1>'));
-      expect(html, contains("addEventListener('flutter-first-frame'"));
       expect(
-        html.indexOf("'flutter-first-frame'"),
-        lessThan(html.indexOf('flutter_bootstrap.js')),
+        File('web/landing.js').readAsStringSync(),
+        contains("addEventListener('flutter-first-frame'"),
+      );
+      expect(
+        html.indexOf('<script src="landing.js">'),
+        allOf(isNonNegative, lessThan(html.indexOf('flutter_bootstrap.js'))),
       );
     });
   });

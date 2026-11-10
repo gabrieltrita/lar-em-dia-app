@@ -100,6 +100,15 @@ class ConfirmEmailCubit extends SubmissionCubit<AuthUser> {
 }
 
 @injectable
+class UnlockCubit extends SubmissionCubit<LoginResult> {
+  new(this._repository);
+
+  final AuthRepository _repository;
+
+  Future<void> submit(String token) => run(() => _repository.unlock(token));
+}
+
+@injectable
 class ForgotPasswordCubit extends SubmissionCubit<void> {
   new(this._repository);
 

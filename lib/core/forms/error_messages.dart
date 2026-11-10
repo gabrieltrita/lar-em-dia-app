@@ -11,6 +11,7 @@ extension ApiErrorMessages on ApiError {
     'two_factor_challenge_expired' => l10n.errorTwoFactorChallengeExpired,
     'invalid_confirmation_token' => l10n.errorInvalidConfirmationToken,
     'invalid_reset_token' => l10n.errorInvalidResetToken,
+    'invalid_unlock_token' => l10n.errorInvalidUnlockToken,
     'validation_failed' => l10n.errorValidationFailed,
     'rate_limited' => l10n.errorRateLimited,
     'two_factor_setup_required' => l10n.errorTwoFactorSetupRequired,

@@ -26,6 +26,7 @@ import 'package:lar_em_dia/features/auth/presentation/pages/register_page.dart';
 import 'package:lar_em_dia/features/auth/presentation/pages/reset_password_page.dart';
 import 'package:lar_em_dia/features/auth/presentation/pages/splash_page.dart';
 import 'package:lar_em_dia/features/auth/presentation/pages/two_factor_page.dart';
+import 'package:lar_em_dia/features/auth/presentation/pages/unlock_page.dart';
 import 'package:lar_em_dia/features/balance/domain/balance.dart';
 import 'package:lar_em_dia/features/balance/presentation/cubits/balance_cubits.dart';
 import 'package:lar_em_dia/features/balance/presentation/pages/balance_form_page.dart';
@@ -60,6 +61,7 @@ abstract final class AppRoutes {
   static const confirmEmail = '/confirm-email';
   static const forgotPassword = '/forgot-password';
   static const resetPassword = '/reset-password';
+  static const unlock = '/unlock';
   static const balances = '/balances';
   static const balanceForm = '/balances/form';
   static const entries = '/entries';
@@ -93,6 +95,7 @@ abstract final class AppRoutes {
     confirmEmail,
     forgotPassword,
     resetPassword,
+    unlock,
   };
 }
 
@@ -388,6 +391,13 @@ GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
       builder: (context, state) => BlocProvider(
         create: (_) => getIt<ConfirmEmailCubit>(),
         child: ConfirmEmailPage(token: state.uri.queryParameters['token']),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.unlock,
+      builder: (context, state) => BlocProvider(
+        create: (_) => getIt<UnlockCubit>(),
+        child: UnlockPage(token: state.uri.queryParameters['token']),
       ),
     ),
     GoRoute(

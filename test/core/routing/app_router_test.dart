@@ -28,6 +28,7 @@ import 'package:lar_em_dia/features/auth/presentation/pages/register_page.dart';
 import 'package:lar_em_dia/features/auth/presentation/pages/reset_password_page.dart';
 import 'package:lar_em_dia/features/auth/presentation/pages/splash_page.dart';
 import 'package:lar_em_dia/features/auth/presentation/pages/two_factor_page.dart';
+import 'package:lar_em_dia/features/auth/presentation/pages/unlock_page.dart';
 import 'package:lar_em_dia/features/balance/domain/balance_repository.dart';
 import 'package:lar_em_dia/features/balance/presentation/pages/balance_form_page.dart';
 import 'package:lar_em_dia/features/balance/presentation/pages/balances_page.dart';
@@ -65,6 +66,7 @@ void main() {
       expect(sessionRedirect(unknown, AppRoutes.home), AppRoutes.splash);
       expect(sessionRedirect(unknown, AppRoutes.splash), isNull);
       expect(sessionRedirect(unknown, AppRoutes.resetPassword), isNull);
+      expect(sessionRedirect(unknown, AppRoutes.unlock), isNull);
     });
 
     test('sends a signed in user away from public pages', () {
@@ -217,6 +219,8 @@ void main() {
     testWidgets('opens every public page', (tester) async {
       when(() => repository.confirmEmail('t1'))
           .thenThrow(const ApiError(code: 'invalid_confirmation_token'));
+      when(() => repository.unlock('t1'))
+          .thenThrow(const ApiError(code: 'invalid_unlock_token'));
       await pumpRouter(tester);
       await signOut(tester);
 
@@ -226,6 +230,7 @@ void main() {
         '${AppRoutes.confirmEmail}?token=t1': ConfirmEmailPage,
         AppRoutes.forgotPassword: ForgotPasswordPage,
         '${AppRoutes.resetPassword}?token=t1': ResetPasswordPage,
+        '${AppRoutes.unlock}?token=t1': UnlockPage,
       };
       for (final MapEntry(key: location, value: page) in pages.entries) {
         router.go(location);
