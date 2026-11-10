@@ -141,6 +141,7 @@ void main() {
       'paid_on': '2026-11-05',
       'entries_count': 2,
       'direction': 'backward',
+      'interval_months': 1,
     });
   });
 

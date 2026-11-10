@@ -313,12 +313,29 @@
   "entryNatureFixed": "Fixa",
   "entryNatureVariable": "Variável",
   "entryRepeatLabel": "Repetir em outros meses",
-  "entryRepeatCountLabel": "Quantidade de meses, contando este",
+  "entryRepeatCountLabel": "Quantas vezes, contando esta",
+  "entryRepeatIntervalLabel": "Frequência",
+  "entryRepeatInterval": "{interval, select, monthly{Todo mês} quarterly{A cada 3 meses} semiannual{A cada 6 meses} other{Todo ano}}",
+  "@entryRepeatInterval": {
+    "placeholders": {
+      "interval": {
+        "type": "String"
+      }
+    }
+  },
+  "entryRepeatPreview": "Datas: {dates}",
+  "@entryRepeatPreview": {
+    "placeholders": {
+      "dates": {
+        "type": "String"
+      }
+    }
+  },
   "entryRepeatDirectionLabel": "Repetir nos",
   "entryRepeatForward": "Próximos meses",
   "entryRepeatBackward": "Meses anteriores",
-  "entryRepeatMonths": "{count} meses",
-  "@entryRepeatMonths": {
+  "entryRepeatTimes": "{count} vezes",
+  "@entryRepeatTimes": {
     "placeholders": {
       "count": {
         "type": "int"

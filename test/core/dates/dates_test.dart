@@ -20,6 +20,15 @@ void main() {
     expect(Dates.addMonths(DateTime(2026), -1), DateTime(2025, 12));
   });
 
+  test('shifts a date by months keeping the day within the month', () {
+    expect(Dates.shiftMonths(DateTime(2026, 1, 31), 1), DateTime(2026, 2, 28));
+    expect(
+      Dates.shiftMonths(DateTime(2028, 2, 29), -12),
+      DateTime(2027, 2, 28),
+    );
+    expect(Dates.shiftMonths(DateTime(2026, 5, 10), 12), DateTime(2027, 5, 10));
+  });
+
   test('reads month parameters', () {
     expect(Dates.parseMonth('2026-04'), DateTime(2026, 4));
     expect(Dates.parseMonth('2026-13'), isNull);

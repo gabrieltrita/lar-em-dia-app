@@ -147,6 +147,7 @@ class ApiEntryRepository implements EntryRepository {
     ..._body(draft),
     'entries_count': recurrence.count,
     'direction': recurrence.direction.name,
+    'interval_months': recurrence.interval.months,
   };
 
   static Json _installmentsBody(EntryDraft draft, Installments installments) =>
