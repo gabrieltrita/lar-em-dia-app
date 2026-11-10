@@ -116,6 +116,19 @@ void main() {
       );
     });
 
+    test('fills the API origin into the security headers before deploying', () {
+      final step = actionStep('Prepare security headers');
+      expect(
+        step['run'],
+        'tool/prepare_web_headers.sh deploy/security-headers.conf '
+        r'"$API_BASE_URL"',
+      );
+      expect(
+        (step['env'] as YamlMap)['API_BASE_URL'],
+        r'${{ inputs.api-base-url }}',
+      );
+    });
+
     test('builds the web app against the API of the environment', () {
       expect(
         (actionStep('Build web')['env'] as YamlMap)['API_BASE_URL'],

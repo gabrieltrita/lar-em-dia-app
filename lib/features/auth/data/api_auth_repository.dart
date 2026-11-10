@@ -89,6 +89,16 @@ class ApiAuthRepository implements AuthRepository {
       _session('/auth/confirm', {'token': token});
 
   @override
+  Future<LoginResult> unlock(String token) async {
+    final response = await _client.post<Json>(
+      '/auth/unlock',
+      decode: _json,
+      body: {'token': token},
+    );
+    return await _loginResult(response.data);
+  }
+
+  @override
   Future<void> requestPasswordReset(String email) => _client.post<void>(
     '/auth/password/forgot',
     decode: _ignore,

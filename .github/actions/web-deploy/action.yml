@@ -47,6 +47,12 @@ runs:
         INDEXABLE: ${{ inputs.indexable }}
       run: tool/prepare_web_build.sh web "https://$APP_HOST" "$INDEXABLE"
 
+    - name: Prepare security headers
+      shell: bash
+      env:
+        API_BASE_URL: ${{ inputs.api-base-url }}
+      run: tool/prepare_web_headers.sh deploy/security-headers.conf "$API_BASE_URL"
+
     - name: Build web
       shell: bash
       env:
