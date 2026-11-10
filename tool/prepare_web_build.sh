@@ -15,12 +15,12 @@ if [[ ! "$site_url" =~ ^https://[a-z0-9.-]+$ ]]; then
   exit 64
 fi
 
-for file in index.html robots.txt sitemap.xml; do
-  sed -i "s|__SITE_URL__|$site_url|g" "$web_dir/$file"
+for file in "$web_dir"/*.html "$web_dir/robots.txt" "$web_dir/sitemap.xml"; do
+  sed -i "s|__SITE_URL__|$site_url|g" "$file"
 done
 
 if [ "$indexable" = "false" ]; then
-  sed -i 's|<meta name="robots" content="index, follow">|<meta name="robots" content="noindex, nofollow">|' "$web_dir/index.html"
+  sed -i 's|<meta name="robots" content="index, follow">|<meta name="robots" content="noindex, nofollow">|' "$web_dir"/*.html
   printf 'User-agent: *\nAllow: /\n' > "$web_dir/robots.txt"
   rm "$web_dir/sitemap.xml"
 fi

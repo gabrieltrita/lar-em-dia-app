@@ -15,4 +15,25 @@
   <url>
     <loc>__SITE_URL__/apoie.html</loc>
   </url>
+  <url>
+    <loc>__SITE_URL__/guias.html</loc>
+  </url>
+  <url>
+    <loc>__SITE_URL__/calculadora-fim-do-mes.html</loc>
+  </url>
+  <url>
+    <loc>__SITE_URL__/calculadora-juros-compostos.html</loc>
+  </url>
+  <url>
+    <loc>__SITE_URL__/planilha-orcamento-familiar.html</loc>
+  </url>
+  <url>
+    <loc>__SITE_URL__/guia-orcamento-familiar.html</loc>
+  </url>
+  <url>
+    <loc>__SITE_URL__/guia-13-salario.html</loc>
+  </url>
+  <url>
+    <loc>__SITE_URL__/guia-contas-de-janeiro.html</loc>
+  </url>
 </urlset>
