@@ -207,7 +207,25 @@ void main() {
         '*',
         '!build/web',
         '!deploy/nginx.conf',
+        '!deploy/security-headers.conf',
       ]);
+    });
+
+    test('lets every file the Dockerfile copies into the build context', () {
+      final allowed = File('.dockerignore')
+          .readAsLinesSync()
+          .where((line) => line.startsWith('!'))
+          .map((line) => line.substring(1))
+          .toSet();
+      final sources = RegExp(r'^COPY (\S+) ', multiLine: true)
+          .allMatches(File('Dockerfile').readAsStringSync())
+          .map((match) => match.group(1)!)
+          .toList();
+
+      expect(sources, isNotEmpty);
+      for (final source in sources) {
+        expect(allowed, contains(source), reason: source);
+      }
     });
 
     test('answers the health check and falls back to index.html', () {

@@ -1,3 +1,4 @@
 *
 !build/web
 !deploy/nginx.conf
+!deploy/security-headers.conf
