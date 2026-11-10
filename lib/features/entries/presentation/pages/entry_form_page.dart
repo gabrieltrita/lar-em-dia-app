@@ -13,6 +13,8 @@ import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/core/state/load_state.dart';
 import 'package:lar_em_dia/core/widgets/date_field.dart';
 import 'package:lar_em_dia/core/widgets/form_widgets.dart';
+import 'package:lar_em_dia/features/balance/domain/balance.dart';
+import 'package:lar_em_dia/features/balance/presentation/cubits/balance_cubits.dart';
 import 'package:lar_em_dia/features/entries/domain/category.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/presentation/cubits/entry_cubits.dart';
@@ -424,6 +426,7 @@ class _EntryFormPageState extends State<EntryFormPage> {
                   lastDate: DateTime(2100),
                   onChanged: (value) => setState(() => _dueOn = value),
                 ),
+                _BeforeBalanceNotice(dueOn: _dueOn),
                 const SizedBox(height: 8),
                 if (!widget.simulation && !_scoped)
                   SwitchListTile(
@@ -450,6 +453,44 @@ class _EntryFormPageState extends State<EntryFormPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _BeforeBalanceNotice extends StatelessWidget {
+  const new({required this.dueOn});
+
+  final DateTime dueOn;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return BlocBuilder<LatestBalanceCubit, Balance?>(
+      builder: (context, balance) => switch (balance) {
+        Balance(:final asOf) when !dueOn.isAfter(asOf) => Padding(
+          key: const Key('entry_before_balance'),
+          padding: const EdgeInsets.only(top: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.info_outline,
+                size: 18,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  l10n.entryBeforeBalanceNotice(Dates.display(asOf)),
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+            ],
+          ),
+        ),
+        _ => const SizedBox.shrink(),
+      },
     );
   }
 }

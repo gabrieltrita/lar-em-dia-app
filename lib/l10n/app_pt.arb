@@ -743,6 +743,14 @@
       }
     }
   },
+  "entryBeforeBalanceNotice": "Este lançamento vence até {date}, data do seu saldo informado. O saldo já o inclui, então ele não altera o fim do mês.",
+  "@entryBeforeBalanceNotice": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "entryAmountLocked": "O valor da parcela só muda em \"Só este\", porque alteraria o total.",
   "entryMarkSettled": "{kind, select, income{Marcar como recebida} other{Marcar como paga}}",
   "@entryMarkSettled": {

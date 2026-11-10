@@ -120,6 +120,10 @@ C _started<C>(C cubit, Future<void> Function(C cubit) start) {
   return cubit;
 }
 
+BlocProvider<LatestBalanceCubit> _latestBalanceProvider() => BlocProvider(
+  create: (_) => _started(getIt<LatestBalanceCubit>(), (cubit) => cubit.load()),
+);
+
 GoRoute _entryFormRoute(EntryKind kind) => GoRoute(
   path: AppRoutes.entryForm(kind),
   builder: (context, state) => MultiBlocProvider(
@@ -129,6 +133,7 @@ GoRoute _entryFormRoute(EntryKind kind) => GoRoute(
         create: (_) =>
             _started(getIt<CategoriesCubit>(), (cubit) => cubit.load(kind)),
       ),
+      _latestBalanceProvider(),
     ],
     child: switch (state.extra) {
       EntryEdit(:final entry, :final scope) => EntryFormPage(
@@ -255,6 +260,7 @@ GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
                 (cubit) => cubit.load(kind),
               ),
             ),
+            _latestBalanceProvider(),
           ],
           child: EntryFormPage(kind: kind, simulation: true),
         ),
