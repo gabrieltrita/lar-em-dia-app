@@ -362,7 +362,7 @@ void main() {
           from: any(named: 'from'),
           period: any(named: 'period'),
         ),
-      ).called(1);
+      ).called(2);
     });
 
     testWidgets('opens the projection details only with a projection', (

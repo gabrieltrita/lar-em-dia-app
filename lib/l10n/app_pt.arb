@@ -743,6 +743,9 @@
       }
     }
   },
+  "entriesIncludeAccumulated": "Incluir saldo acumulado",
+  "entriesFinalBalance": "Saldo final do mês",
+  "entriesMonthResult": "Resultado do mês",
   "entryBeforeBalanceNotice": "Este lançamento vence até {date}, data do seu saldo informado. O saldo já o inclui, então ele não altera o fim do mês.",
   "@entryBeforeBalanceNotice": {
     "placeholders": {

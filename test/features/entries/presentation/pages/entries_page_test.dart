@@ -10,6 +10,7 @@ import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/presentation/cubits/entry_cubits.dart';
 import 'package:lar_em_dia/features/entries/presentation/pages/entries_page.dart';
 import 'package:lar_em_dia/features/entries/presentation/widgets/category_visuals.dart';
+import 'package:lar_em_dia/features/projection/domain/projection.dart';
 import 'package:lar_em_dia/features/shell/presentation/finance_changes.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -20,6 +21,7 @@ import '../../../../helpers/pump_page.dart';
 void main() {
   late AuthHarness harness;
   late MockEntryRepository repository;
+  late MockProjectionRepository projections;
   late FinanceChanges changes;
   late int notified;
 
@@ -27,6 +29,13 @@ void main() {
   setUp(() {
     harness = AuthHarness();
     repository = MockEntryRepository();
+    projections = MockProjectionRepository();
+    when(
+      () => projections.fetch(
+        from: any(named: 'from'),
+        period: any(named: 'period'),
+      ),
+    ).thenAnswer((_) async => projection);
     notified = 0;
     changes = FinanceChanges()..addListener(() => notified++);
     when(() => repository.categories(EntryKind.expense))
@@ -43,15 +52,75 @@ void main() {
   }) => pumpPage(
     tester,
     BlocProvider(
-      create: (_) => started(MonthEntriesCubit(repository), (cubit) async {
-        await cubit.load(month: november);
-        cubit.filterKind(kind);
-      }),
+      create: (_) =>
+          started(MonthEntriesCubit(repository, projections), (cubit) async {
+            await cubit.load(month: november);
+            cubit.filterKind(kind);
+          }),
       child: const EntriesPage(),
     ),
     session: harness.session,
     changes: changes,
   );
+
+  testWidgets('shows the final balance or the month result in the footer', (
+    tester,
+  ) async {
+    when(() => repository.month(any()))
+        .thenAnswer((_) async => [salary, rent, housing, groceries]);
+    await pump(tester, kind: EntryKind.expense);
+    final footer = find.byKey(const Key('entries_final_balance'));
+
+    expect(
+      find.descendant(of: footer, matching: find.text('Saldo final do mês')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: footer, matching: find.text(r'R$ 4.934,56')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Incluir saldo acumulado'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(of: footer, matching: find.text('Resultado do mês')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: footer, matching: find.text(r'+R$ 3.700,00')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('shows a dash as the final balance without a balance', (
+    tester,
+  ) async {
+    when(
+      () => projections.fetch(
+        from: any(named: 'from'),
+        period: any(named: 'period'),
+      ),
+    ).thenAnswer((_) async => Projection(months: [novemberProjection]));
+    await pump(tester);
+
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('entries_final_balance')),
+        matching: find.text('—'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('opens the add sheet from the button', (tester) async {
+    await pump(tester);
+
+    await tester.tap(find.byTooltip('Adicionar'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Informar saldo'), findsOneWidget);
+  });
 
   testWidgets('shows income and expenses together with the result', (
     tester,
@@ -222,7 +291,7 @@ void main() {
       tester,
       BlocProvider(
         create: (_) => started(
-          MonthEntriesCubit(repository),
+          MonthEntriesCubit(repository, projections),
           (cubit) => cubit.load(month: november),
         ),
         child: const EntriesPage(),

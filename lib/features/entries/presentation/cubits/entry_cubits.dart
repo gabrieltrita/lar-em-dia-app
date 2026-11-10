@@ -8,6 +8,8 @@ import 'package:lar_em_dia/core/state/load_state.dart';
 import 'package:lar_em_dia/features/entries/domain/category.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/domain/entry_repository.dart';
+import 'package:lar_em_dia/features/projection/domain/projection.dart';
+import 'package:lar_em_dia/features/projection/domain/projection_repository.dart';
 
 part 'entry_cubits.freezed.dart';
 
@@ -16,6 +18,7 @@ abstract class MonthEntries with _$MonthEntries {
   const factory({
     required List<Entry> entries,
     required Map<String, Category> categories,
+    int? closingCents,
   }) = _MonthEntries;
 
   const new _();
@@ -43,12 +46,13 @@ abstract class MonthEntriesState with _$MonthEntriesState {
     required LoadState<MonthEntries> data,
     EntryKind? kind,
     EntryNature? nature,
+    @Default(true) bool includeAccumulated,
   }) = _MonthEntriesState;
 }
 
 @injectable
 class MonthEntriesCubit extends Cubit<MonthEntriesState> {
-  new(this._repository)
+  new(this._repository, this._projections)
     : super(
         MonthEntriesState(
           month: Dates.firstOfMonth(DateTime.now()),
@@ -57,6 +61,7 @@ class MonthEntriesCubit extends Cubit<MonthEntriesState> {
       );
 
   final EntryRepository _repository;
+  final ProjectionRepository _projections;
 
   Future<void> load({DateTime? month, bool quiet = false}) async {
     final target = Dates.firstOfMonth(month ?? state.month);
@@ -74,6 +79,10 @@ class MonthEntriesCubit extends Cubit<MonthEntriesState> {
           ...await _repository.categories(kind),
       ];
       final entries = await _repository.month(target);
+      final projection = await _projections.fetch(
+        from: target,
+        period: ProjectionPeriod.threeMonths,
+      );
       if (target != state.month) {
         return;
       }
@@ -83,6 +92,9 @@ class MonthEntriesCubit extends Cubit<MonthEntriesState> {
             MonthEntries(
               entries: entries,
               categories: {for (final c in categories) c.id: c},
+              closingCents: projection.anchor == null
+                  ? null
+                  : projection.months.first.closingCents,
             ),
           ),
         ),
@@ -101,6 +113,9 @@ class MonthEntriesCubit extends Cubit<MonthEntriesState> {
 
   void filterNature(EntryNature? nature) =>
       emit(state.copyWith(nature: nature));
+
+  void includeAccumulated({required bool include}) =>
+      emit(state.copyWith(includeAccumulated: include));
 
   Future<void> previous() => load(month: Dates.addMonths(state.month, -1));
 
