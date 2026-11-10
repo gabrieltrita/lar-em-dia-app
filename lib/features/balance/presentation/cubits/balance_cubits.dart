@@ -33,6 +33,21 @@ class BalancesCubit extends Cubit<LoadState<List<Balance>>> {
 }
 
 @injectable
+class LatestBalanceCubit extends Cubit<Balance?> {
+  new(this._repository) : super(null);
+
+  final BalanceRepository _repository;
+
+  Future<void> load() async {
+    try {
+      emit(await _repository.latest());
+    } on ApiError {
+      emit(null);
+    }
+  }
+}
+
+@injectable
 class BalanceFormCubit extends SubmissionCubit<Balance> {
   new(this._repository);
 

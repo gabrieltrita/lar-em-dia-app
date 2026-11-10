@@ -13,6 +13,8 @@ import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/core/state/load_state.dart';
 import 'package:lar_em_dia/core/widgets/date_field.dart';
 import 'package:lar_em_dia/core/widgets/form_widgets.dart';
+import 'package:lar_em_dia/features/balance/domain/balance.dart';
+import 'package:lar_em_dia/features/balance/presentation/cubits/balance_cubits.dart';
 import 'package:lar_em_dia/features/entries/domain/category.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/presentation/cubits/entry_cubits.dart';
@@ -60,6 +62,7 @@ class _EntryFormPageState extends State<EntryFormPage> {
   bool _repeat = false;
   int _repeatCount = Recurrence.defaultCount;
   RecurrenceDirection _repeatDirection = RecurrenceDirection.forward;
+  RecurrenceInterval _repeatInterval = RecurrenceInterval.monthly;
   bool _installments = false;
   int _installmentsCount = Installments.defaultCount;
 
@@ -68,6 +71,12 @@ class _EntryFormPageState extends State<EntryFormPage> {
   bool get _isNew => widget.existing == null;
 
   bool get _scoped => widget.scope != EntryScope.one;
+
+  Recurrence get _recurrence => Recurrence(
+    count: _repeatCount,
+    direction: _repeatDirection,
+    interval: _repeatInterval,
+  );
 
   bool get _amountLocked =>
       _scoped && (widget.existing?.isInstallment ?? false);
@@ -92,9 +101,7 @@ class _EntryFormPageState extends State<EntryFormPage> {
       status: _settled ? EntryStatus.paid : EntryStatus.pending,
       nature: _isExpense ? _nature : null,
     );
-    final recurrence = _repeat
-        ? Recurrence(count: _repeatCount, direction: _repeatDirection)
-        : null;
+    final recurrence = _repeat ? _recurrence : null;
     final installments = _installments
         ? Installments(count: _installmentsCount)
         : null;
@@ -160,6 +167,7 @@ class _EntryFormPageState extends State<EntryFormPage> {
       'kind': l10n.entryInstallmentsLabel,
       'due_on': l10n.entryDueOnLabel,
       'entries_count': l10n.entryRepeatCountLabel,
+      'interval_months': l10n.entryRepeatIntervalLabel,
       'direction': l10n.entryRepeatDirectionLabel,
     };
     return [
@@ -233,6 +241,20 @@ class _EntryFormPageState extends State<EntryFormPage> {
       ),
       if (_repeat) ...[
         const SizedBox(height: 8),
+        DropdownButtonFormField<RecurrenceInterval>(
+          key: const Key('entry_repeat_interval'),
+          initialValue: _repeatInterval,
+          decoration: InputDecoration(labelText: l10n.entryRepeatIntervalLabel),
+          items: [
+            for (final interval in RecurrenceInterval.values)
+              DropdownMenuItem(
+                value: interval,
+                child: Text(l10n.entryRepeatInterval(interval.name)),
+              ),
+          ],
+          onChanged: (value) => setState(() => _repeatInterval = value!),
+        ),
+        const SizedBox(height: 16),
         DropdownButtonFormField<int>(
           key: const Key('entry_repeat_count'),
           initialValue: _repeatCount,
@@ -245,7 +267,7 @@ class _EntryFormPageState extends State<EntryFormPage> {
             )
               DropdownMenuItem(
                 value: count,
-                child: Text(l10n.entryRepeatMonths(count)),
+                child: Text(l10n.entryRepeatTimes(count)),
               ),
           ],
           onChanged: (value) => setState(() => _repeatCount = value!),
@@ -273,6 +295,7 @@ class _EntryFormPageState extends State<EntryFormPage> {
                 setState(() => _repeatDirection = selection.single),
           ),
         ),
+        _RecurrencePreview(dueDates: _recurrence.dueDates(_dueOn)),
       ],
     ];
   }
@@ -403,6 +426,7 @@ class _EntryFormPageState extends State<EntryFormPage> {
                   lastDate: DateTime(2100),
                   onChanged: (value) => setState(() => _dueOn = value),
                 ),
+                _BeforeBalanceNotice(dueOn: _dueOn),
                 const SizedBox(height: 8),
                 if (!widget.simulation && !_scoped)
                   SwitchListTile(
@@ -428,6 +452,68 @@ class _EntryFormPageState extends State<EntryFormPage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _BeforeBalanceNotice extends StatelessWidget {
+  const new({required this.dueOn});
+
+  final DateTime dueOn;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return BlocBuilder<LatestBalanceCubit, Balance?>(
+      builder: (context, balance) => switch (balance) {
+        Balance(:final asOf) when !dueOn.isAfter(asOf) => Padding(
+          key: const Key('entry_before_balance'),
+          padding: const EdgeInsets.only(top: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.info_outline,
+                size: 18,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  l10n.entryBeforeBalanceNotice(Dates.display(asOf)),
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+            ],
+          ),
+        ),
+        _ => const SizedBox.shrink(),
+      },
+    );
+  }
+}
+
+class _RecurrencePreview extends StatelessWidget {
+  const new({required this.dueDates});
+
+  static const shownBeforeLast = 3;
+
+  final List<DateTime> dueDates;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final labels = dueDates.map(Dates.display).toList();
+    final shown = labels.length > shownBeforeLast + 1
+        ? '${labels.take(shownBeforeLast).join(', ')} … ${labels.last}'
+        : labels.join(', ');
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Text(
+        l10n.entryRepeatPreview(shown),
+        key: const Key('entry_repeat_preview'),
       ),
     );
   }

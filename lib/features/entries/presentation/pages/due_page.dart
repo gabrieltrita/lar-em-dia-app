@@ -15,6 +15,7 @@ import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/presentation/cubits/entry_cubits.dart';
 import 'package:lar_em_dia/features/entries/presentation/widgets/category_visuals.dart';
 import 'package:lar_em_dia/features/entries/presentation/widgets/paid_checkbox.dart';
+import 'package:lar_em_dia/features/shell/presentation/app_shell.dart';
 import 'package:lar_em_dia/features/shell/presentation/finance_changes.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
@@ -27,6 +28,7 @@ class DuePage extends StatelessWidget {
     final cubit = context.read<DueCubit>();
     return Scaffold(
       appBar: AppBar(title: Text(l10n.dueTitle)),
+      floatingActionButton: const AddButton(),
       body: BlocBuilder<DueCubit, LoadState<DueEntries>>(
         builder: (context, state) => switch (state) {
           Loading() => SkeletonList(label: l10n.loadingLabel),

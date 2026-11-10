@@ -159,7 +159,7 @@ void main() {
     await cubit.add(sofaPlan);
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('3 meses'), findsOneWidget);
+    expect(find.textContaining('3 vezes · A cada 3 meses'), findsOneWidget);
     expect(find.textContaining('4x'), findsOneWidget);
     expect(find.byType(NegativeMonthsAlert), findsNothing);
     final difference = find.text(r'Diferença: R$ 0,00');

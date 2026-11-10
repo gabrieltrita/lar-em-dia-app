@@ -18,6 +18,7 @@ import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart'
 import 'package:lar_em_dia/features/entries/presentation/widgets/category_label.dart';
 import 'package:lar_em_dia/features/home/presentation/cubits/home_cubit.dart';
 import 'package:lar_em_dia/features/projection/presentation/widgets/negative_months_alert.dart';
+import 'package:lar_em_dia/features/shell/presentation/app_shell.dart';
 import 'package:lar_em_dia/features/shell/presentation/finance_changes.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
@@ -35,6 +36,7 @@ class HomePage extends StatelessWidget {
       },
     );
     return Scaffold(
+      floatingActionButton: const AddButton(),
       appBar: AppBar(
         title: Text(
           firstName == null ? l10n.appTitle : l10n.homeGreeting(firstName),

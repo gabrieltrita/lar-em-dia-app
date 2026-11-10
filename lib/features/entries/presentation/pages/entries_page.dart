@@ -118,6 +118,17 @@ class EntriesPage extends StatelessWidget {
     final cubit = context.read<MonthEntriesCubit>();
     return Scaffold(
       appBar: AppBar(title: Text(l10n.shellEntries)),
+      floatingActionButton: const AddButton(),
+      bottomNavigationBar: BlocBuilder<MonthEntriesCubit, MonthEntriesState>(
+        builder: (context, state) => switch (state.data) {
+          Loaded(:final value) => _BalanceFooter(
+            data: value,
+            includeAccumulated: state.includeAccumulated,
+            onInclude: (include) => cubit.includeAccumulated(include: include),
+          ),
+          _ => const SizedBox.shrink(),
+        },
+      ),
       body: BlocBuilder<MonthEntriesCubit, MonthEntriesState>(
         builder: (context, state) => Column(
           children: [
@@ -347,6 +358,79 @@ class _MonthTotals extends StatelessWidget {
           ],
         ),
       },
+    );
+  }
+}
+
+class _BalanceFooter extends StatelessWidget {
+  const new({
+    required this.data,
+    required this.includeAccumulated,
+    required this.onInclude,
+  });
+
+  final MonthEntries data;
+  final bool includeAccumulated;
+  final ValueChanged<bool> onInclude;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final closing = data.closingCents;
+    return Material(
+      color: theme.colorScheme.surfaceContainer,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(4, 4, 16, 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: CheckboxListTile(
+                  key: const Key('entries_include_accumulated'),
+                  value: includeAccumulated,
+                  onChanged: (value) => onInclude(value!),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  title: Text(l10n.entriesIncludeAccumulated),
+                ),
+              ),
+              Column(
+                key: const Key('entries_final_balance'),
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    includeAccumulated
+                        ? l10n.entriesFinalBalance
+                        : l10n.entriesMonthResult,
+                    style: theme.textTheme.labelSmall,
+                  ),
+                  switch ((includeAccumulated, closing)) {
+                    (true, final cents?) => MoneyText(
+                      cents,
+                      colored: true,
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    (true, null) => Text(
+                      '—',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    (false, _) => MoneyText(
+                      data.resultCents,
+                      signed: true,
+                      colored: true,
+                      style: theme.textTheme.titleMedium,
+                    ),
+                  },
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

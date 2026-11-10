@@ -7,6 +7,7 @@ import 'package:lar_em_dia/core/state/load_state.dart';
 import 'package:lar_em_dia/features/entries/domain/category.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/presentation/cubits/entry_cubits.dart';
+import 'package:lar_em_dia/features/projection/domain/projection.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/finance_fixtures.dart';
@@ -18,6 +19,7 @@ void main() {
   );
 
   late MockEntryRepository repository;
+  late MockProjectionRepository projections;
 
   const failure = ApiError(code: 'network_error');
   final october = DateTime(2026, 10);
@@ -25,6 +27,13 @@ void main() {
   setUpAll(registerFinanceFallbacks);
   setUp(() {
     repository = MockEntryRepository();
+    projections = MockProjectionRepository();
+    when(
+      () => projections.fetch(
+        from: any(named: 'from'),
+        period: any(named: 'period'),
+      ),
+    ).thenAnswer((_) async => projection);
     when(() => repository.categories(EntryKind.income))
         .thenAnswer((_) async => [salaryCategory, rentCategory]);
     when(() => repository.categories(EntryKind.expense))
@@ -35,6 +44,7 @@ void main() {
 
   MonthEntries loaded() => MonthEntries(
     entries: [salary, rent, housing, groceries],
+    closingCents: novemberProjection.closingCents,
     categories: {
       for (final category in [
         salaryCategory,
@@ -60,14 +70,14 @@ void main() {
   });
 
   test('starts on the current month', () {
-    final cubit = MonthEntriesCubit(repository);
+    final cubit = MonthEntriesCubit(repository, projections);
     expect(cubit.state.month.day, 1);
     expect(cubit.state.month.month, DateTime.now().month);
   });
 
   blocTest<MonthEntriesCubit, MonthEntriesState>(
     'loads a month with the categories of both kinds',
-    build: () => MonthEntriesCubit(repository),
+    build: () => MonthEntriesCubit(repository, projections),
     act: (cubit) => cubit.load(month: DateTime(2026, 11, 20)),
     expect: () => [
       MonthEntriesState(
@@ -79,8 +89,45 @@ void main() {
   );
 
   blocTest<MonthEntriesCubit, MonthEntriesState>(
+    'leaves the closing balance empty without an informed balance',
+    setUp: () => when(
+      () => projections.fetch(
+        from: november,
+        period: ProjectionPeriod.threeMonths,
+      ),
+    ).thenAnswer((_) async => const Projection(months: [])),
+    build: () => MonthEntriesCubit(repository, projections),
+    act: (cubit) => cubit.load(month: november),
+    verify: (cubit) => expect(
+      cubit.state.data,
+      LoadState.loaded(loaded().copyWith(closingCents: null)),
+    ),
+  );
+
+  blocTest<MonthEntriesCubit, MonthEntriesState>(
+    'chooses whether the footer includes the accumulated balance',
+    build: () => MonthEntriesCubit(repository, projections),
+    act: (cubit) => cubit
+      ..includeAccumulated(include: false)
+      ..includeAccumulated(include: true),
+    verify: (cubit) => expect(cubit.state.includeAccumulated, isTrue),
+    expect: () => [
+      isA<MonthEntriesState>().having(
+        (state) => state.includeAccumulated,
+        'includeAccumulated',
+        isFalse,
+      ),
+      isA<MonthEntriesState>().having(
+        (state) => state.includeAccumulated,
+        'includeAccumulated',
+        isTrue,
+      ),
+    ],
+  );
+
+  blocTest<MonthEntriesCubit, MonthEntriesState>(
     'reloads quietly without showing the loading state',
-    build: () => MonthEntriesCubit(repository),
+    build: () => MonthEntriesCubit(repository, projections),
     seed: () =>
         MonthEntriesState(month: november, data: LoadState.loaded(loaded())),
     act: (cubit) => cubit.load(quiet: true),
@@ -90,7 +137,7 @@ void main() {
 
   blocTest<MonthEntriesCubit, MonthEntriesState>(
     'filters by kind and keeps the nature only for expenses',
-    build: () => MonthEntriesCubit(repository),
+    build: () => MonthEntriesCubit(repository, projections),
     act: (cubit) {
       cubit
         ..filterKind(EntryKind.expense)
@@ -108,7 +155,7 @@ void main() {
 
   blocTest<MonthEntriesCubit, MonthEntriesState>(
     'moves to the previous and the next month',
-    build: () => MonthEntriesCubit(repository),
+    build: () => MonthEntriesCubit(repository, projections),
     seed: () => MonthEntriesState(
       month: november,
       data: const LoadState<MonthEntries>.loading(),
@@ -126,7 +173,7 @@ void main() {
 
   blocTest<MonthEntriesCubit, MonthEntriesState>(
     'ignores a month that is no longer selected',
-    build: () => MonthEntriesCubit(repository),
+    build: () => MonthEntriesCubit(repository, projections),
     act: (cubit) async {
       final first = cubit.load(month: october);
       await cubit.load(month: november);
@@ -141,7 +188,7 @@ void main() {
   blocTest<MonthEntriesCubit, MonthEntriesState>(
     'reports a failed load',
     setUp: () => when(() => repository.month(any())).thenThrow(failure),
-    build: () => MonthEntriesCubit(repository),
+    build: () => MonthEntriesCubit(repository, projections),
     act: (cubit) => cubit.load(month: november),
     skip: 1,
     expect: () => [
@@ -154,7 +201,7 @@ void main() {
 
   test('delete reloads on success and returns the error otherwise', () async {
     when(() => repository.delete('entry-1')).thenAnswer((_) async {});
-    final cubit = MonthEntriesCubit(repository);
+    final cubit = MonthEntriesCubit(repository, projections);
     await cubit.load(month: november);
 
     expect(await cubit.delete(salary), isNull);
@@ -168,7 +215,7 @@ void main() {
   test('delete sends the scope of a series entry', () async {
     when(() => repository.delete('entry-1', scope: EntryScope.following))
         .thenAnswer((_) async {});
-    final cubit = MonthEntriesCubit(repository);
+    final cubit = MonthEntriesCubit(repository, projections);
 
     expect(await cubit.delete(salary, scope: EntryScope.following), isNull);
     verify(() => repository.delete('entry-1', scope: EntryScope.following))
@@ -183,7 +230,7 @@ void main() {
     test('replaces the entry in the list', () async {
       when(() => repository.markPaid(rent.id, paidOn: today))
           .thenAnswer((_) async => paidRent);
-      final cubit = MonthEntriesCubit(repository);
+      final cubit = MonthEntriesCubit(repository, projections);
       await cubit.load(month: november);
 
       expect(await cubit.setPaid(rent, paid: true), isNull);
@@ -198,7 +245,7 @@ void main() {
       when(() => repository.markPaid(salary.id, paidOn: null))
           .thenAnswer((_) async => salary);
       when(() => repository.month(any())).thenThrow(failure);
-      final cubit = MonthEntriesCubit(repository);
+      final cubit = MonthEntriesCubit(repository, projections);
       await cubit.load(month: november);
 
       expect(await cubit.setPaid(salary, paid: false), isNull);
@@ -209,7 +256,7 @@ void main() {
     test('returns the error', () async {
       when(() => repository.markPaid(any(), paidOn: any(named: 'paidOn')))
           .thenThrow(failure);
-      final cubit = MonthEntriesCubit(repository);
+      final cubit = MonthEntriesCubit(repository, projections);
 
       expect(await cubit.setPaid(rent, paid: true), failure);
       await cubit.close();
