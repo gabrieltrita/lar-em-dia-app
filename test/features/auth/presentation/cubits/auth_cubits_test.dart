@@ -96,6 +96,19 @@ void main() {
     ],
   );
 
+  blocTest<UnlockCubit, Submission<LoginResult>>(
+    'UnlockCubit returns the session or the 2FA challenge',
+    setUp: () =>
+        when(() => repository.unlock('t1'))
+            .thenAnswer((_) async => const LoginResult.twoFactorRequired('c1')),
+    build: () => UnlockCubit(repository),
+    act: (cubit) => cubit.submit('t1'),
+    expect: () => const [
+      Submission<LoginResult>.inProgress(),
+      Submission.success(LoginResult.twoFactorRequired('c1')),
+    ],
+  );
+
   blocTest<ForgotPasswordCubit, Submission<void>>(
     'ForgotPasswordCubit requests the reset link',
     setUp: () =>

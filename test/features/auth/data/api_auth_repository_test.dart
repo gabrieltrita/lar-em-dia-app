@@ -155,6 +155,30 @@ void main() {
     expect(storage.accessToken, isNull);
   });
 
+  test('unlock signs in with the emailed token', () async {
+    final repository = build((_) => session());
+
+    final result = await repository.unlock('t1');
+
+    expect(result, isA<LoginAuthenticated>());
+    expect(lastRequest().path, '/auth/unlock');
+    expect(lastRequest().data, {'token': 't1'});
+    expect(storage.accessToken, 'a2');
+  });
+
+  test('unlock returns the 2FA challenge when the account has 2FA', () async {
+    final repository = build(
+      (_) => FakeAdapter.json(200, {
+        'data': {'two_factor_required': true, 'challenge_token': 'c1'},
+      }),
+    );
+
+    final result = await repository.unlock('t1');
+
+    expect(result, const LoginResult.twoFactorRequired('c1'));
+    expect(storage.accessToken, isNull);
+  });
+
   test('login surfaces API errors', () async {
     final repository = build((_) => failure(401, 'invalid_credentials'));
 
