@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calculadora: quanto vai sobrar no fim do mês | Lar em Dia</title>
+  <meta name="description" content="Calcule de graça quanto dinheiro vai sobrar no fim do mês e veja o saldo previsto para os próximos 12 meses, com os meses que ficam no vermelho.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="__SITE_URL__/calculadora-fim-do-mes.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Lar em Dia">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:title" content="Calculadora: quanto vai sobrar no fim do mês">
+  <meta property="og:description" content="Calcule de graça quanto dinheiro vai sobrar no fim do mês e veja o saldo previsto para os próximos 12 meses, com os meses que ficam no vermelho.">
+  <meta property="og:url" content="__SITE_URL__/calculadora-fim-do-mes.html">
+  <meta property="og:image" content="__SITE_URL__/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="stylesheet" href="conteudo.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Calculadora: quanto vai sobrar no fim do mês",
+    "description": "Calcule de graça quanto dinheiro vai sobrar no fim do mês e veja o saldo previsto para os próximos 12 meses, com os meses que ficam no vermelho.",
+    "url": "__SITE_URL__/calculadora-fim-do-mes.html",
+    "applicationCategory": "FinanceApplication",
+    "operatingSystem": "Web",
+    "inLanguage": "pt-BR",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "BRL"
+    }
+  }
+  </script>
+  <script type="module" src="js/pagina-fim-do-mes.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="/"><img src="icons/Icon-192.png" alt="" width="32" height="32">Lar em Dia</a>
+  <a href="guias.html">Guias e ferramentas</a>
+</header>
+<main>
+<nav class="crumbs"><a href="guias.html">Guias e ferramentas</a></nav>
+<h1>Quanto vai sobrar no fim do mês?</h1>
+<p class="lead">Informe o saldo de hoje e quanto entra e sai por mês. A calculadora mostra quanto sobra e como fica o saldo nos próximos 12 meses. Tudo é calculado no seu navegador: nada é enviado.</p>
+
+<section class="tool" aria-labelledby="tool-title">
+  <h2 id="tool-title" class="sr-only">Calculadora</h2>
+  <form id="calculator" novalidate>
+    <div class="fields">
+      <label>Saldo na conta hoje<input name="balance" inputmode="decimal" value="1.500,00" autocomplete="off"><span class="hint">Pode ser negativo, como -300</span></label>
+      <label>Receitas do mês<input name="income" inputmode="decimal" value="4.200,00" autocomplete="off"><span class="hint">Salário, renda extra, aluguel recebido</span></label>
+      <label>Despesas fixas<input name="fixed" inputmode="decimal" value="2.900,00" autocomplete="off"><span class="hint">Aluguel, luz, internet, parcelas</span></label>
+      <label>Despesas variáveis<input name="variable" inputmode="decimal" value="1.100,00" autocomplete="off"><span class="hint">Mercado, lazer, transporte</span></label>
+    </div>
+  </form>
+  <div class="results" aria-live="polite">
+    <div class="card main" id="leftover-card"><span>Sobra por mês</span><strong id="leftover">-</strong></div>
+    <div class="card"><span>Saldo no fim deste mês</span><strong id="first-month">-</strong></div>
+    <div class="card"><span>Saldo daqui a 12 meses</span><strong id="last-month">-</strong></div>
+  </div>
+  <p class="message" id="message" aria-live="polite"></p>
+  <figure id="chart-figure">
+    <figcaption>Saldo previsto no fim de cada mês</figcaption>
+    <div id="chart"></div>
+    <ul class="legend"><li class="swatch-invested">No azul</li><li class="swatch-negative">No vermelho</li></ul>
+  </figure>
+  <details>
+    <summary>Ver a tabela mês a mês</summary>
+    <div class="table-wrap"><table><thead><tr><th>Mês</th><th>Saldo no fim do mês</th></tr></thead><tbody id="months-table"></tbody></table></div>
+  </details>
+</section>
+
+<article>
+<h2>Como a conta é feita</h2>
+<p>A sobra do mês é a diferença entre o que entra e o que sai: <strong>receitas - despesas fixas - despesas variáveis</strong>. O saldo de cada mês é o saldo do mês anterior mais essa sobra. Se a sobra é negativa, o saldo cai um pouco a cada mês, e a calculadora mostra quando ele passa de zero para o vermelho.</p>
+
+<h2>Despesas fixas e variáveis: qual a diferença?</h2>
+<p><strong>Fixas</strong> são as que se repetem com valor parecido todo mês e são difíceis de cortar de uma hora para outra: aluguel, condomínio, luz, água, internet, plano de saúde, escola, streaming e parcelas do cartão. <strong>Variáveis</strong> mudam conforme as suas escolhas: mercado, restaurantes, lazer, roupas e viagens. É nelas que dá para ajustar mais rápido quando o mês aperta.</p>
+
+<h2>Três jeitos de aumentar a sobra</h2>
+<ul>
+  <li><strong>Olhe a média de três meses</strong> das despesas variáveis, e não só a do último mês. Um mês bom engana.</li>
+  <li><strong>Revise as fixas uma vez por ano</strong>: plano de celular, internet, seguros e assinaturas costumam ter opções mais baratas.</li>
+  <li><strong>Conte as parcelas que vão acabar</strong>: elas liberam dinheiro nos próximos meses, e saber quando ajuda a planejar.</li>
+</ul>
+<p>Quer guardar a sobra e ver quanto ela rende? Use a <a href="calculadora-juros-compostos.html">calculadora de juros compostos</a>. Prefere uma planilha? Baixe a <a href="planilha-orcamento-familiar.html">planilha de orçamento familiar</a>.</p>
+</article>
+<aside class="cta">
+  <h2>Faça isso no Lar em Dia, grátis</h2>
+  <p>Na vida real, cada mês é diferente: tem 13º, IPVA, parcelas que acabam e contas que vencem em datas diferentes. O Lar em Dia projeta o saldo com os lançamentos de cada mês e avisa antes de um mês ficar no vermelho.</p>
+  <a class="button" href="/">Começar agora</a>
+</aside>
+<footer>
+  <p><a href="/">Lar em Dia</a> · <a href="guias.html">Guias</a> · <a href="privacy.html">Privacidade</a> · <a href="terms.html">Termos de uso</a> · <a href="account-deletion.html">Excluir conta</a> · <a href="apoie.html">Apoie</a></p>
+  <p>Dúvidas ou sugestões: <a href="mailto:contato@trita.dev">contato@trita.dev</a></p>
+</footer>
+</main>
+</body>
+</html>

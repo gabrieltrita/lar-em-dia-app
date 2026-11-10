@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calculadora de juros compostos com gráficos | Lar em Dia</title>
+  <meta name="description" content="Simule de graça quanto o seu dinheiro rende com juros compostos e aportes mensais. Veja gráficos da evolução, compare taxas e confira o valor em dinheiro de hoje.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="__SITE_URL__/calculadora-juros-compostos.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Lar em Dia">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:title" content="Calculadora de juros compostos com gráficos">
+  <meta property="og:description" content="Simule de graça quanto o seu dinheiro rende com juros compostos e aportes mensais. Veja gráficos da evolução, compare taxas e confira o valor em dinheiro de hoje.">
+  <meta property="og:url" content="__SITE_URL__/calculadora-juros-compostos.html">
+  <meta property="og:image" content="__SITE_URL__/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="stylesheet" href="conteudo.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Calculadora de juros compostos com gráficos",
+    "description": "Simule de graça quanto o seu dinheiro rende com juros compostos e aportes mensais. Veja gráficos da evolução, compare taxas e confira o valor em dinheiro de hoje.",
+    "url": "__SITE_URL__/calculadora-juros-compostos.html",
+    "applicationCategory": "FinanceApplication",
+    "operatingSystem": "Web",
+    "inLanguage": "pt-BR",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "BRL"
+    }
+  }
+  </script>
+  <script type="module" src="js/pagina-juros-compostos.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="/"><img src="icons/Icon-192.png" alt="" width="32" height="32">Lar em Dia</a>
+  <a href="guias.html">Guias e ferramentas</a>
+</header>
+<main>
+<nav class="crumbs"><a href="guias.html">Guias e ferramentas</a></nav>
+<h1>Calculadora de juros compostos</h1>
+<p class="lead">Veja quanto um valor inicial e aportes todo mês podem virar com o tempo, quanto disso vem dos juros e como taxas diferentes mudam o resultado. O cálculo é feito no seu navegador: nada é enviado.</p>
+
+<section class="tool" aria-labelledby="tool-title">
+  <h2 id="tool-title" class="sr-only">Simulação</h2>
+  <form id="calculator" novalidate>
+    <div class="fields">
+      <label>Valor inicial<input name="initial" inputmode="decimal" value="1.000,00" autocomplete="off"></label>
+      <label>Aporte mensal<input name="monthly" inputmode="decimal" value="300,00" autocomplete="off"></label>
+      <label>Taxa de juros<span class="combo"><input name="rate" inputmode="decimal" value="0,8" autocomplete="off" aria-label="Taxa de juros em porcentagem"><select name="ratePeriod" aria-label="Período da taxa"><option value="month">% ao mês</option><option value="year">% ao ano</option></select></span></label>
+      <label>Prazo<span class="combo"><input name="duration" inputmode="numeric" value="10" autocomplete="off" aria-label="Prazo"><select name="durationUnit" aria-label="Unidade do prazo"><option value="year">anos</option><option value="month">meses</option></select></span></label>
+    </div>
+    <details>
+      <summary>Comparar com outras taxas</summary>
+      <div class="fields">
+        <label>Taxa do cenário B<input name="rateB" inputmode="decimal" value="0,5" autocomplete="off"><span class="hint">No mesmo período da taxa principal. Deixe vazio para não comparar.</span></label>
+        <label>Taxa do cenário C<input name="rateC" inputmode="decimal" value="1" autocomplete="off"><span class="hint">Também opcional.</span></label>
+      </div>
+    </details>
+    <details>
+      <summary>Opções avançadas</summary>
+      <div class="fields">
+        <label>Reajuste anual do aporte<input name="raise" inputmode="decimal" value="0" autocomplete="off"><span class="hint">Em %. Aumenta o aporte a cada 12 meses.</span></label>
+        <label>Inflação anual<input name="inflation" inputmode="decimal" value="0" autocomplete="off"><span class="hint">Em %. Mostra o valor final em dinheiro de hoje.</span></label>
+      </div>
+    </details>
+  </form>
+
+  <div class="results" aria-live="polite">
+    <div class="card main"><span>Valor final</span><strong id="final">-</strong></div>
+    <div class="card"><span>Total investido</span><strong id="invested">-</strong></div>
+    <div class="card"><span>Juros ganhos</span><strong id="interest">-</strong></div>
+    <div class="card" id="real-card" hidden><span>Em dinheiro de hoje</span><strong id="real">-</strong></div>
+  </div>
+  <p class="message" id="crossover" aria-live="polite"></p>
+
+  <figure id="evolution-figure">
+    <figcaption>Evolução do patrimônio, por <span id="evolution-unit">ano</span></figcaption>
+    <div id="evolution"></div>
+    <ul class="legend"><li class="swatch-invested">Total investido</li><li class="swatch-interest">Juros acumulados</li></ul>
+  </figure>
+  <div class="charts">
+    <figure>
+      <figcaption>De onde vem o valor final</figcaption>
+      <div id="donut"></div>
+      <p class="donut-center" id="donut-share"></p>
+      <ul class="legend"><li class="swatch-invested">Investido</li><li class="swatch-interest">Juros</li></ul>
+    </figure>
+    <figure id="comparison-figure" hidden>
+      <figcaption>Comparação entre taxas</figcaption>
+      <div id="comparison"></div>
+      <ul class="legend" id="comparison-legend"></ul>
+    </figure>
+  </div>
+
+  <details>
+    <summary>Ver a tabela mês a mês</summary>
+    <div class="table-wrap"><table><thead><tr><th>Mês</th><th>Aporte</th><th>Juros do mês</th><th>Total investido</th><th>Juros acumulados</th><th>Total</th></tr></thead><tbody id="table-body"></tbody></table></div>
+  </details>
+  <p class="note">É uma simulação com taxa constante, sem impostos e sem taxas. Não é recomendação de investimento: rentabilidade passada não garante rentabilidade futura.</p>
+</section>
+
+<article>
+<h2>O que são juros compostos</h2>
+<p>Nos juros compostos, os juros de cada mês são calculados sobre o valor que já inclui os juros dos meses anteriores. É o famoso "juros sobre juros". No começo a diferença parece pequena, mas com o tempo os juros passam a crescer mais do que os seus próprios aportes.</p>
+<p>A conta, mês a mês, é: <strong>saldo do mês = saldo anterior × (1 + taxa) + aporte</strong>. Esta calculadora aplica os juros e depois soma o aporte do mês.</p>
+
+<h2>Taxa ao mês ou ao ano?</h2>
+<p>As duas descrevem a mesma coisa em escalas diferentes, mas não basta dividir a taxa anual por 12. Uma taxa de 1% ao mês equivale a cerca de 12,68% ao ano, porque os juros de cada mês também rendem. Quando você escolhe "% ao ano", a calculadora converte para a taxa mensal equivalente.</p>
+
+<h2>Por que o tempo importa tanto</h2>
+<p>Mudar o prazo de 10 para 20 anos costuma mais do que dobrar o resultado, porque os juros acumulados passam a render também. Por isso começar cedo, mesmo com pouco, faz diferença. Use a comparação de taxas para ver também o peso de uma taxa um pouco maior ao longo dos anos.</p>
+
+<h2>Inflação: o valor em dinheiro de hoje</h2>
+<p>R$ 100 mil daqui a 20 anos não compram o mesmo que R$ 100 mil hoje. Informe uma inflação anual nas opções avançadas e a calculadora mostra quanto o valor final vale em dinheiro de hoje. Assim, você vê o ganho real.</p>
+
+<h2>De onde sai o aporte</h2>
+<p>O aporte é a sobra do mês. Se você ainda não sabe quanto sobra, comece pela <a href="calculadora-fim-do-mes.html">calculadora de quanto vai sobrar no fim do mês</a> e pelo <a href="guia-orcamento-familiar.html">guia de orçamento familiar</a>.</p>
+</article>
+<aside class="cta">
+  <h2>Faça isso no Lar em Dia, grátis</h2>
+  <p>Para investir todo mês, primeiro é preciso saber quanto sobra. O Lar em Dia mostra a sobra de cada mês e quanto a família está guardando ao longo do tempo.</p>
+  <a class="button" href="/">Começar agora</a>
+</aside>
+<footer>
+  <p><a href="/">Lar em Dia</a> · <a href="guias.html">Guias</a> · <a href="privacy.html">Privacidade</a> · <a href="terms.html">Termos de uso</a> · <a href="account-deletion.html">Excluir conta</a> · <a href="apoie.html">Apoie</a></p>
+  <p>Dúvidas ou sugestões: <a href="mailto:contato@trita.dev">contato@trita.dev</a></p>
+</footer>
+</main>
+</body>
+</html>
