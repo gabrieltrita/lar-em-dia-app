@@ -1,15 +1,19 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lar_em_dia/core/links/site_pages.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/features/auth/domain/auth_user.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
 class MorePage extends StatelessWidget {
-  const new({super.key});
+  const new({super.key, this.showSupport = kIsWeb});
+
+  final bool showSupport;
 
   @override
   Widget build(BuildContext context) {
@@ -75,6 +79,15 @@ class MorePage extends StatelessWidget {
               Icons.category_outlined,
               l10n.adminCategories,
               AppRoutes.adminCategories,
+            ),
+          ],
+          if (showSupport) ...[
+            header(l10n.moreAbout),
+            ListTile(
+              leading: const Icon(Icons.favorite_outline),
+              title: Text(l10n.moreSupport),
+              trailing: const Icon(Icons.open_in_new),
+              onTap: () => unawaited(openSitePage(SitePage.support)),
             ),
           ],
           const Divider(height: 32),

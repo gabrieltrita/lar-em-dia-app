@@ -10,6 +10,7 @@ void main() {
       '/privacy.html',
       '/terms.html',
       '/account-deletion.html',
+      '/apoie.html',
     ]);
     expect(SitePage.privacy.uri, Uri.base.resolve('/privacy.html'));
   });
