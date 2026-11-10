@@ -951,5 +951,7 @@
       }
     }
   },
-  "moreSecurity": "Segurança"
+  "moreSecurity": "Segurança",
+  "moreAbout": "Lar em Dia",
+  "moreSupport": "Apoie o Lar em Dia"
 }

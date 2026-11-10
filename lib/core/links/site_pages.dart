@@ -4,7 +4,8 @@ import 'package:url_launcher/url_launcher.dart';
 enum SitePage {
   privacy('privacy.html'),
   terms('terms.html'),
-  accountDeletion('account-deletion.html');
+  accountDeletion('account-deletion.html'),
+  support('apoie.html');
 
   new(this.path);
 
