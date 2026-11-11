@@ -43,6 +43,11 @@ class ApiClient {
     }
   }
 
+  Future<ApiResponse<T>> deleteReturning<T>(
+    String path, {
+    required T Function(Object? data) decode,
+  }) => _send(() => _dio.delete<Json>(path), decode);
+
   Future<ApiResponse<T>> _send<T>(
     Future<Response<Json>> Function() request,
     T Function(Object? data) decode,

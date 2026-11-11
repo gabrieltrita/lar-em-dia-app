@@ -9,6 +9,7 @@ import 'package:lar_em_dia/core/theme/finance_colors.dart';
 import 'package:lar_em_dia/features/auth/domain/auth_repository.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
 import 'package:lar_em_dia/features/balance/domain/balance_repository.dart';
+import 'package:lar_em_dia/features/entries/data/finance_cache.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/domain/entry_repository.dart';
 import 'package:lar_em_dia/features/home/presentation/cubits/home_cubit.dart';
@@ -37,7 +38,7 @@ void main() {
       entries = MockEntryRepository();
       projections = MockProjectionRepository();
       notified = 0;
-      changes = FinanceChanges()..addListener(() => notified++);
+      changes = FinanceChanges(FinanceCache())..addListener(() => notified++);
       when(balances.latest).thenAnswer((_) async => balance);
       when(
         () => projections.fetch(
@@ -262,6 +263,7 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(balances.latest).called(2);
+      expect(notified, 1);
     });
   });
 

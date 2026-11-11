@@ -8,6 +8,7 @@ import 'package:lar_em_dia/core/di/injection.dart';
 import 'package:lar_em_dia/features/account/presentation/time_zone_sync.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
 import 'package:lar_em_dia/features/reminders/presentation/due_reminders_sync.dart';
+import 'package:lar_em_dia/features/shell/presentation/finance_cache_reset.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,6 +16,7 @@ void main() {
     usePathUrlStrategy();
   }
   configureDependencies();
+  getIt<FinanceCacheReset>().start();
   getIt<TimeZoneSync>().start();
   if (DueRemindersSync.supported) {
     getIt<DueRemindersSync>().start();

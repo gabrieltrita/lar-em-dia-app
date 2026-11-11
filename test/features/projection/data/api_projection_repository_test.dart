@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lar_em_dia/core/dates/dates.dart';
 import 'package:lar_em_dia/core/network/api_client.dart';
+import 'package:lar_em_dia/features/entries/data/finance_cache.dart';
 import 'package:lar_em_dia/features/projection/data/api_projection_repository.dart';
 import 'package:lar_em_dia/features/projection/domain/projection.dart';
 
@@ -9,12 +11,14 @@ import '../../../helpers/finance_fixtures.dart';
 
 void main() {
   late FakeAdapter adapter;
+  late FinanceCache cache;
 
   ApiProjectionRepository build(Object? data) {
     adapter = FakeAdapter((_) => FakeAdapter.json(200, {'data': data}));
     final dio = Dio(BaseOptions(baseUrl: 'http://api.test'))
       ..httpClientAdapter = adapter;
-    return ApiProjectionRepository(ApiClient(dio));
+    cache = FinanceCache();
+    return ApiProjectionRepository(ApiClient(dio), cache);
   }
 
   Map<String, Object?> monthJson(ProjectionMonth month, String key) => {
@@ -35,6 +39,17 @@ void main() {
     ],
   };
 
+  Map<String, Object?> plainMonth(DateTime month, int closing) => {
+    'month': Dates.toMonth(month),
+    'opening_cents': closing - 100,
+    'income_cents': 100,
+    'expense_cents': 0,
+    'fixed_expense_cents': 0,
+    'variable_expense_cents': 0,
+    'closing_cents': closing,
+    'savings_cents': 0,
+  };
+
   test('reads the anchor and the months from the given month', () async {
     final repository = build({
       'anchor': {'amount_cents': 123456, 'as_of': '2026-11-03'},
@@ -43,29 +58,90 @@ void main() {
         monthJson(decemberProjection, '2026-12'),
       ],
       'alerts': {'first_negative_month': '2026-12', 'negative_months_count': 1},
-      'last_entry_month': '2027-03',
+      'last_entry_month': '2026-12',
     });
 
-    final result = await repository.fetch(from: DateTime(2026, 11, 20));
+    final result = await repository.fetch(
+      from: DateTime(2026, 11),
+      period: ProjectionPeriod.all,
+    );
 
-    expect(result, projection);
+    expect(result.anchor, projection.anchor);
+    expect(result.lastEntryMonth, DateTime(2026, 12));
+    expect(result.months.map((month) => month.closingCents), [493456, -106544]);
+    expect(result.months.map((month) => month.savingsCents), [370000, -230000]);
+    expect(result.firstNegativeMonth, DateTime(2026, 12));
+    expect(result.negativeMonthsCount, 1);
     expect(adapter.requests.single.path, '/projection');
     expect(adapter.requests.single.queryParameters, {
       'from': '2026-11',
-      'months': '12',
+      'months': 'all',
     });
   });
 
+  test(
+    'loads a margin around the period and serves it from the cache',
+    () async {
+      final repository = build({
+        'anchor': null,
+        'months': [
+          for (var index = 0; index < 24; index++)
+            plainMonth(DateTime(2026, 5 + index), index * 100),
+        ],
+        'last_entry_month': null,
+      });
+
+      final year = await repository.fetch(from: DateTime(2026, 11, 20));
+      final quarter = await repository.fetch(
+        from: DateTime(2027),
+        period: ProjectionPeriod.threeMonths,
+      );
+
+      expect(adapter.requests.single.queryParameters, {
+        'from': '2026-05',
+        'months': '24',
+      });
+      expect(year.months, hasLength(12));
+      expect(year.months.first.month, DateTime(2026, 11));
+      expect(year.months.first.savingsCents, 100);
+      expect(quarter.months.map((month) => month.savingsCents), [
+        100,
+        200,
+        300,
+      ]);
+    },
+  );
+
   test('reads a projection without an anchor', () async {
-    final repository = build({'anchor': null, 'months': <Object?>[]});
+    final repository = build({
+      'anchor': null,
+      'months': [plainMonth(november, 0)],
+    });
 
     final result = await repository.fetch(
       from: november,
       period: ProjectionPeriod.all,
     );
 
-    expect(result, const Projection(months: []));
+    expect(result.anchor, isNull);
+    expect(result.months, hasLength(1));
     expect(adapter.requests.single.queryParameters['months'], 'all');
+  });
+
+  test('keeps nothing fetched before the cache was cleared', () async {
+    final repository = build({
+      'anchor': null,
+      'months': [plainMonth(november, 0)],
+    });
+
+    final fetching = repository.fetch(
+      from: november,
+      period: ProjectionPeriod.all,
+    );
+    cache.clear();
+    await fetching;
+
+    expect(cache.projectionWindow, isNull);
   });
 
   test('simulates plans and reads both projections', () async {

@@ -279,17 +279,19 @@ class DemoDatabase {
     return entry..addAll(_entryFields(merged));
   }
 
-  void deleteEntry(String id, {String? scope}) {
+  List<Row> seriesEntries(String seriesId) => [
+    for (final entry in entries)
+      if (entry['series_id'] == seriesId) entry,
+  ]..sort((a, b) => _date(a, 'due_on').compareTo(_date(b, 'due_on')));
+
+  List<String> deleteEntry(String id, {String? scope}) {
     final entry = findEntry(id);
     final seriesId = entry['series_id'];
-    final scoped = _scoped(entry, scope);
-    if (scoped == null) {
-      entries.remove(entry);
-    } else {
-      entries.removeWhere(scoped.contains);
-    }
+    final deleted = _scoped(entry, scope) ?? [entry];
+    entries.removeWhere(deleted.contains);
+    final ids = [for (final row in deleted) row['id']! as String];
     if (seriesId == null) {
-      return;
+      return ids;
     }
     final row = _find(series, seriesId as String);
     final remaining = entries.where((e) => e['series_id'] == seriesId).toList();
@@ -307,6 +309,7 @@ class DemoDatabase {
         e['series_count'] = remaining.length;
       }
     }
+    return ids;
   }
 
   List<Row>? _scoped(Row entry, String? scope) {

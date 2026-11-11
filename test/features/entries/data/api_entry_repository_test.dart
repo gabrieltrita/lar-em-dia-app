@@ -1,14 +1,18 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lar_em_dia/core/dates/dates.dart';
 import 'package:lar_em_dia/core/network/api_client.dart';
 import 'package:lar_em_dia/features/entries/data/api_entry_repository.dart';
+import 'package:lar_em_dia/features/entries/data/finance_cache.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
+import 'package:lar_em_dia/features/projection/domain/projection.dart';
 
 import '../../../helpers/fake_adapter.dart';
 import '../../../helpers/finance_fixtures.dart';
 
 void main() {
   late FakeAdapter adapter;
+  late FinanceCache cache;
 
   Map<String, Object?> entryJson(String id, {String? paidOn}) => {
     'id': id,
@@ -27,7 +31,8 @@ void main() {
     adapter = FakeAdapter(handler);
     final dio = Dio(BaseOptions(baseUrl: 'http://api.test'))
       ..httpClientAdapter = adapter;
-    return ApiEntryRepository(ApiClient(dio));
+    cache = FinanceCache();
+    return ApiEntryRepository(ApiClient(dio), cache);
   }
 
   test('lists the categories of a kind', () async {
@@ -46,11 +51,12 @@ void main() {
     );
 
     expect(await repository.categories(EntryKind.income), [salaryCategory]);
+    expect(await repository.categories(EntryKind.income), [salaryCategory]);
     expect(adapter.requests.single.path, '/categories');
     expect(adapter.requests.single.queryParameters, {'kind': 'income'});
   });
 
-  test('reads every page of the month', () async {
+  test('reads every page of a block of months around the month', () async {
     final repository = build((options) {
       final page = options.queryParameters['page'] as int;
       return FakeAdapter.json(200, {
@@ -60,20 +66,131 @@ void main() {
     });
 
     final entries = await repository.month(
-      DateTime(2026, 2, 14),
+      DateTime(2026, 11, 14),
       kind: EntryKind.income,
     );
 
     expect(entries.map((entry) => entry.id), ['entry-1', 'entry-2']);
     expect(entries.first.paidOn, DateTime(2026, 11, 5));
     expect(entries.first.status, EntryStatus.paid);
+    expect(adapter.requests, hasLength(2));
     expect(adapter.requests.first.queryParameters, {
-      'from': '2026-02-01',
-      'to': '2026-02-28',
-      'kind': 'income',
-      'limit': 100,
+      'from': '2026-05-01',
+      'to': '2027-05-31',
+      'limit': 500,
       'page': 1,
     });
+    expect(
+      await repository.month(DateTime(2026, 11), kind: EntryKind.expense),
+      isEmpty,
+    );
+    expect(await repository.month(DateTime(2027, 2)), isEmpty);
+    expect(adapter.requests, hasLength(2));
+  });
+
+  test('loads the next block in the background near the edge', () async {
+    final repository = build(
+      (_) => FakeAdapter.json(200, {
+        'data': <Object>[],
+        'meta': {'next': null},
+      }),
+    );
+
+    await repository.month(DateTime(2026, 11));
+    await repository.month(DateTime(2027, 4));
+    await pumpEventQueue();
+
+    expect(
+      [
+        for (final request in adapter.requests)
+          (request.queryParameters['from'], request.queryParameters['to']),
+      ],
+      [('2026-05-01', '2027-05-31'), ('2027-06-01', '2027-11-30')],
+    );
+
+    await repository.month(DateTime(2026, 6));
+    await pumpEventQueue();
+    expect(
+      (
+        adapter.requests.last.queryParameters['from'],
+        adapter.requests.last.queryParameters['to'],
+      ),
+      ('2025-11-01', '2026-04-30'),
+    );
+  });
+
+  test('loads only the missing months next to a loaded block', () async {
+    final repository = build(
+      (_) => FakeAdapter.json(200, {
+        'data': <Object>[],
+        'meta': {'next': null},
+      }),
+    );
+
+    await repository.month(DateTime(2026, 11));
+    await repository.month(DateTime(2027, 8));
+    await repository.month(DateTime(2026, 2));
+
+    expect(
+      [
+        for (final request in adapter.requests)
+          (request.queryParameters['from'], request.queryParameters['to']),
+      ],
+      [
+        ('2026-05-01', '2027-05-31'),
+        ('2027-06-01', '2028-02-29'),
+        ('2025-08-01', '2026-04-30'),
+      ],
+    );
+  });
+
+  test('ignores a failed background load', () async {
+    var calls = 0;
+    final repository = build(
+      (_) => calls++ == 0
+          ? FakeAdapter.json(200, {
+              'data': <Object>[],
+              'meta': {'next': null},
+            })
+          : FakeAdapter.json(500, {
+              'error': {'code': 'internal_error', 'message': 'x'},
+            }),
+    );
+
+    await repository.month(DateTime(2026, 11));
+    await repository.month(DateTime(2027, 5));
+    await pumpEventQueue();
+
+    expect(adapter.requests, hasLength(2));
+    expect(cache.hasMonth(DateTime(2027, 6)), isFalse);
+  });
+
+  test('keeps nothing loaded before the cache was cleared', () async {
+    final repository = build(
+      (options) => FakeAdapter.json(200, {
+        'data': options.path == '/categories'
+            ? [
+                {
+                  'id': 'cat-salary',
+                  'kind': 'income',
+                  'key': 'salary',
+                  'name': 'Salary',
+                  'position': 0,
+                },
+              ]
+            : [entryJson('entry-1')],
+        'meta': {'next': null},
+      }),
+    );
+
+    final loading = repository.month(DateTime(2026, 11));
+    final categories = repository.categories(EntryKind.income);
+    cache.clear();
+    await loading;
+
+    expect(await categories, [salaryCategory]);
+    expect(cache.hasMonth(DateTime(2026, 11)), isFalse);
+    expect(cache.categories, isEmpty);
   });
 
   test('creates a received entry paid on its date', () async {
@@ -254,7 +371,13 @@ void main() {
   });
 
   test('deletes an entry', () async {
-    final repository = build((_) => FakeAdapter.json(204, null));
+    final repository = build(
+      (_) => FakeAdapter.json(200, {
+        'data': {
+          'deleted_ids': ['entry-2'],
+        },
+      }),
+    );
 
     await repository.delete('entry-2');
 
@@ -262,10 +385,15 @@ void main() {
     expect(adapter.requests.single.path, '/entries/entry-2');
   });
 
-  test('reads entries between two days', () async {
+  test('reads entries between two days from the cached months', () async {
     final repository = build(
       (_) => FakeAdapter.json(200, {
-        'data': [entryJson('entry-1')],
+        'data': [
+          {...entryJson('entry-1'), 'kind': 'expense', 'due_on': '2026-11-27'},
+          {...entryJson('entry-2'), 'kind': 'expense', 'due_on': '2026-11-28'},
+          {...entryJson('entry-3'), 'due_on': '2026-12-01'},
+          {...entryJson('entry-4'), 'kind': 'expense', 'due_on': '2026-12-06'},
+        ],
         'meta': {'next': null},
       }),
     );
@@ -276,11 +404,10 @@ void main() {
       kind: EntryKind.expense,
     );
 
-    expect(entries, hasLength(1));
+    expect(entries.map((entry) => entry.id), ['entry-2']);
     expect(adapter.requests.single.queryParameters, {
-      'from': '2026-11-28',
-      'to': '2026-12-05',
-      'kind': 'expense',
+      'from': '2026-05-01',
+      'to': '2027-06-30',
       'limit': ApiEntryRepository.pageSize,
       'page': 1,
     });
@@ -332,12 +459,199 @@ void main() {
   });
 
   test('deletes the whole series of an entry', () async {
-    final repository = build((_) => FakeAdapter.json(204, null));
+    final repository = build(
+      (_) => FakeAdapter.json(200, {
+        'data': {
+          'deleted_ids': ['entry-2'],
+        },
+        'meta': {'entries': <Object>[]},
+      }),
+    );
 
     await repository.delete('entry-2', scope: EntryScope.all);
 
     expect(adapter.requests.single.method, 'DELETE');
     expect(adapter.requests.single.uri.path, '/entries/entry-2');
     expect(adapter.requests.single.uri.queryParameters, {'scope': 'all'});
+  });
+
+  group('with cached months and projection', () {
+    final projectionJson = {
+      'anchor': null,
+      'months': [
+        {
+          'month': '2026-11',
+          'opening_cents': 0,
+          'income_cents': 500000,
+          'expense_cents': 0,
+          'fixed_expense_cents': 0,
+          'variable_expense_cents': 0,
+          'closing_cents': 500000,
+          'savings_cents': 500000,
+        },
+      ],
+      'alerts': {'first_negative_month': null, 'negative_months_count': 0},
+      'last_entry_month': '2026-11',
+    };
+    late ApiEntryRepository repository;
+    late List<ResponseBody Function(RequestOptions)> answers;
+
+    Map<String, Object?> seriesJson(String id, int position, String dueOn) => {
+      ...entryJson(id),
+      'due_on': dueOn,
+      'series_id': 'series-1',
+      'series_position': position,
+    };
+
+    setUp(() async {
+      answers = [];
+      repository = build((options) => answers.removeAt(0)(options));
+      answers.add(
+        (_) => FakeAdapter.json(200, {
+          'data': [
+            entryJson('entry-1'),
+            seriesJson('entry-2', 1, '2026-11-10'),
+            seriesJson('entry-3', 2, '2026-12-10'),
+          ],
+          'meta': {'next': null},
+        }),
+      );
+      await repository.month(DateTime(2026, 11));
+      cache.storeProjection(
+        Projection(
+          months: [
+            ProjectionMonth(
+              month: DateTime(2026, 11),
+              openingCents: 0,
+              incomeCents: 0,
+              expenseCents: 0,
+              fixedExpenseCents: 0,
+              variableExpenseCents: 0,
+              closingCents: 0,
+              savingsCents: 0,
+            ),
+          ],
+        ),
+      );
+    });
+
+    List<String> ids(DateTime month) => [
+      for (final entry in cache.entriesBetween(month, Dates.lastOfMonth(month)))
+        entry.id,
+    ];
+
+    test('asks for the cached projection and applies the answer', () async {
+      answers.add(
+        (_) => FakeAdapter.json(201, {
+          'data': {...entryJson('entry-9'), 'due_on': '2026-11-01'},
+          'meta': {'projection': projectionJson},
+        }),
+      );
+
+      await repository.create(salary.toDraft());
+
+      expect(adapter.requests.last.uri.queryParameters, {
+        'projection_from': '2026-11',
+        'projection_months': '1',
+      });
+      expect(ids(DateTime(2026, 11)), ['entry-9', 'entry-1', 'entry-2']);
+      expect(
+        cache
+            .projection(DateTime(2026, 11), ProjectionPeriod.all)!
+            .months
+            .single
+            .closingCents,
+        500000,
+      );
+    });
+
+    test('replaces the series with the entries it answers', () async {
+      answers.add(
+        (_) => FakeAdapter.json(200, {
+          'data': seriesJson('entry-2', 1, '2026-11-15'),
+          'meta': {
+            'entries': [
+              seriesJson('entry-2', 1, '2026-11-15'),
+              seriesJson('entry-3', 2, '2026-12-15'),
+            ],
+          },
+        }),
+      );
+
+      await repository.update(
+        'entry-2',
+        rent.toDraft(),
+        scope: EntryScope.following,
+      );
+
+      expect(adapter.requests.last.uri.queryParameters, {
+        'scope': 'following',
+        'projection_from': '2026-11',
+        'projection_months': '1',
+      });
+      expect(
+        [
+          for (final entry in cache.entriesBetween(
+            DateTime(2026, 11),
+            DateTime(2026, 12, 31),
+          ))
+            Dates.toIso(entry.dueOn),
+        ],
+        ['2026-11-05', '2026-11-15', '2026-12-15'],
+      );
+    });
+
+    test('drops deleted entries and keeps the rest of the series', () async {
+      answers.add(
+        (_) => FakeAdapter.json(200, {
+          'data': {
+            'deleted_ids': ['entry-3'],
+          },
+          'meta': {
+            'entries': [
+              {...seriesJson('entry-2', 1, '2026-11-10'), 'series_count': 1},
+            ],
+          },
+        }),
+      );
+
+      await repository.delete('entry-3', scope: EntryScope.following);
+
+      expect(ids(DateTime(2026, 11)), ['entry-1', 'entry-2']);
+      expect(ids(DateTime(2026, 12)), isEmpty);
+      expect(
+        cache
+            .entriesBetween(DateTime(2026, 11), DateTime(2026, 11, 30))
+            .last
+            .seriesCount,
+        1,
+      );
+    });
+
+    test('moves a marked entry and skips months not loaded', () async {
+      answers
+        ..add(
+          (_) => FakeAdapter.json(200, {
+            'data': entryJson('entry-1', paidOn: '2026-11-05'),
+          }),
+        )
+        ..add(
+          (_) => FakeAdapter.json(200, {
+            'data': {...entryJson('entry-1'), 'due_on': '2030-01-05'},
+          }),
+        );
+
+      await repository.markPaid('entry-1', paidOn: DateTime(2026, 11, 5));
+      expect(
+        cache
+            .entriesBetween(DateTime(2026, 11), DateTime(2026, 11, 30))
+            .first
+            .isPaid,
+        isTrue,
+      );
+
+      await repository.update('entry-1', salary.toDraft());
+      expect(ids(DateTime(2026, 11)), ['entry-2']);
+    });
   });
 }
