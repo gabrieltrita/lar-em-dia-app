@@ -956,5 +956,24 @@
   },
   "moreSecurity": "Segurança",
   "moreAbout": "Lar em Dia",
-  "moreSupport": "Apoie o Lar em Dia"
+  "moreSupport": "Apoie o Lar em Dia",
+  "moreCopyright": "© {year} Lar em Dia",
+  "@moreCopyright": {
+    "placeholders": {
+      "year": {
+        "type": "String"
+      }
+    }
+  },
+  "moreVersion": "Versão {version} ({build})",
+  "@moreVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "build": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -5,6 +5,7 @@ import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/features/auth/domain/auth_user.dart';
 import 'package:lar_em_dia/features/shell/presentation/more_page.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../../helpers/auth_fixtures.dart';
@@ -82,6 +83,20 @@ void main() {
         PreferredLaunchMode.externalApplication,
       ),
     ]);
+  });
+
+  testWidgets('shows the copyright and the app version', (tester) async {
+    PackageInfo.setMockInitialValues(
+      appName: 'Lar em Dia',
+      packageName: 'dev.trita.laremdia',
+      version: '1.2.3',
+      buildNumber: '45',
+      buildSignature: '',
+    );
+    await pump(tester, ana);
+
+    expect(find.text('© ${DateTime.now().year} Lar em Dia'), findsOneWidget);
+    expect(find.text('Versão 1.2.3 (45)'), findsOneWidget);
   });
 
   testWidgets('logs out', (tester) async {

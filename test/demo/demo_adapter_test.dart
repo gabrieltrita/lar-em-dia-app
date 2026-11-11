@@ -99,8 +99,23 @@ void main() {
       );
       final page = call('GET', '/balances', query: {'limit': '1'});
       expect(page.body!['meta'], containsPair('next', 2));
-      expect(call('DELETE', '/balances/$id').status, 204);
+      final deleted = call(
+        'DELETE',
+        '/balances/$id',
+        query: {'projection_from': '2026-11', 'projection_months': '2'},
+      );
+      expect(data(deleted), {
+        'deleted_ids': [id],
+      });
+      final projected = deleted.body!['meta']! as Map<String, Object?>;
+      expect((projected['projection']! as Map)['months'], hasLength(2));
       expect(call('GET', '/balances/$id').status, 404);
+      expect(
+        errorCode(
+          call('POST', '/balances', query: {'projection_months': '61'}),
+        ),
+        'invalid_months',
+      );
     });
 
     test('pages and filters entries', () {
@@ -124,8 +139,8 @@ void main() {
         '/entries',
         query: {'limit': '1000', 'page': '99', 'kind': 'x', 'nature': 'y'},
       );
-      expect(last.body!['meta'], containsPair('page', 3));
-      expect(last.body!['meta'], containsPair('per_page', 100));
+      expect(last.body!['meta'], containsPair('page', 1));
+      expect(last.body!['meta'], containsPair('per_page', 500));
 
       final second = call(
         'GET',
@@ -168,10 +183,19 @@ void main() {
       expect(refused.status, 422);
       expect(errorCode(refused), 'only_for_single_entry');
 
-      expect(
-        call('DELETE', '/entries/$id', query: {'scope': 'all'}).status,
-        204,
+      final following = call(
+        'DELETE',
+        '/entries/${((created['entries']! as List<Object?>)[1]! as Map)['id']}',
+        query: {'scope': 'following', 'projection_from': ''},
       );
+      final meta = following.body!['meta']! as Map<String, Object?>;
+      expect((data(following)! as Map)['deleted_ids'], hasLength(2));
+      expect(meta['entries'], [containsPair('series_count', 1)]);
+      expect((meta['projection']! as Map)['months'], hasLength(12));
+
+      final all = call('DELETE', '/entries/$id', query: {'scope': 'all'});
+      expect(all.status, 200);
+      expect(all.body!['meta'], {'entries': <Object?>[]});
       expect(
         server.database.series.where((row) => row['id'] == created['id']),
         isEmpty,
@@ -205,7 +229,9 @@ void main() {
         {'code': 'greater_than', 'message': 'greater_than'},
       ]);
 
-      expect(call('DELETE', '/entries/$id').status, 204);
+      expect(data(call('DELETE', '/entries/$id')), {
+        'deleted_ids': [id],
+      });
       expect(call('DELETE', '/entries/$id').status, 404);
     });
 
@@ -300,7 +326,7 @@ void main() {
         'invalid_month',
       );
       expect(
-        errorCode(call('GET', '/projection', query: {'months': '25'})),
+        errorCode(call('GET', '/projection', query: {'months': '61'})),
         'invalid_months',
       );
       expect(

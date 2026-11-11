@@ -25,6 +25,7 @@ class DateField extends StatelessWidget {
       initialDate: value,
       firstDate: firstDate,
       lastDate: lastDate,
+      barrierDismissible: false,
     );
     if (picked != null) {
       onChanged(Dates.dateOnly(picked));

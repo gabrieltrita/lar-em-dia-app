@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
+import 'package:lar_em_dia/features/entries/data/finance_cache.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/shell/presentation/finance_changes.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
@@ -69,7 +70,7 @@ Future<void> pumpPage(
   addTearDown(router.dispose);
   await tester.pumpWidget(
     RepositoryProvider.value(
-      value: changes ?? FinanceChanges(),
+      value: changes ?? FinanceChanges(FinanceCache()),
       child: BlocProvider.value(
         value: session,
         child: MaterialApp.router(

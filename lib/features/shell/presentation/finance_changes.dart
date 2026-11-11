@@ -1,8 +1,12 @@
 import 'package:flutter/widgets.dart';
 import 'package:injectable/injectable.dart';
+import 'package:lar_em_dia/core/cache/local_cache.dart';
 
 @lazySingleton
 class FinanceChanges {
+  new(this._cache);
+
+  final LocalCache _cache;
   final _listeners = <VoidCallback>[];
 
   void addListener(VoidCallback listener) => _listeners.add(listener);
@@ -13,6 +17,11 @@ class FinanceChanges {
     for (final listener in [..._listeners]) {
       listener();
     }
+  }
+
+  void refresh() {
+    _cache.clear();
+    notify();
   }
 }
 

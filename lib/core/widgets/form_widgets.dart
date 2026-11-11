@@ -24,7 +24,7 @@ class SubmitButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FilledButton(
-      onPressed: busy ? null : onPressed,
+      onPressed: busy ? null : () => _pressIfOnTop(context),
       child: busy
           ? const SizedBox.square(
               dimension: 20,
@@ -32,6 +32,12 @@ class SubmitButton extends StatelessWidget {
             )
           : Text(label),
     );
+  }
+
+  void _pressIfOnTop(BuildContext context) {
+    if (ModalRoute.isCurrentOf(context) ?? true) {
+      onPressed();
+    }
   }
 }
 

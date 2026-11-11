@@ -25,25 +25,37 @@ void main() {
           as YamlMap;
 
   group('Deploy workflow', () {
-    test('deploys staging from main and production from a version tag', () {
+    test('deploys production from a version tag and staging only by hand', () {
       final on = workflow['on'] as YamlMap;
       final push = on['push'] as YamlMap;
-      expect(push['branches'], ['main']);
+      expect(push.keys, ['tags']);
       expect(push['tags'], ['[0-9]+.[0-9]+.[0-9]+']);
       final dispatch = on['workflow_dispatch'] as YamlMap;
-      final environment =
-          (dispatch['inputs'] as YamlMap)['environment'] as YamlMap;
-      expect(environment['options'], ['staging', 'production']);
+      final inputs = dispatch['inputs'] as YamlMap;
+      expect((inputs['environment'] as YamlMap)['options'], [
+        'staging',
+        'production',
+      ]);
+      expect((inputs['setup'] as YamlMap)['type'], 'boolean');
+      expect((inputs['setup'] as YamlMap)['default'], false);
 
       expect(staging['needs'], 'ci');
       expect(staging['if'], contains("vars.STAGING_DEPLOY_HOST != ''"));
-      expect(staging['if'], contains("github.ref_type == 'branch'"));
+      expect(staging['if'], isNot(contains("github.event_name == 'push'")));
+      expect(staging['if'], contains("github.ref == 'refs/heads/main'"));
       expect(staging['if'], contains("inputs.environment == 'staging'"));
+      expect(staging['if'], isNot(contains('inputs.setup')));
 
       expect(production['needs'], 'ci');
       expect(production['if'], contains("vars.DEPLOY_HOST != ''"));
-      expect(production['if'], contains("github.ref_type == 'tag'"));
-      expect(production['if'], contains("inputs.environment == 'production'"));
+      expect(
+        production['if'],
+        contains("github.event_name == 'push' && github.ref_type == 'tag'"),
+      );
+      expect(
+        production['if'],
+        contains("inputs.environment == 'production' && inputs.setup)"),
+      );
 
       final ci = readYaml('.github/workflows/ci.yml');
       expect((ci['on'] as YamlMap).containsKey('workflow_call'), isTrue);
@@ -95,10 +107,7 @@ void main() {
         final env = job['env'] as YamlMap;
         expect('${env['DEPLOY_HOST']}', contains('DEPLOY_HOST'));
         expect('${env['APP_HOST']}', contains('APP_HOST'));
-        expect(
-          deployWith(job)['setup'],
-          r"${{ github.event_name == 'workflow_dispatch' }}",
-        );
+        expect(deployWith(job)['setup'], r'${{ inputs.setup == true }}');
       }
     });
   });

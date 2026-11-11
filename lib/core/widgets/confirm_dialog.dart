@@ -21,6 +21,7 @@ Future<bool> confirmAction(
   final l10n = AppLocalizations.of(context);
   final confirmed = await showDialog<bool>(
     context: context,
+    barrierDismissible: false,
     builder: (context) => AlertDialog(
       title: Text(title),
       content: Text(message),

@@ -119,4 +119,28 @@ void main() {
       throwsA(isA<ApiError>().having((e) => e.code, 'code', 'forbidden')),
     );
   });
+
+  test('deleteReturning decodes the answer and maps errors', () async {
+    client = clientFor((options) {
+      if (options.path == '/ok') {
+        return FakeAdapter.json(200, {
+          'data': {'name': 'gone'},
+          'meta': {'page': 1},
+        });
+      }
+      return FakeAdapter.json(404, {
+        'error': {'code': 'not_found'},
+      });
+    });
+
+    final response = await client.deleteReturning('/ok', decode: decodeName);
+    expect(response.data, 'gone');
+    expect(response.meta, {'page': 1});
+    expect(adapter.requests.single.method, 'DELETE');
+
+    await expectLater(
+      client.deleteReturning('/missing', decode: decodeName),
+      throwsA(isA<ApiError>().having((e) => e.code, 'code', 'not_found')),
+    );
+  });
 }

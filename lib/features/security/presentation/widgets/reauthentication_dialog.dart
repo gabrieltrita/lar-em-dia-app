@@ -11,6 +11,7 @@ Future<Reauthentication?> askReauthentication(
   GoogleReauthentication? google,
 }) => showDialog<Reauthentication>(
   context: context,
+  barrierDismissible: false,
   builder: (_) => google == null
       ? _ReauthenticationDialog(title: title)
       : _GoogleReauthenticationDialog(title: title, google: google),

@@ -26,8 +26,10 @@ class DemoServer {
   static const refreshToken = 'demo-refresh-token';
   static const pageSize = 25;
   static const maxPageSize = 100;
+  static const maxEntriesPageSize = 500;
   static const maxSimulationEntries = 10;
   static const allMonthsLimit = 60;
+  static const maxMonths = 60;
 
   static const twoFactorSecret = 'JBSWY3DPEHPK3PXP';
   static const backupCodesCount = 10;
@@ -71,23 +73,45 @@ class DemoServer {
         ),
         ('GET', ['categories']) => _data(database.categoriesOf(query['kind'])),
         ('GET', ['balances']) => _page(database.sortedBalances(), query),
-        ('POST', ['balances']) => _data(database.createBalance(body), 201),
+        ('POST', ['balances']) => _changed(
+          query,
+          () => database.createBalance(body),
+          status: 201,
+        ),
         ('GET', ['balances', final id]) => _data(database.findBalance(id)),
-        ('PATCH', ['balances', final id]) => _data(
-          database.updateBalance(id, body),
+        ('PATCH', ['balances', final id]) => _changed(
+          query,
+          () => database.updateBalance(id, body),
         ),
-        ('DELETE', ['balances', final id]) => _noContent(
-          () => database.deleteBalance(id),
-        ),
+        ('DELETE', ['balances', final id]) => _changed(query, () {
+          database.deleteBalance(id);
+          return {
+            'deleted_ids': [id],
+          };
+        }),
         ('GET', ['entries']) => _entries(query),
-        ('POST', ['entries']) => _data(database.createEntry(body), 201),
-        ('POST', ['entry_series']) => _data(database.createSeries(body), 201),
-        ('GET', ['entries', final id]) => _data(database.findEntry(id)),
-        ('PATCH', ['entries', final id]) => _data(
-          database.updateEntry(id, body, scope: query['scope']),
+        ('POST', ['entries']) => _changed(
+          query,
+          () => database.createEntry(body),
+          status: 201,
         ),
-        ('DELETE', ['entries', final id]) => _noContent(
-          () => database.deleteEntry(id, scope: query['scope']),
+        ('POST', ['entry_series']) => _changed(
+          query,
+          () => database.createSeries(body),
+          status: 201,
+        ),
+        ('GET', ['entries', final id]) => _data(database.findEntry(id)),
+        ('PATCH', ['entries', final id]) => _changed(
+          query,
+          () => database.updateEntry(id, body, scope: query['scope']),
+          seriesId: database.findEntry(id)['series_id'] as String?,
+        ),
+        ('DELETE', ['entries', final id]) => _changed(
+          query,
+          () => {
+            'deleted_ids': database.deleteEntry(id, scope: query['scope']),
+          },
+          seriesId: database.findEntry(id)['series_id'] as String?,
         ),
         ('GET', ['projection']) => _projection(query),
         ('POST', ['projection', 'simulation']) => _simulation(body),
@@ -249,6 +273,39 @@ class DemoServer {
     },
   });
 
+  DemoResponse _changed(
+    Map<String, String> query,
+    Object? Function() change, {
+    int status = 200,
+    String? seriesId,
+  }) {
+    final period = _projectionPeriod(query);
+    final data = change();
+    final meta = {
+      if (seriesId != null) 'entries': database.seriesEntries(seriesId),
+      if (period case (final month, final months))
+        'projection': _projectionBody(month, months),
+    };
+    return DemoResponse(status, {
+      'data': data,
+      if (meta.isNotEmpty) 'meta': meta,
+    });
+  }
+
+  (DateTime, int)? _projectionPeriod(Map<String, String> query) {
+    if (!query.containsKey('projection_from') &&
+        !query.containsKey('projection_months')) {
+      return null;
+    }
+    return _period({
+      if (query['projection_from'] case final String from when from.isNotEmpty)
+        'from': from,
+      if (query['projection_months'] case final String months
+          when months.isNotEmpty)
+        'months': months,
+    });
+  }
+
   DemoResponse _entries(Map<String, String> query) {
     final kind = query['kind'];
     final nature = query['nature'];
@@ -260,6 +317,7 @@ class DemoServer {
         nature: nature == 'fixed' || nature == 'variable' ? nature : null,
       ),
       query,
+      maxLimit: maxEntriesPageSize,
     );
   }
 
@@ -319,7 +377,7 @@ class DemoServer {
       );
     }
     final months = int.tryParse(query['months'] ?? '12');
-    if (months == null || months < 1 || months > 24) {
+    if (months == null || months < 1 || months > maxMonths) {
       throw const DemoBadRequest('invalid_months');
     }
     return (first, months);
@@ -358,10 +416,14 @@ class DemoServer {
     return Dates.parseIso(value);
   }
 
-  static DemoResponse _page(List<Row> rows, Map<String, String> query) {
+  static DemoResponse _page(
+    List<Row> rows,
+    Map<String, String> query, {
+    int maxLimit = maxPageSize,
+  }) {
     final limit = (int.tryParse(query['limit'] ?? '') ?? pageSize).clamp(
       1,
-      maxPageSize,
+      maxLimit,
     );
     final pages = rows.isEmpty ? 1 : (rows.length / limit).ceil();
     final page = (int.tryParse(query['page'] ?? '') ?? 1).clamp(1, pages);
@@ -380,11 +442,6 @@ class DemoServer {
 
   static DemoResponse _data(Object? data, [int status = 200]) =>
       DemoResponse(status, {'data': data});
-
-  static DemoResponse _noContent(void Function() action) {
-    action();
-    return const DemoResponse(204);
-  }
 
   static DemoResponse _error(int status, String code, String message) =>
       DemoResponse(status, {
