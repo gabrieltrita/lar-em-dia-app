@@ -15,6 +15,7 @@ Future<EntryScope?> askEntryScope(
   };
   return showDialog<EntryScope>(
     context: context,
+    barrierDismissible: false,
     builder: (context) => SimpleDialog(
       title: Text(title),
       children: [

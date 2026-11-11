@@ -107,6 +107,7 @@ class _TwoFactorCard extends StatelessWidget {
     if (result case (codes: final codes?, error: _) when context.mounted) {
       await showDialog<void>(
         context: context,
+        barrierDismissible: false,
         builder: (dialogContext) => Dialog(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
