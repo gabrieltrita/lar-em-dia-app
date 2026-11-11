@@ -50,7 +50,10 @@ class HomePage extends StatelessWidget {
             onRetry: () => unawaited(cubit.load()),
           ),
           Loaded(value: final summary) => RefreshIndicator(
-            onRefresh: () => cubit.load(quiet: true),
+            onRefresh: () {
+              context.read<FinanceChanges>().refresh();
+              return cubit.load(quiet: true);
+            },
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 88),

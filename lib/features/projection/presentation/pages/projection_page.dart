@@ -13,6 +13,7 @@ import 'package:lar_em_dia/features/projection/presentation/cubits/projection_cu
 import 'package:lar_em_dia/features/projection/presentation/widgets/cash_flow_chart.dart';
 import 'package:lar_em_dia/features/projection/presentation/widgets/negative_months_alert.dart';
 import 'package:lar_em_dia/features/projection/presentation/widgets/projection_summary.dart';
+import 'package:lar_em_dia/features/shell/presentation/finance_changes.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
 class ProjectionPage extends StatelessWidget {
@@ -128,7 +129,10 @@ class _ProjectionViewState extends State<_ProjectionView> {
     final l10n = AppLocalizations.of(context);
     final projection = widget.projection;
     return RefreshIndicator(
-      onRefresh: () => context.read<ProjectionCubit>().load(),
+      onRefresh: () {
+        context.read<FinanceChanges>().refresh();
+        return context.read<ProjectionCubit>().load(quiet: true);
+      },
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),

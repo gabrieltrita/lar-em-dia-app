@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lar_em_dia/core/network/api_error.dart';
+import 'package:lar_em_dia/features/entries/data/finance_cache.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/presentation/cubits/entry_cubits.dart';
 import 'package:lar_em_dia/features/entries/presentation/pages/due_page.dart';
@@ -46,7 +47,7 @@ void main() {
     harness = AuthHarness();
     repository = MockEntryRepository();
     notified = 0;
-    changes = FinanceChanges()..addListener(() => notified++);
+    changes = FinanceChanges(FinanceCache())..addListener(() => notified++);
     when(() => repository.categories(EntryKind.expense))
         .thenAnswer((_) async => [housingCategory, groceriesCategory]);
     when(() => repository.between(any(), any(), kind: EntryKind.expense))

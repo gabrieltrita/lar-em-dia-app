@@ -37,7 +37,10 @@ class DuePage extends StatelessWidget {
             onRetry: () => unawaited(cubit.load()),
           ),
           Loaded(:final value) => RefreshIndicator(
-            onRefresh: () => cubit.load(quiet: true),
+            onRefresh: () {
+              context.read<FinanceChanges>().refresh();
+              return cubit.load(quiet: true);
+            },
             child: value.entries.isEmpty
                 ? ListView(
                     physics: const AlwaysScrollableScrollPhysics(),

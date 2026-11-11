@@ -1,31 +1,48 @@
+import 'dart:async';
+
 import 'package:injectable/injectable.dart';
 import 'package:lar_em_dia/core/dates/dates.dart';
 import 'package:lar_em_dia/core/network/api_client.dart';
+import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/features/entries/data/entry_dtos.dart';
+import 'package:lar_em_dia/features/entries/data/finance_cache.dart';
 import 'package:lar_em_dia/features/entries/domain/category.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/domain/entry_repository.dart';
 
 @LazySingleton(as: EntryRepository)
 class ApiEntryRepository implements EntryRepository {
-  new(this._client);
+  new(this._client, this._cache);
 
   static const path = '/entries';
   static const seriesPath = '/entry_series';
-  static const pageSize = 100;
+  static const pageSize = 500;
+  static const blockMonths = 6;
+  static const prefetchMargin = 2;
 
   final ApiClient _client;
+  final FinanceCache _cache;
 
   @override
   Future<List<Category>> categories(EntryKind kind) async {
-    final response = await _client.get<List<Category>>(
-      '/categories',
-      decode: (data) => (data! as List<dynamic>)
-          .map((item) => CategoryDto.fromJson(item as Json).toDomain())
-          .toList(),
-      query: {'kind': kind.name},
-    );
-    return response.data;
+    if (_cache.categories[kind] case final List<Category> cached) {
+      return cached;
+    }
+    final generation = _cache.generation;
+    final categories = await _cache.once('categories:${kind.name}', () async {
+      final response = await _client.get<List<Category>>(
+        '/categories',
+        decode: (data) => (data! as List<dynamic>)
+            .map((item) => CategoryDto.fromJson(item as Json).toDomain())
+            .toList(),
+        query: {'kind': kind.name},
+      );
+      return response.data;
+    });
+    if (generation == _cache.generation) {
+      _cache.categories[kind] = categories;
+    }
+    return categories;
   }
 
   @override
@@ -38,33 +55,96 @@ class ApiEntryRepository implements EntryRepository {
     DateTime to, {
     EntryKind? kind,
   }) async {
-    final entries = <Entry>[];
-    int? page = 1;
-    while (page != null) {
-      final response = await _client.get<List<Entry>>(
-        path,
-        decode: _decodeList,
-        query: {
-          'from': Dates.toIso(from),
-          'to': Dates.toIso(to),
-          'kind': ?kind?.name,
-          'limit': pageSize,
-          'page': page,
-        },
-      );
-      entries.addAll(response.data);
-      page = response.meta['next'] as int?;
+    final first = Dates.firstOfMonth(from);
+    final last = Dates.firstOfMonth(to);
+    await _ensureMonths(first, last);
+    _prefetchAround(first, last);
+    return [
+      for (final entry in _cache.entriesBetween(from, to))
+        if (kind == null || entry.kind == kind) entry,
+    ];
+  }
+
+  Future<void> _ensureMonths(DateTime first, DateTime last) async {
+    final missing = [
+      for (final month in FinanceCache.monthsBetween(first, last))
+        if (!_cache.hasMonth(month)) month,
+    ];
+    if (missing.isEmpty) {
+      return;
     }
-    return entries;
+    var start = Dates.addMonths(missing.first, -blockMonths);
+    var end = Dates.addMonths(missing.last, blockMonths);
+    while (_cache.hasMonth(start)) {
+      start = Dates.addMonths(start, 1);
+    }
+    while (_cache.hasMonth(end)) {
+      end = Dates.addMonths(end, -1);
+    }
+    await _loadMonths(start, end);
+  }
+
+  void _prefetchAround(DateTime first, DateTime last) {
+    final (start, end) = _cache.loadedRun(first, last);
+    if (FinanceCache.monthsBetween(last, end).length <= prefetchMargin) {
+      unawaited(
+        _prefetch(Dates.addMonths(end, 1), Dates.addMonths(end, blockMonths)),
+      );
+    }
+    if (FinanceCache.monthsBetween(start, first).length <= prefetchMargin) {
+      unawaited(
+        _prefetch(
+          Dates.addMonths(start, -blockMonths),
+          Dates.addMonths(start, -1),
+        ),
+      );
+    }
+  }
+
+  Future<void> _prefetch(DateTime first, DateTime last) async {
+    try {
+      await _loadMonths(first, last);
+    } on ApiError {
+      return;
+    }
+  }
+
+  Future<void> _loadMonths(DateTime first, DateTime last) {
+    final generation = _cache.generation;
+    return _cache.once(
+      'entries:${Dates.toMonth(first)}:${Dates.toMonth(last)}',
+      () async {
+        final entries = <Entry>[];
+        int? page = 1;
+        while (page != null) {
+          final response = await _client.get<List<Entry>>(
+            path,
+            decode: _decodeList,
+            query: {
+              'from': Dates.toIso(first),
+              'to': Dates.toIso(Dates.lastOfMonth(last)),
+              'limit': pageSize,
+              'page': page,
+            },
+          );
+          entries.addAll(response.data);
+          page = response.meta['next'] as int?;
+        }
+        if (generation == _cache.generation) {
+          _cache.storeMonths(first, last, entries);
+        }
+      },
+    );
   }
 
   @override
   Future<Entry> create(EntryDraft draft) async {
     final response = await _client.post<Entry>(
-      path,
+      _withProjection(path),
       decode: _decode,
       body: _body(draft),
     );
+    _applyChange(response, [response.data]);
     return response.data;
   }
 
@@ -74,10 +154,11 @@ class ApiEntryRepository implements EntryRepository {
     Recurrence recurrence,
   ) async {
     final response = await _client.post<List<Entry>>(
-      seriesPath,
+      _withProjection(seriesPath),
       decode: (data) => _decodeList((data! as Json)['entries']),
       body: _seriesBody(draft, recurrence),
     );
+    _applyChange(response, response.data);
     return response.data;
   }
 
@@ -87,10 +168,11 @@ class ApiEntryRepository implements EntryRepository {
     Installments installments,
   ) async {
     final response = await _client.post<List<Entry>>(
-      seriesPath,
+      _withProjection(seriesPath),
       decode: (data) => _decodeList((data! as Json)['entries']),
       body: _installmentsBody(draft, installments),
     );
+    _applyChange(response, response.data);
     return response.data;
   }
 
@@ -101,17 +183,18 @@ class ApiEntryRepository implements EntryRepository {
     EntryScope scope = EntryScope.one,
   }) async {
     final response = await _client.patch<Entry>(
-      _scoped(id, scope),
+      _withProjection('$path/$id', scope: scope),
       decode: _decode,
       body: scope == EntryScope.one ? _body(draft) : _sharedBody(draft),
     );
+    _applyChange(response, [response.data]);
     return response.data;
   }
 
   @override
   Future<Entry> markPaid(String id, {required DateTime? paidOn}) async {
     final response = await _client.patch<Entry>(
-      '$path/$id',
+      _withProjection('$path/$id'),
       decode: _decode,
       body: {
         'status':
@@ -119,15 +202,37 @@ class ApiEntryRepository implements EntryRepository {
         'paid_on': paidOn == null ? null : Dates.toIso(paidOn),
       },
     );
+    _applyChange(response, [response.data]);
     return response.data;
   }
 
   @override
-  Future<void> delete(String id, {EntryScope scope = EntryScope.one}) =>
-      _client.delete(_scoped(id, scope));
+  Future<void> delete(String id, {EntryScope scope = EntryScope.one}) async {
+    final response = await _client.deleteReturning<List<String>>(
+      _withProjection('$path/$id', scope: scope),
+      decode: (data) => [
+        for (final id in (data! as Json)['deleted_ids'] as List<dynamic>)
+          id as String,
+      ],
+    );
+    _cache.removeEntries(response.data.toSet());
+    _applyChange(response, const []);
+  }
 
-  static String _scoped(String id, EntryScope scope) =>
-      scope == EntryScope.one ? '$path/$id' : '$path/$id?scope=${scope.name}';
+  String _withProjection(String target, {EntryScope scope = EntryScope.one}) =>
+      _cache.withProjectionWindow(
+        target,
+        query: {if (scope != EntryScope.one) 'scope': scope.name},
+      );
+
+  void _applyChange(ApiResponse<Object?> response, List<Entry> changed) {
+    _cache.upsertEntries(changed);
+    if (response.meta['entries'] case [_, ...] && final series) {
+      final entries = _decodeList(series);
+      _cache.replaceSeries(entries.first.seriesId!, entries);
+    }
+    _cache.applyProjectionMeta(response.meta);
+  }
 
   static Json _sharedBody(EntryDraft draft) =>
       _body(draft)
