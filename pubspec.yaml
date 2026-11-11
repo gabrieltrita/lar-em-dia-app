@@ -27,6 +27,7 @@ dependencies:
   injectable: ^3.0.0
   intl: ^0.20.3
   json_annotation: ^4.12.0
+  package_info_plus: ^10.2.2
   qr_flutter: ^4.1.0
   timezone: ^0.11.2
   url_launcher: ^6.3.3

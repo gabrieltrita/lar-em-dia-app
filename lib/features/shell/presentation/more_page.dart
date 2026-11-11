@@ -8,6 +8,7 @@ import 'package:lar_em_dia/core/links/site_pages.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/features/auth/domain/auth_user.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
+import 'package:lar_em_dia/features/shell/presentation/app_info_footer.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
 class MorePage extends StatelessWidget {
@@ -99,6 +100,7 @@ class MorePage extends StatelessWidget {
             ),
             onTap: () => unawaited(context.read<SessionCubit>().logout()),
           ),
+          const AppInfoFooter(),
         ],
       ),
     );
