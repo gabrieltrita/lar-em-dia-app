@@ -58,10 +58,9 @@ void main() {
     final workflow = readYaml('.github/workflows/android.yml');
     final bundle = (workflow['jobs'] as YamlMap)['bundle'] as YamlMap;
 
-    test('builds from a version tag or by hand, after the CI', () {
+    test('builds only by hand, after the CI', () {
       final on = workflow['on'] as YamlMap;
-      expect((on['push'] as YamlMap)['tags'], ['[0-9]+.[0-9]+.[0-9]+']);
-      expect(on.containsKey('workflow_dispatch'), isTrue);
+      expect(on.keys, ['workflow_dispatch']);
       expect(bundle['needs'], 'ci');
       expect(
         stepNamed(bundle, 'Require the commit to be on main')['run'],
@@ -97,14 +96,13 @@ void main() {
       );
     });
 
-    test('the CI builds a signed release with a throwaway key', () {
+    test('the CI never builds Android', () {
       final ci = readYaml('.github/workflows/ci.yml');
       final test = (ci['jobs'] as YamlMap)['test'] as YamlMap;
-      const name = 'Build Android release with a throwaway key';
-      final run = '${stepNamed(test, name)['run']}';
-      expect(run, contains('keytool -genkeypair'));
-      expect(run, contains('flutter build appbundle --release'));
-      expect(run, contains('android.permission.INTERNET'));
+      for (final step in stepsOf(test)) {
+        expect('${step['run'] ?? ''}', isNot(contains('appbundle')));
+        expect('${step['uses'] ?? ''}', isNot(contains('setup-java')));
+      }
     });
   });
 
