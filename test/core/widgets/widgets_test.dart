@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lar_em_dia/core/widgets/confirm_dialog.dart';
@@ -115,7 +117,8 @@ void main() {
     expect(answer, isTrue);
   });
 
-  testWidgets('confirmDeletion answers false when dismissed', (tester) async {
+  testWidgets('confirmDeletion stays open on outside taps and answers false '
+      'when dismissed with back', (tester) async {
     bool? answer;
     await pumpLocalized(
       tester,
@@ -135,8 +138,69 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tapAt(const Offset(5, 5));
     await tester.pumpAndSettle();
+    expect(find.text('Some'), findsOneWidget);
+    expect(answer, isNull);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
 
     expect(answer, isFalse);
+  });
+
+  testWidgets('DateField picker stays open on outside taps', (tester) async {
+    await pumpLocalized(
+      tester,
+      DateField(
+        label: 'Data',
+        value: DateTime(2026, 11, 3),
+        firstDate: DateTime(2026),
+        lastDate: DateTime(2026, 12, 31),
+        onChanged: (_) {},
+      ),
+    );
+
+    await tester.tap(find.byType(DateField));
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(5, 5));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DatePickerDialog), findsOneWidget);
+  });
+
+  testWidgets('SubmitButton ignores presses while a dialog covers it', (
+    tester,
+  ) async {
+    var presses = 0;
+    late BuildContext pageContext;
+    await pumpLocalized(
+      tester,
+      Builder(
+        builder: (context) {
+          pageContext = context;
+          return SubmitButton(
+            label: 'Salvar',
+            busy: false,
+            onPressed: () => presses++,
+          );
+        },
+      ),
+    );
+
+    await tester.tap(find.text('Salvar'));
+    expect(presses, 1);
+
+    unawaited(
+      showDialog<void>(
+        context: pageContext,
+        barrierDismissible: false,
+        barrierColor: Colors.transparent,
+        builder: (_) => const SizedBox.shrink(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    tester.widget<FilledButton>(find.byType(FilledButton)).onPressed!.call();
+
+    expect(presses, 1);
   });
 
   testWidgets('RetryMessage shows the message and retries', (tester) async {

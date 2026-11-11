@@ -43,6 +43,7 @@ class GoogleSignInSection extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final accepted = await showDialog<bool>(
       context: context,
+      barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
         title: Text(l10n.googleConsentsTitle),
         content: Column(
