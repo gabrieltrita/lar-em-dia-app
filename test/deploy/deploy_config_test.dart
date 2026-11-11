@@ -99,6 +99,14 @@ void main() {
       );
       expect(productionWith['indexable'], 'true');
       expect(
+        productionWith['build-name'],
+        r"${{ github.ref_type == 'tag' && github.ref_name || '' }}",
+      );
+      expect(stagingWith.containsKey('build-name'), isFalse);
+      for (final settings in [stagingWith, productionWith]) {
+        expect(settings['build-number'], r'${{ github.run_number }}');
+      }
+      expect(
         productionWith['ssh-private-key'],
         r'${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}',
       );
@@ -154,6 +162,32 @@ void main() {
       expect(
         actionStep('Build web')['run'],
         contains(r'--dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID"'),
+      );
+    });
+
+    test('builds the web app with the release tag and the run number', () {
+      final input = (action['inputs'] as YamlMap)['build-name'] as YamlMap;
+      expect(input['required'], isFalse);
+      expect(input['default'], '');
+      expect(
+        (actionStep('Build web')['env'] as YamlMap)['BUILD_NAME'],
+        r'${{ inputs.build-name }}',
+      );
+      expect(
+        actionStep('Build web')['run'],
+        contains(r'${BUILD_NAME:+--build-name="$BUILD_NAME"}'),
+      );
+      expect(
+        ((action['inputs'] as YamlMap)['build-number'] as YamlMap)['required'],
+        isTrue,
+      );
+      expect(
+        (actionStep('Build web')['env'] as YamlMap)['BUILD_NUMBER'],
+        r'${{ inputs.build-number }}',
+      );
+      expect(
+        actionStep('Build web')['run'],
+        contains(r'--build-number="$BUILD_NUMBER"'),
       );
     });
 

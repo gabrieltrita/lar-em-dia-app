@@ -20,6 +20,13 @@ inputs:
     description: Google OAuth web client id; empty hides the Google sign-in
     required: false
     default: ""
+  build-name:
+    description: Version shown in the app (the release tag); empty keeps the pubspec.yaml version
+    required: false
+    default: ""
+  build-number:
+    description: Build number shown next to the version (the workflow run number)
+    required: true
   indexable:
     description: Let search engines index the app (true only in production)
     required: true
@@ -59,10 +66,12 @@ runs:
         API_BASE_URL: ${{ inputs.api-base-url }}
         APP_HOST: ${{ inputs.app-host }}
         GOOGLE_CLIENT_ID: ${{ inputs.google-client-id }}
+        BUILD_NAME: ${{ inputs.build-name }}
+        BUILD_NUMBER: ${{ inputs.build-number }}
       run: |
         flutter pub get
         dart run build_runner build --delete-conflicting-outputs
-        flutter build web --release --no-web-resources-cdn --dart-define=API_BASE_URL="$API_BASE_URL" --dart-define=SITE_URL="https://$APP_HOST" --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID"
+        flutter build web --release --no-web-resources-cdn --dart-define=API_BASE_URL="$API_BASE_URL" --dart-define=SITE_URL="https://$APP_HOST" --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" --build-number="$BUILD_NUMBER" ${BUILD_NAME:+--build-name="$BUILD_NAME"}
 
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
