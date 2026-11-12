@@ -5,8 +5,8 @@ void main() {
   test('builds a family with a year of entries and one negative month', () {
     final database = DemoSeed.build(DateTime(2026, 11, 3));
 
-    expect(database.categoriesOf('income'), hasLength(10));
-    expect(database.categoriesOf('expense'), hasLength(20));
+    expect(database.categoriesOf('income'), hasLength(11));
+    expect(database.categoriesOf('expense'), hasLength(21));
     expect(database.latestBalance(), containsPair('as_of', '2026-11-01'));
 
     final months = database.projection(from: DateTime(2026, 11), months: 12);

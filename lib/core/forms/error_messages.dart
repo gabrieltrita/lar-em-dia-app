@@ -22,6 +22,7 @@ extension ApiErrorMessages on ApiError {
     'reauthentication_unavailable' => l10n.errorReauthenticationUnavailable,
     'only_for_single_entry' => l10n.errorOnlyForSingleEntry,
     'installment_amount_locked' => l10n.errorInstallmentAmountLocked,
+    'insufficient_quantity' => l10n.errorInsufficientQuantity,
     'google_sign_in_failed' => l10n.errorGoogleSignInFailed,
     'oauth_token_invalid' => l10n.errorOauthTokenInvalid,
     'oauth_email_unverified' => l10n.errorOauthEmailUnverified,
@@ -48,6 +49,9 @@ extension ApiErrorMessages on ApiError {
       'in_future' => l10n.validationInFuture,
       'inactive' => l10n.validationInactive,
       'immutable' => l10n.validationImmutable,
+      'insufficient_quantity' => l10n.validationInsufficientQuantity,
+      'unknown_asset' => l10n.validationUnknownAsset,
+      'only_for_trades' => l10n.validationOnlyForTrades,
       'greater_than' || 'not_an_integer' => l10n.validationAmountRequired,
       _ => l10n.validationInvalid,
     };

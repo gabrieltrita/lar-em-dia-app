@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:lar_em_dia/core/dates/dates.dart';
+import 'package:lar_em_dia/demo/demo_investments.dart';
 
 typedef Row = Map<String, Object?>;
 typedef FieldErrors = Map<String, List<String>>;
@@ -29,6 +30,7 @@ class DemoDatabase {
   final List<Row> balances = [];
   final List<Row> entries = [];
   final List<Row> series = [];
+  late final DemoInvestments investments = DemoInvestments(this);
   int _sequence = 0;
 
   static const minSeriesCount = 2;

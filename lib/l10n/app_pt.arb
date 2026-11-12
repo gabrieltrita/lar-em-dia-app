@@ -975,5 +975,157 @@
         "type": "String"
       }
     }
+  },
+  "shellInvestments": "Investimentos",
+  "categoryInvestmentContribution": "Aporte em investimentos",
+  "categoryInvestmentRedemption": "Resgate de investimentos",
+  "errorInsufficientQuantity": "Não dá para fazer isso: uma venda depois desta data ficaria sem cotas suficientes.",
+  "validationInsufficientQuantity": "Você não tem cotas suficientes nesta data",
+  "validationUnknownAsset": "Papel não encontrado",
+  "validationOnlyForTrades": "Só vale para compra e venda",
+  "assetTypeStock": "Ação",
+  "assetTypeFii": "FII",
+  "investmentGoalIncome": "Renda",
+  "investmentGoalGrowth": "Crescimento",
+  "investmentKindBuy": "Compra",
+  "investmentKindSell": "Venda",
+  "investmentKindSplit": "Desdobramento",
+  "investmentKindReverseSplit": "Grupamento",
+  "investmentKindBonus": "Bonificação",
+  "investmentsTitle": "Investimentos",
+  "investmentsDisclaimer": "Informações calculadas a partir dos seus lançamentos. Não são recomendação de investimento. Cotações: B3. Cadastros: CVM (dados abertos, ODbL).",
+  "investmentsNetWorth": "Patrimônio",
+  "investmentsContributed": "Aportado",
+  "investmentsGain": "Ganho",
+  "investmentsRealized": "Lucro realizado",
+  "investmentsCost": "Custo",
+  "investmentsMarketValue": "Valor atual",
+  "investmentsAveragePriceLabel": "Preço médio",
+  "investmentsAveragePrice": "PM {price}",
+  "@investmentsAveragePrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "investmentsShares": "{count, plural, =1{1 cota} other{{count} cotas}}",
+  "@investmentsShares": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "investmentsQuoteOn": "{price} em {date}",
+  "@investmentsQuoteOn": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "investmentsNoQuote": "sem cotação",
+  "investmentsGoalShare": "{goal} {percent} ({amount})",
+  "@investmentsGoalShare": {
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "investmentsEvolution": "Evolução",
+  "investmentsEvolutionChart": "Gráfico do patrimônio e do valor aportado mês a mês",
+  "investmentsSeeAll": "Ver tudo",
+  "investmentsAll": "Todos",
+  "investmentsNoPositionsInGoal": "Nenhum papel com este objetivo.",
+  "investmentsRegister": "Registrar operação",
+  "investmentsRegisterBuy": "Registrar compra",
+  "investmentsAlreadyInvested": "Já tenho investimentos",
+  "investmentsEmptyTitle": "Acompanhe seus investimentos",
+  "investmentsEmptyMessage": "Registre as compras e vendas de FIIs e ações para ver o patrimônio, o preço médio e o ganho de cada papel, separados entre Renda e Crescimento.",
+  "investmentsHistoryEmpty": "Sem evolução ainda",
+  "investmentsHistoryEmptyMessage": "A evolução aparece depois da primeira operação.",
+  "investmentsMonth": "Mês",
+  "investmentFormNewTitle": "Registrar operação",
+  "investmentFormEditTitle": "Editar operação",
+  "investmentFormExistingHint": "Use a quantidade e o preço médio que aparecem na sua corretora. Uma compra por papel basta.",
+  "investmentFormAsset": "Papel",
+  "investmentFormAssetHint": "Digite o código ou o nome, como HGLG11",
+  "investmentFormAssetRequired": "Escolha um papel",
+  "investmentFormChangeAsset": "Trocar papel",
+  "investmentFormKind": "Tipo",
+  "investmentFormQuantity": "Cotas",
+  "investmentFormBonusQuantity": "Cotas recebidas",
+  "investmentFormQuantityInvalid": "Informe um número inteiro de cotas",
+  "investmentFormPrice": "Preço por cota",
+  "investmentFormAveragePriceHelper": "O preço médio da corretora",
+  "investmentFormFees": "Taxas",
+  "investmentFormRatioFrom": "A cada",
+  "investmentFormRatioTo": "Passa a ter",
+  "investmentFormRatioSummary": "Você tem {before} cotas e passará a ter {after}.",
+  "@investmentFormRatioSummary": {
+    "placeholders": {
+      "before": {
+        "type": "int"
+      },
+      "after": {
+        "type": "int"
+      }
+    }
+  },
+  "investmentFormRatioInvalid": "Proporção inválida para este tipo",
+  "investmentFormRatioNoShares": "Você ainda não tem cotas deste papel",
+  "investmentFormDebitBalance": "Descontar do saldo",
+  "investmentFormCreditBalance": "Somar ao saldo",
+  "investmentFormDebitAmount": "{amount} entra nos lançamentos como despesa",
+  "@investmentFormDebitAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "investmentFormCreditAmount": "{amount} entra nos lançamentos como receita",
+  "@investmentFormCreditAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "investmentFormGoal": "Objetivo deste papel",
+  "investmentTransactionsTitle": "Operações",
+  "investmentTransactionsEmpty": "Nenhuma operação deste papel.",
+  "investmentTransactionPrice": "{price} por cota",
+  "@investmentTransactionPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "investmentTransactionInBalance": "no saldo",
+  "investmentTransactionMenu": "Mais opções",
+  "investmentDeleteTitle": "Excluir operação?",
+  "investmentDeleteMessage": "{kind} de {date}. Se ela entrou no saldo, o lançamento também sai.",
+  "@investmentDeleteMessage": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
   }
 }

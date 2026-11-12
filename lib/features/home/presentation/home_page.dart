@@ -408,7 +408,7 @@ class _DueShortcut extends StatelessWidget {
         title: Text(l10n.homeDueShortcut(count)),
         subtitle: count == 0 ? null : Text(Money.format(summary.upcomingCents)),
         trailing: const Icon(Icons.chevron_right),
-        onTap: () => context.go(AppRoutes.due),
+        onTap: () => unawaited(context.push<void>(AppRoutes.due)),
       ),
     );
   }

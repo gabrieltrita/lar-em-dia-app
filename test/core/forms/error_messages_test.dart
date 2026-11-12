@@ -34,6 +34,7 @@ void main() {
       'reauthentication_unavailable': l10n.errorReauthenticationUnavailable,
       'only_for_single_entry': l10n.errorOnlyForSingleEntry,
       'installment_amount_locked': l10n.errorInstallmentAmountLocked,
+      'insufficient_quantity': l10n.errorInsufficientQuantity,
       ApiError.networkErrorCode: l10n.errorNetwork,
       'something_new': l10n.errorUnknown,
     };
@@ -62,6 +63,9 @@ void main() {
       'in_future': l10n.validationInFuture,
       'inactive': l10n.validationInactive,
       'immutable': l10n.validationImmutable,
+      'insufficient_quantity': l10n.validationInsufficientQuantity,
+      'unknown_asset': l10n.validationUnknownAsset,
+      'only_for_trades': l10n.validationOnlyForTrades,
       'greater_than': l10n.validationAmountRequired,
       'not_an_integer': l10n.validationAmountRequired,
       'whatever': l10n.validationInvalid,

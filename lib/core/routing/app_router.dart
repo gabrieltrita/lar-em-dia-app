@@ -38,6 +38,11 @@ import 'package:lar_em_dia/features/entries/presentation/pages/entries_page.dart
 import 'package:lar_em_dia/features/entries/presentation/pages/entry_form_page.dart';
 import 'package:lar_em_dia/features/home/presentation/cubits/home_cubit.dart';
 import 'package:lar_em_dia/features/home/presentation/home_page.dart';
+import 'package:lar_em_dia/features/investments/presentation/cubits/investment_cubits.dart';
+import 'package:lar_em_dia/features/investments/presentation/pages/asset_detail_page.dart';
+import 'package:lar_em_dia/features/investments/presentation/pages/investment_form_page.dart';
+import 'package:lar_em_dia/features/investments/presentation/pages/investments_page.dart';
+import 'package:lar_em_dia/features/investments/presentation/pages/portfolio_history_page.dart';
 import 'package:lar_em_dia/features/projection/domain/projection.dart';
 import 'package:lar_em_dia/features/projection/presentation/cubits/projection_cubit.dart';
 import 'package:lar_em_dia/features/projection/presentation/cubits/simulation_cubit.dart';
@@ -67,6 +72,9 @@ abstract final class AppRoutes {
   static const entries = '/entries';
   static const entry = '/entry';
   static const due = '/due';
+  static const investments = '/investments';
+  static const investmentForm = '$investments/new';
+  static const investmentHistory = '$investments/history';
   static const more = '/more';
   static const projection = '/projection';
   static const simulation = '$projection/simulate';
@@ -82,6 +90,8 @@ abstract final class AppRoutes {
   static const unsubscribe = '/unsubscribe';
 
   static String adminUser(String id) => '$adminUsers/$id';
+
+  static String assetDetail(String ticker) => '$investments/assets/$ticker';
 
   static String simulationEntry(EntryKind kind) => '$simulation/${kind.name}';
 
@@ -163,6 +173,9 @@ Widget _reloading<C extends StateStreamableSource<Object?>>({
   ),
 );
 
+Widget _withChanges(Widget child) =>
+    RepositoryProvider.value(value: getIt<FinanceChanges>(), child: child);
+
 StatefulShellBranch _branch(
   String path,
   Widget Function(GoRouterState state) page,
@@ -201,12 +214,12 @@ GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
           ),
         ),
         _branch(
-          AppRoutes.due,
+          AppRoutes.investments,
           (_) => _reloading(
-            create: getIt.get<DueCubit>,
+            create: getIt.get<PortfolioCubit>,
             start: (cubit) => cubit.load(),
             reload: (cubit) => cubit.load(quiet: true),
-            child: const DuePage(),
+            child: const InvestmentsPage(),
           ),
         ),
         _branch(
@@ -220,6 +233,53 @@ GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
         ),
         _branch(AppRoutes.more, (_) => const MorePage()),
       ],
+    ),
+    GoRoute(
+      path: AppRoutes.due,
+      builder: (context, state) => _withChanges(
+        _reloading(
+          create: getIt.get<DueCubit>,
+          start: (cubit) => cubit.load(),
+          reload: (cubit) => cubit.load(quiet: true),
+          child: const DuePage(),
+        ),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.investmentForm,
+      builder: (context, state) => MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => getIt<InvestmentFormCubit>()),
+          BlocProvider(create: (_) => getIt<AssetSearchCubit>()),
+        ],
+        child: InvestmentFormPage(
+          args: switch (state.extra) {
+            final InvestmentFormArgs args => args,
+            _ => const InvestmentFormArgs(),
+          },
+        ),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.investmentHistory,
+      builder: (context, state) => BlocProvider(
+        create: (_) =>
+            _started(getIt<PortfolioHistoryCubit>(), (cubit) => cubit.load()),
+        child: const PortfolioHistoryPage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.assetDetail(':ticker'),
+      builder: (context, state) => _withChanges(
+        _reloading(
+          create: () => getIt<AssetDetailCubit>(
+            param1: state.pathParameters['ticker']!.toUpperCase(),
+          ),
+          start: (cubit) => cubit.load(),
+          reload: (cubit) => cubit.load(quiet: true),
+          child: const AssetDetailPage(),
+        ),
+      ),
     ),
     GoRoute(
       path: AppRoutes.balances,

@@ -113,6 +113,39 @@ class DemoServer {
           },
           seriesId: database.findEntry(id)['series_id'] as String?,
         ),
+        ('GET', ['assets']) => _page(
+          database.investments.searchAssets(query['q']),
+          query,
+        ),
+        ('GET', ['assets', final ticker]) => _data(
+          database.investments.assetDetail(ticker),
+        ),
+        ('GET', ['portfolio']) => _data(
+          database.investments.portfolio(goal: query['goal']),
+        ),
+        ('GET', ['portfolio', 'history']) => _data(
+          database.investments.history(),
+        ),
+        ('GET', ['investment_transactions']) => _page(
+          database.investments.listTransactions(query['ticker']),
+          query,
+        ),
+        ('POST', ['investment_transactions']) => _data(
+          database.investments.createTransaction(body),
+          201,
+        ),
+        ('GET', ['investment_transactions', final id]) => _data(
+          database.investments.findTransaction(id),
+        ),
+        ('PATCH', ['investment_transactions', final id]) => _data(
+          database.investments.updateTransaction(id, body),
+        ),
+        ('DELETE', ['investment_transactions', final id]) => _deleteInvestment(
+          id,
+        ),
+        ('PATCH', ['investment_positions', final ticker]) => _data(
+          database.investments.updateGoal(ticker, body),
+        ),
         ('GET', ['projection']) => _projection(query),
         ('POST', ['projection', 'simulation']) => _simulation(body),
         _ => throw const DemoNotFound(),
@@ -133,10 +166,15 @@ class DemoServer {
         },
       });
     } on DemoUnprocessable catch (error) {
-      return _error(422, error.code, 'Only for a single entry');
+      return _error(422, error.code, 'The change was refused');
     } on DemoBadRequest catch (error) {
       return _error(400, error.code, 'Invalid query parameter');
     }
+  }
+
+  DemoResponse _deleteInvestment(String id) {
+    database.investments.deleteTransaction(id);
+    return _data({'deleted_id': id});
   }
 
   DemoResponse _auth(String method, String action, Map<String, Object?> body) {

@@ -302,6 +302,8 @@ void main() {
 
       await tester.tap(find.text('Mais'));
       await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.text('Sair'), 200);
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Sair'));
       await tester.pumpAndSettle();
 
