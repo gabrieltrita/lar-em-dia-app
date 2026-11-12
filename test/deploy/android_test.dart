@@ -98,8 +98,8 @@ void main() {
 
     test('the CI never builds Android', () {
       final ci = readYaml('.github/workflows/ci.yml');
-      final test = (ci['jobs'] as YamlMap)['test'] as YamlMap;
-      for (final step in stepsOf(test)) {
+      final jobs = (ci['jobs'] as YamlMap).values.cast<YamlMap>();
+      for (final step in jobs.expand(stepsOf)) {
         expect('${step['run'] ?? ''}', isNot(contains('appbundle')));
         expect('${step['uses'] ?? ''}', isNot(contains('setup-java')));
       }
