@@ -5,7 +5,6 @@ import 'package:lar_em_dia/app.dart';
 import 'package:lar_em_dia/core/di/injection.dart';
 import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
-import 'package:lar_em_dia/core/theme/finance_colors.dart';
 import 'package:lar_em_dia/features/auth/domain/auth_repository.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
 import 'package:lar_em_dia/features/balance/domain/balance_repository.dart';
@@ -14,6 +13,7 @@ import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/domain/entry_repository.dart';
 import 'package:lar_em_dia/features/home/presentation/cubits/home_cubit.dart';
 import 'package:lar_em_dia/features/home/presentation/home_page.dart';
+import 'package:lar_em_dia/features/projection/presentation/widgets/cash_flow_chart.dart';
 import 'package:lar_em_dia/features/reserve/domain/reserve.dart';
 import 'package:lar_em_dia/features/reserve/domain/reserve_dismissal.dart';
 import 'package:lar_em_dia/features/reserve/domain/reserve_repository.dart';
@@ -95,10 +95,10 @@ void main() {
       await pump(tester);
 
       expect(find.text('Olá, Ana!'), findsOneWidget);
+      expect(find.byType(CashFlowChart), findsNothing);
       expect(find.text('Balanço de novembro de 2026'), findsOneWidget);
       final result = tester.widget<Text>(find.text(r'+R$ 3.700,00'));
-      final context = tester.element(find.byType(HomePage));
-      expect(result.style?.color, FinanceColors.of(context).positive);
+      expect(result.style?.color, Colors.white);
       expect(find.byIcon(Icons.trending_up), findsOneWidget);
       expect(find.text(r'R$ 6.500,00'), findsOneWidget);
       expect(find.text(r'R$ 2.800,00'), findsOneWidget);
@@ -218,6 +218,44 @@ void main() {
       await tester.tap(find.text('1 conta vence nos próximos 7 dias'));
       await tester.pumpAndSettle();
       expect(find.text(routeMarker(AppRoutes.due)), findsOneWidget);
+    });
+
+    testWidgets('opens the quick actions and reloads after a save', (
+      tester,
+    ) async {
+      await pump(tester);
+
+      for (final (label, route, save) in [
+        ('Despesa', AppRoutes.entryForm(EntryKind.expense), true),
+        ('Receita', AppRoutes.entryForm(EntryKind.income), false),
+        ('Saldo', AppRoutes.balanceForm, false),
+        ('Simular', AppRoutes.simulation, false),
+      ]) {
+        await tester.tap(find.text(label));
+        await tester.pumpAndSettle();
+        expect(find.text(routeMarker(route)), findsOneWidget, reason: label);
+        await tester.tap(find.text(save ? savedAndBack : closedAndBack));
+        await tester.pumpAndSettle();
+      }
+      expect(notified, 1);
+    });
+
+    testWidgets('splits the page in two columns on desktop', (tester) async {
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await pump(tester);
+
+      final hero = tester.getTopLeft(find.text('Balanço de novembro de 2026'));
+      final actions = tester.getTopLeft(find.text('Simular'));
+      expect(actions.dx, greaterThan(hero.dx + 400));
+      expect(actions.dy, lessThan(hero.dy + 100));
+
+      expect(find.byType(CashFlowChart), findsOneWidget);
+      await tester.tapAt(tester.getCenter(find.byType(CashFlowChart)));
+      await tester.pump();
+      await tester.tap(find.text('Ver projeção'));
+      await tester.pumpAndSettle();
+      expect(find.text(routeMarker(AppRoutes.projection)), findsOneWidget);
     });
 
     testWidgets('says when nothing is due', (tester) async {

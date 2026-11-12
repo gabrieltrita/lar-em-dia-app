@@ -267,7 +267,13 @@ class MonthSummaryTile extends StatelessWidget {
             Row(
               children: [
                 Expanded(child: Text(monthName(context, month.month))),
-                ResultPill(cents: month.resultCents),
+                SizedBox(
+                  width: 88,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: ResultPill(cents: month.resultCents),
+                  ),
+                ),
                 const SizedBox(width: 12),
                 SizedBox(
                   width: 112,

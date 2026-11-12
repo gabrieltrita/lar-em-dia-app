@@ -10,8 +10,8 @@
     "start_url": ".",
     "scope": ".",
     "display": "standalone",
-    "background_color": "#2E7D5B",
-    "theme_color": "#2E7D5B",
+    "background_color": "#5F6FD6",
+    "theme_color": "#5F6FD6",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

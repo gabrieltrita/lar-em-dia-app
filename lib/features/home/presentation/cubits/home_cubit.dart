@@ -47,6 +47,7 @@ abstract class HomeSummary with _$HomeSummary {
     @Default([]) List<CategoryAmount> expenseByCategory,
     @Default(0) int fixedCents,
     @Default(0) int variableCents,
+    @Default([]) List<ProjectionMonth> months,
   }) = _HomeSummary;
 
   const new _();
@@ -125,6 +126,7 @@ class HomeCubit extends Cubit<LoadState<HomeSummary>> {
             }),
             fixedCents: natureCents(EntryNature.fixed),
             variableCents: natureCents(EntryNature.variable),
+            months: projection?.months ?? const [],
           ),
         ),
       );

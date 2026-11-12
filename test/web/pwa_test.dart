@@ -25,8 +25,8 @@ void main() {
       expect(manifest['scope'], '.');
       expect(manifest['id'], '/');
       expect(manifest['categories'], ['finance']);
-      expect(manifest['theme_color'], '#2E7D5B');
-      expect(manifest['background_color'], '#2E7D5B');
+      expect(manifest['theme_color'], '#5F6FD6');
+      expect(manifest['background_color'], '#5F6FD6');
     });
 
     test('lists icons that exist with the declared sizes', () {
