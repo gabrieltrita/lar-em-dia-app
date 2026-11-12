@@ -61,6 +61,9 @@ lib/
   l10n/app_pt.arb             user-facing copy (pt-BR)
 test/                         mirrors lib/; helpers in test/helpers
 tool/check_core_coverage.sh   fails below 100% line coverage in lib/core
+tool/test.sh                  runs the tests with one file per CPU and checks lib/core coverage
+tool/test_files.sh            lists one CI shard's test files
+tool/merge_coverage.sh        merges the CI shards' lcov files
 ```
 
 ## API contract
@@ -247,8 +250,10 @@ To add a page: copy an existing guide, change the title, description, canonical,
 ```bash
 dart format --output=none --set-exit-if-changed lib test
 flutter analyze
-flutter test --coverage && tool/check_core_coverage.sh
+tool/test.sh
 node --test 'test/web/*.test.mjs'
 ```
 
-GitHub Actions runs all of them, plus a web build, on every pull request and on pushes to `dev`.
+`tool/test.sh` runs `flutter test --coverage` with one test file per CPU at a time (Flutter's default is half the CPUs; `TEST_JOBS=2 tool/test.sh` chooses another number) and then `tool/check_core_coverage.sh`. To run a single file, use `flutter test test/path/to/file_test.dart`; the lib/core check only makes sense for the whole suite.
+
+GitHub Actions runs all of them, plus a web build, on every pull request and on pushes to `dev`, in parallel jobs: `analyze` (format, analyze and the web content scripts), `test` split into `TEST_SHARDS` shards (`tool/test_files.sh INDEX COUNT` gives each shard a share of the test files, since `flutter test --total-shards` splits tests but still compiles every file in every shard), `coverage` (merges the shards' lcov files with `tool/merge_coverage.sh` and enforces lib/core coverage) and `build_web`. Changing `TEST_SHARDS` also needs the matching `matrix.shard` list.
