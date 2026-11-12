@@ -1,5 +1,6 @@
 import 'package:lar_em_dia/core/dates/dates.dart';
 import 'package:lar_em_dia/demo/demo_database.dart';
+import 'package:lar_em_dia/demo/demo_investments.dart';
 
 abstract final class DemoSeed {
   static const email = 'ana@demo.laremdia.app';
@@ -24,6 +25,7 @@ abstract final class DemoSeed {
     'tax_refund': 'Tax refund',
     'reimbursement': 'Reimbursement',
     'other_income': 'Other income',
+    'investment_redemption': 'Investment redemption',
   };
 
   static const fixedExpenses = {
@@ -50,6 +52,7 @@ abstract final class DemoSeed {
     'gifts_donations': 'Gifts and donations',
     'taxes_fees': 'Taxes and fees',
     'other_expense': 'Other expense',
+    'investment_contribution': 'Investment contribution',
   };
 
   static const _monthly = [
@@ -69,6 +72,47 @@ abstract final class DemoSeed {
   static const fridgeInstallments = 10;
   static const courseCents = 120000;
   static const courseInstallments = 24;
+
+  static const investmentMonths = 24;
+  static const _monthlyBuys = [
+    ('HGLG11', 2, 1),
+    ('MXRF11', 30, 1),
+    ('KNRI11', 1, 2),
+    ('ITSA4', 20, 1),
+    ('TAEE11', 8, 2),
+    ('WEGE3', 5, 3),
+  ];
+
+  static void seedInvestments(DemoDatabase database) {
+    final investments = database.investments;
+    final firstMonth = Dates.firstOfMonth(database.today);
+    Row trade(String ticker, String kind, int quantity, DateTime day) => {
+      'ticker': ticker,
+      'kind': kind,
+      'traded_on': Dates.toIso(day),
+      'quantity': quantity,
+      'price_cents': investments.closeCentsOn(
+        DemoInvestments.findAsset(ticker)!,
+        day,
+      ),
+      'fees_cents': 0,
+      if (ticker == 'TAEE11') 'goal': 'income',
+    };
+    for (var back = investmentMonths; back >= 1; back--) {
+      final day = Dates.addMonths(
+        firstMonth,
+        -back,
+      ).add(const Duration(days: 9));
+      for (final (ticker, quantity, every) in _monthlyBuys) {
+        if (back % every == 0) {
+          investments.createTransaction(trade(ticker, 'buy', quantity, day));
+        }
+      }
+      if (back == 4) {
+        investments.createTransaction(trade('ITSA4', 'sell', 60, day));
+      }
+    }
+  }
 
   static DemoDatabase build(DateTime today) {
     final database = DemoDatabase(today: today);
@@ -160,6 +204,7 @@ abstract final class DemoSeed {
       beforeTrip + tripShortfallCents,
       DateTime(tripMonth.year, tripMonth.month, 22),
     );
+    seedInvestments(database);
     return database;
   }
 }

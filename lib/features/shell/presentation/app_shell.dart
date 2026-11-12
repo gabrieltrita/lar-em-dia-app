@@ -44,9 +44,9 @@ class AppShell extends StatelessWidget {
               label: l10n.shellEntries,
             ),
             NavigationDestination(
-              icon: const Icon(Icons.event_outlined),
-              selectedIcon: const Icon(Icons.event),
-              label: l10n.shellDue,
+              icon: const Icon(Icons.savings_outlined),
+              selectedIcon: const Icon(Icons.savings),
+              label: l10n.shellInvestments,
             ),
             NavigationDestination(
               icon: const Icon(Icons.show_chart),

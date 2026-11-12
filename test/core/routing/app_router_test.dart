@@ -38,6 +38,11 @@ import 'package:lar_em_dia/features/entries/presentation/pages/due_page.dart';
 import 'package:lar_em_dia/features/entries/presentation/pages/entries_page.dart';
 import 'package:lar_em_dia/features/entries/presentation/pages/entry_form_page.dart';
 import 'package:lar_em_dia/features/home/presentation/home_page.dart';
+import 'package:lar_em_dia/features/investments/domain/investment_repository.dart';
+import 'package:lar_em_dia/features/investments/presentation/pages/asset_detail_page.dart';
+import 'package:lar_em_dia/features/investments/presentation/pages/investment_form_page.dart';
+import 'package:lar_em_dia/features/investments/presentation/pages/investments_page.dart';
+import 'package:lar_em_dia/features/investments/presentation/pages/portfolio_history_page.dart';
 import 'package:lar_em_dia/features/projection/domain/projection_repository.dart';
 import 'package:lar_em_dia/features/projection/presentation/pages/projection_details_page.dart';
 import 'package:lar_em_dia/features/projection/presentation/pages/projection_page.dart';
@@ -54,6 +59,7 @@ import '../../helpers/account_fixtures.dart';
 import '../../helpers/admin_fixtures.dart';
 import '../../helpers/auth_fixtures.dart';
 import '../../helpers/finance_fixtures.dart';
+import '../../helpers/investment_fixtures.dart';
 import '../../helpers/security_fixtures.dart';
 
 void main() {
@@ -112,9 +118,11 @@ void main() {
     late MockAdminRepository admin;
     late MockSecurityRepository security;
     late MockAccountRepository account;
+    late MockInvestmentRepository investments;
 
     setUpAll(() {
       registerFinanceFallbacks();
+      registerInvestmentFallbacks();
       configureDependencies();
       getIt.allowReassignment = true;
     });
@@ -137,6 +145,12 @@ void main() {
       when(admin.categories).thenAnswer((_) async => [adminPets]);
       security = MockSecurityRepository();
       account = MockAccountRepository();
+      investments = MockInvestmentRepository();
+      when(investments.portfolio).thenAnswer((_) async => portfolio);
+      when(investments.history).thenAnswer((_) async => history);
+      when(() => investments.asset('HGLG11')).thenAnswer((_) async => hglg);
+      when(() => investments.transactions('HGLG11'))
+          .thenAnswer((_) async => [hglgBuy]);
       when(account.notificationSettings).thenAnswer((_) async => alertsOn);
       when(() => account.unsubscribe('abc')).thenAnswer((_) async => alertsOff);
       when(security.twoFactorStatus).thenAnswer((_) async => twoFactorOff);
@@ -164,7 +178,8 @@ void main() {
         ..registerSingleton<ProjectionRepository>(projections)
         ..registerSingleton<AdminRepository>(admin)
         ..registerSingleton<SecurityRepository>(security)
-        ..registerSingleton<AccountRepository>(account);
+        ..registerSingleton<AccountRepository>(account)
+        ..registerSingleton<InvestmentRepository>(investments);
       events = SessionEvents();
       session = SessionCubit(repository, events);
       router = buildRouter(session);
@@ -271,6 +286,10 @@ void main() {
         AppRoutes.simulation: SimulationPage,
         AppRoutes.simulationEntry(EntryKind.income): EntryFormPage,
         AppRoutes.simulationEntry(EntryKind.expense): EntryFormPage,
+        AppRoutes.investments: InvestmentsPage,
+        AppRoutes.investmentForm: InvestmentFormPage,
+        AppRoutes.investmentHistory: PortfolioHistoryPage,
+        AppRoutes.assetDetail('hglg11'): AssetDetailPage,
       };
       for (final MapEntry(key: location, value: page) in pages.entries) {
         router.go(location);
@@ -297,6 +316,13 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Editar despesa'), findsOneWidget);
       expect(find.textContaining('todos os lançamentos'), findsOneWidget);
+
+      router.go(
+        AppRoutes.investmentForm,
+        extra: InvestmentFormArgs(existing: hglgBuy),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Editar operação'), findsOneWidget);
     });
 
     testWidgets('switches tabs and adds from the button', (tester) async {
@@ -307,7 +333,7 @@ void main() {
       expect(find.byType(NavigationBar), findsOneWidget);
       for (final (label, page) in [
         ('Lançamentos', EntriesPage),
-        ('Vencimentos', DuePage),
+        ('Investimentos', InvestmentsPage),
         ('Projeção', ProjectionPage),
         ('Mais', MorePage),
       ]) {
@@ -349,25 +375,48 @@ void main() {
       await pumpRouter(tester);
       session.signedIn(ana);
       await tester.pumpAndSettle();
-      for (final label in ['Lançamentos', 'Vencimentos', 'Projeção']) {
+      for (final label in ['Lançamentos', 'Investimentos', 'Projeção']) {
         await tester.tap(find.text(label).last);
         await tester.pumpAndSettle();
       }
       clearInteractions(entries);
       clearInteractions(projections);
+      clearInteractions(investments);
 
       getIt<FinanceChanges>().notify();
       await tester.pumpAndSettle();
 
       verify(() => entries.month(any())).called(2);
       verify(() => entries.between(any(), any(), kind: EntryKind.expense))
-          .called(2);
+          .called(1);
+      verify(investments.portfolio).called(1);
       verify(
         () => projections.fetch(
           from: any(named: 'from'),
           period: any(named: 'period'),
         ),
       ).called(2);
+    });
+
+    testWidgets('reloads the pushed due and asset pages after a change', (
+      tester,
+    ) async {
+      await pumpRouter(tester);
+      session.signedIn(ana);
+      await tester.pumpAndSettle();
+      unawaited(router.push(AppRoutes.due));
+      await tester.pumpAndSettle();
+      unawaited(router.push(AppRoutes.assetDetail('HGLG11')));
+      await tester.pumpAndSettle();
+      clearInteractions(entries);
+      clearInteractions(investments);
+
+      getIt<FinanceChanges>().notify();
+      await tester.pumpAndSettle();
+
+      verify(() => entries.between(any(), any(), kind: EntryKind.expense))
+          .called(2);
+      verify(() => investments.asset('HGLG11')).called(1);
     });
 
     testWidgets('opens the projection details only with a projection', (

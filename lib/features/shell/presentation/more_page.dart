@@ -57,6 +57,7 @@ class MorePage extends StatelessWidget {
             l10n.moreBalances,
             AppRoutes.balances,
           ),
+          link(Icons.event_outlined, l10n.shellDue, AppRoutes.due),
           header(l10n.moreAccount),
           link(Icons.lock_outline, l10n.moreSecurity, AppRoutes.account),
           link(
