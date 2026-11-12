@@ -83,6 +83,19 @@ CategoryVisual categoryVisualForKey(
     icon: Icons.request_quote_outlined,
     group: CategoryGroup.financial,
   ),
+  'investment_contribution' => (
+    icon: Icons.candlestick_chart_outlined,
+    group: CategoryGroup.financial,
+  ),
+  'investment_redemption' => (
+    icon: Icons.currency_exchange,
+    group: CategoryGroup.income,
+  ),
+  'reserve_deposit' => (
+    icon: Icons.savings_outlined,
+    group: CategoryGroup.financial,
+  ),
+  'reserve_withdrawal' => (icon: Icons.savings, group: CategoryGroup.income),
   'other_expense' => (icon: Icons.more_horiz, group: CategoryGroup.other),
   _ => (
     icon: Icons.label_outline,

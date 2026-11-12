@@ -665,6 +665,8 @@ void main() {
       'tax_refund',
       'reimbursement',
       'other_income',
+      'investment_contribution',
+      'investment_redemption',
     ];
     String label(String key) => categoryLabel(
       l10n,

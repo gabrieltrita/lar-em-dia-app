@@ -41,6 +41,7 @@ void main() {
 
     for (final (label, route) in [
       ('Saldo e histórico', AppRoutes.balances),
+      ('Vencimentos', AppRoutes.due),
       ('Segurança', AppRoutes.account),
       ('Alertas de vencimento', AppRoutes.notificationSettings),
     ]) {

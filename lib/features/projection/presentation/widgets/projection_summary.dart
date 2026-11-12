@@ -47,6 +47,15 @@ class ProjectionHero extends StatelessWidget {
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
+        if (last.hasReserve)
+          Text(
+            l10n.projectionHeroWithReserve(
+              Money.format(last.closingWithReserveCents),
+            ),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
         if (onSeeMore != null)
           TextButton(
             style: TextButton.styleFrom(padding: EdgeInsets.zero),
@@ -180,6 +189,21 @@ class MonthReadout extends StatelessWidget {
                   ),
                 ],
               ),
+              if (month.hasReserve) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    cell(
+                      l10n.projectionReadoutReserve,
+                      MoneyText(month.reserveCents, style: value),
+                    ),
+                    cell(
+                      l10n.projectionReadoutWithReserve,
+                      MoneyText(month.closingWithReserveCents, style: value),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -332,6 +356,18 @@ class MonthSummaryTile extends StatelessWidget {
                   ),
                 ],
               ),
+              if (month.hasReserve) ...[
+                const SizedBox(height: 6),
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    Text(l10n.projectionReadoutReserve, style: muted),
+                    MoneyText(month.reserveCents, style: muted),
+                  ],
+                ),
+              ],
             ],
           ],
         ),

@@ -975,5 +975,368 @@
         "type": "String"
       }
     }
+  },
+  "shellInvestments": "Investimentos",
+  "categoryInvestmentContribution": "Aporte em investimentos",
+  "categoryInvestmentRedemption": "Resgate de investimentos",
+  "errorInsufficientQuantity": "Não dá para fazer isso: uma venda depois desta data ficaria sem cotas suficientes.",
+  "validationInsufficientQuantity": "Você não tem cotas suficientes nesta data",
+  "validationUnknownAsset": "Papel não encontrado",
+  "validationOnlyForTrades": "Só vale para compra e venda",
+  "assetTypeStock": "Ação",
+  "assetTypeFii": "FII",
+  "investmentGoalIncome": "Renda",
+  "investmentGoalGrowth": "Crescimento",
+  "investmentKindBuy": "Compra",
+  "investmentKindSell": "Venda",
+  "investmentKindSplit": "Desdobramento",
+  "investmentKindReverseSplit": "Grupamento",
+  "investmentKindBonus": "Bonificação",
+  "investmentsTitle": "Investimentos",
+  "investmentsDisclaimer": "Informações calculadas a partir dos seus lançamentos. Não são recomendação de investimento. Cotações: B3. Cadastros: CVM (dados abertos, ODbL).",
+  "investmentsNetWorth": "Patrimônio",
+  "investmentsContributed": "Aportado",
+  "investmentsGain": "Ganho",
+  "investmentsRealized": "Lucro realizado",
+  "investmentsCost": "Custo",
+  "investmentsMarketValue": "Valor atual",
+  "investmentsAveragePriceLabel": "Preço médio",
+  "investmentsAveragePrice": "PM {price}",
+  "@investmentsAveragePrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "investmentsShares": "{count, plural, =1{1 cota} other{{count} cotas}}",
+  "@investmentsShares": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "investmentsQuoteOn": "{price} em {date}",
+  "@investmentsQuoteOn": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "investmentsNoQuote": "sem cotação",
+  "investmentsGoalShare": "{goal} {percent} ({amount})",
+  "@investmentsGoalShare": {
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "investmentsEvolution": "Evolução",
+  "investmentsEvolutionChart": "Gráfico do patrimônio e do valor aportado mês a mês",
+  "investmentsSeeAll": "Ver tudo",
+  "investmentsAll": "Todos",
+  "investmentsNoPositionsInGoal": "Nenhum papel com este objetivo.",
+  "investmentsRegister": "Registrar operação",
+  "investmentsRegisterBuy": "Registrar compra",
+  "investmentsAlreadyInvested": "Já tenho investimentos",
+  "investmentsEmptyTitle": "Acompanhe seus investimentos",
+  "investmentsEmptyMessage": "Registre as compras e vendas de FIIs e ações para ver o patrimônio, o preço médio e o ganho de cada papel, separados entre Renda e Crescimento.",
+  "investmentsHistoryEmpty": "Sem evolução ainda",
+  "investmentsHistoryEmptyMessage": "A evolução aparece depois da primeira operação.",
+  "investmentsMonth": "Mês",
+  "investmentFormNewTitle": "Registrar operação",
+  "investmentFormEditTitle": "Editar operação",
+  "investmentFormExistingHint": "Use a quantidade e o preço médio que aparecem na sua corretora. Uma compra por papel basta.",
+  "investmentFormAsset": "Papel",
+  "investmentFormAssetHint": "Digite o código ou o nome, como HGLG11",
+  "investmentFormAssetRequired": "Escolha um papel",
+  "investmentFormChangeAsset": "Trocar papel",
+  "investmentFormKind": "Tipo",
+  "investmentFormQuantity": "Cotas",
+  "investmentFormBonusQuantity": "Cotas recebidas",
+  "investmentFormQuantityInvalid": "Informe um número inteiro de cotas",
+  "investmentFormPrice": "Preço por cota",
+  "investmentFormAveragePriceHelper": "O preço médio da corretora",
+  "investmentFormFees": "Taxas",
+  "investmentFormRatioFrom": "A cada",
+  "investmentFormRatioTo": "Passa a ter",
+  "investmentFormRatioSummary": "Você tem {before} cotas e passará a ter {after}.",
+  "@investmentFormRatioSummary": {
+    "placeholders": {
+      "before": {
+        "type": "int"
+      },
+      "after": {
+        "type": "int"
+      }
+    }
+  },
+  "investmentFormRatioInvalid": "Proporção inválida para este tipo",
+  "investmentFormRatioNoShares": "Você ainda não tem cotas deste papel",
+  "investmentFormDebitBalance": "Descontar do saldo",
+  "investmentFormCreditBalance": "Somar ao saldo",
+  "investmentFormDebitAmount": "{amount} entra nos lançamentos como despesa",
+  "@investmentFormDebitAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "investmentFormCreditAmount": "{amount} entra nos lançamentos como receita",
+  "@investmentFormCreditAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "investmentFormGoal": "Objetivo deste papel",
+  "investmentTransactionsTitle": "Operações",
+  "investmentTransactionsEmpty": "Nenhuma operação deste papel.",
+  "investmentTransactionPrice": "{price} por cota",
+  "@investmentTransactionPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "investmentTransactionInBalance": "no saldo",
+  "investmentTransactionMenu": "Mais opções",
+  "investmentDeleteTitle": "Excluir operação?",
+  "investmentDeleteMessage": "{kind} de {date}. Se ela entrou no saldo, o lançamento também sai.",
+  "@investmentDeleteMessage": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "categoryReserveDeposit": "Depósito na reserva de emergência",
+  "categoryReserveWithdrawal": "Resgate da reserva de emergência",
+  "errorInsufficientReserve": "Não dá para fazer isso: um resgate depois desta data ficaria sem dinheiro suficiente no pote.",
+  "validationInsufficientReserve": "O pote não tem esse valor nesta data",
+  "validationAnchorNotAllowed": "O saldo atual não mexe no saldo da conta",
+  "validationRateRequired": "Informe a taxa deste tipo",
+  "validationRateNotAllowed": "Este tipo não usa essa taxa",
+  "projectionHeroWithReserve": "Saldo + reserva: {amount}",
+  "@projectionHeroWithReserve": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "projectionReadoutReserve": "Reserva",
+  "projectionReadoutWithReserve": "Saldo + reserva",
+  "reserveTitle": "Reserva de emergência",
+  "reserveIntroduction": "Uma reserva cobre imprevistos sem mexer no orçamento. Toque para informar onde ela está guardada.",
+  "reserveNoReserveMessage": "Você ainda não informou uma reserva de emergência. Uma referência comum é ter de 3 a 6 meses dos seus custos fixos ({amount} por mês).",
+  "@reserveNoReserveMessage": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reserveNotNow": "Agora não",
+  "reserveInform": "Informar reserva",
+  "reserveNetTotal": "Total líquido",
+  "reserveGross": "Bruto",
+  "reserveInvested": "Investido",
+  "reserveYield": "Rendimento",
+  "reserveTax": "IR estimado",
+  "reserveCoverage": "{months} de {goal} meses",
+  "@reserveCoverage": {
+    "placeholders": {
+      "months": {
+        "type": "String"
+      },
+      "goal": {
+        "type": "int"
+      }
+    }
+  },
+  "reserveSuggestion": "Sugestão baseada nos seus lançamentos: {amount}, {months} meses dos seus {fixed} de custos fixos",
+  "@reserveSuggestion": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "months": {
+        "type": "int"
+      },
+      "fixed": {
+        "type": "String"
+      }
+    }
+  },
+  "reserveOwnGoal": "Sua meta: {amount}",
+  "@reserveOwnGoal": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reserveNoSuggestion": "Lance suas contas fixas para ver uma sugestão de reserva",
+  "reserveAdjustGoal": "Ajustar meta",
+  "reserveBelowTarget": "Sua reserva está abaixo da meta de {amount}",
+  "@reserveBelowTarget": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reserveIdleMoney": "Dinheiro em conta parada não rende",
+  "reserveAccountsTitle": "Potes",
+  "reserveNewAccount": "Novo pote",
+  "reserveRegisterMovement": "Registrar movimento",
+  "reserveProjectionTitle": "Projeção",
+  "reserveProjectionChart": "Gráfico da projeção da reserva, bruto e líquido mês a mês",
+  "reservePeriodYears": "{years, plural, =1{1 ano} other{{years} anos}}",
+  "@reservePeriodYears": {
+    "placeholders": {
+      "years": {
+        "type": "int"
+      }
+    }
+  },
+  "reserveProjectionEnd": "No fim do período: {gross} bruto, {net} líquido",
+  "@reserveProjectionEnd": {
+    "placeholders": {
+      "gross": {
+        "type": "String"
+      },
+      "net": {
+        "type": "String"
+      }
+    }
+  },
+  "reserveAssumptions": "Estimativa: Selic de {selic} ao ano, CDI de {cdi}, sem feriados e sem IOF. Taxas de {date}.",
+  "@reserveAssumptions": {
+    "placeholders": {
+      "selic": {
+        "type": "String"
+      },
+      "cdi": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "reserveRatesMissing": "Taxas ainda não carregadas: os potes aparecem sem rendimento por enquanto.",
+  "reserveDisclaimer": "Informações educativas e calculadas a partir dos seus dados. Não são recomendação de investimento. Rentabilidade passada não garante rentabilidade futura. Taxas: Banco Central (SGS).",
+  "reserveEmptyTitle": "Informe sua reserva de emergência",
+  "reserveEmptyMessage": "A reserva é o dinheiro guardado para imprevistos, como uma conta inesperada ou um mês sem renda. Informe onde ela está para acompanhar quanto ela cobre.",
+  "reserveEmptyWithSuggestion": "A reserva é o dinheiro guardado para imprevistos. Seus custos fixos são de {amount} por mês: informe onde a reserva está para acompanhar quantos meses ela cobre.",
+  "@reserveEmptyWithSuggestion": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "reserveEmptyAction": "Informar minha reserva",
+  "reserveGoalTitle": "Meta da reserva",
+  "reserveGoalByMonths": "Meses",
+  "reserveGoalByAmount": "Valor",
+  "reserveGoalMonths": "{months, plural, =1{1 mês de custos fixos} other{{months} meses de custos fixos}}",
+  "@reserveGoalMonths": {
+    "placeholders": {
+      "months": {
+        "type": "int"
+      }
+    }
+  },
+  "reserveGoalAmount": "Valor da meta",
+  "reserveKindSelicTreasury": "Tesouro Selic",
+  "reserveKindCdb": "CDB/LCI/LCA",
+  "reserveKindSavings": "Poupança",
+  "reserveKindIdle": "Conta parada",
+  "reserveKindFixedRate": "Taxa fixa",
+  "reserveRateCdi": "{percent} do CDI",
+  "@reserveRateCdi": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "reserveRateAnnual": "{percent} ao ano",
+  "@reserveRateAnnual": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "reserveTaxExempt": "isento de IR",
+  "reserveAccountNewTitle": "Novo pote",
+  "reserveAccountEditTitle": "Editar pote",
+  "reserveAccountName": "Nome",
+  "reserveAccountNameHelper": "Por exemplo: Tesouro na corretora",
+  "reserveAccountKind": "Tipo",
+  "reserveAccountCdiPercent": "% do CDI",
+  "reserveAccountAnnualRate": "Taxa ao ano",
+  "reserveAccountRateInvalid": "Informe uma taxa válida",
+  "reserveAccountExempt": "Isento de IR (LCI/LCA)",
+  "reserveAccountAnchor": "Saldo de hoje",
+  "reserveAccountAnchorHelper": "Opcional. Deixe em branco para lançar os depósitos um a um.",
+  "reserveAccountDelete": "Excluir pote",
+  "reserveAccountDeleteTitle": "Excluir pote?",
+  "reserveAccountDeleteMessage": "{name} e os movimentos dele saem da reserva. Os lançamentos ligados também saem do saldo.",
+  "@reserveAccountDeleteMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reserveMovementsTitle": "Movimentos",
+  "reserveMovementsEmpty": "Nenhum movimento ainda.",
+  "reserveMovementLinked": "no saldo",
+  "reserveMovementNewTitle": "Registrar movimento",
+  "reserveMovementEditTitle": "Editar movimento",
+  "reserveMovementAccount": "Pote",
+  "reserveMovementAccountRequired": "Escolha um pote",
+  "reserveMovementKind": "Tipo",
+  "reserveMovementDeposit": "Depósito",
+  "reserveMovementWithdrawal": "Resgate",
+  "reserveMovementAnchor": "Saldo atual",
+  "reserveMovementAnchorHint": "O saldo atual substitui o que veio antes desta data: o pote passa a valer este valor e rende a partir dele.",
+  "reserveMovementAmount": "Valor",
+  "reserveMovementDebitBalance": "Descontar do saldo",
+  "reserveMovementCreditBalance": "Somar ao saldo",
+  "reserveMovementDeleteTitle": "Excluir movimento?",
+  "reserveMovementDeleteMessage": "{kind} de {date}. Se ele entrou no saldo, o lançamento também sai.",
+  "@reserveMovementDeleteMessage": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
   }
 }

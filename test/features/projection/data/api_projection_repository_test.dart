@@ -30,6 +30,7 @@ void main() {
     'variable_expense_cents': month.variableExpenseCents,
     'closing_cents': month.closingCents,
     'savings_cents': month.savingsCents,
+    'reserve_cents': month.reserveCents,
     'expense_by_category': [
       for (final amount in month.expenseByCategory)
         {
@@ -70,6 +71,7 @@ void main() {
     expect(result.lastEntryMonth, DateTime(2026, 12));
     expect(result.months.map((month) => month.closingCents), [493456, -106544]);
     expect(result.months.map((month) => month.savingsCents), [370000, -230000]);
+    expect(result.months.map((month) => month.reserveCents), [0, 0]);
     expect(result.firstNegativeMonth, DateTime(2026, 12));
     expect(result.negativeMonthsCount, 1);
     expect(adapter.requests.single.path, '/projection');

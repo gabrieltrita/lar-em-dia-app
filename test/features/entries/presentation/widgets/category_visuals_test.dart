@@ -19,6 +19,7 @@ const incomeKeys = [
   'tax_refund',
   'reimbursement',
   'other_income',
+  'investment_redemption',
 ];
 
 const expenseKeys = [
@@ -42,6 +43,7 @@ const expenseKeys = [
   'gifts_donations',
   'taxes_fees',
   'other_expense',
+  'investment_contribution',
 ];
 
 Category categoryWith(String key, EntryKind kind) =>

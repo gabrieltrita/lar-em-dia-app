@@ -1,5 +1,6 @@
 import 'package:lar_em_dia/core/dates/dates.dart';
 import 'package:lar_em_dia/demo/demo_database.dart';
+import 'package:lar_em_dia/demo/demo_investments.dart';
 
 abstract final class DemoSeed {
   static const email = 'ana@demo.laremdia.app';
@@ -24,6 +25,8 @@ abstract final class DemoSeed {
     'tax_refund': 'Tax refund',
     'reimbursement': 'Reimbursement',
     'other_income': 'Other income',
+    'investment_redemption': 'Investment redemption',
+    'reserve_withdrawal': 'Emergency reserve withdrawal',
   };
 
   static const fixedExpenses = {
@@ -50,6 +53,8 @@ abstract final class DemoSeed {
     'gifts_donations': 'Gifts and donations',
     'taxes_fees': 'Taxes and fees',
     'other_expense': 'Other expense',
+    'investment_contribution': 'Investment contribution',
+    'reserve_deposit': 'Emergency reserve deposit',
   };
 
   static const _monthly = [
@@ -69,6 +74,76 @@ abstract final class DemoSeed {
   static const fridgeInstallments = 10;
   static const courseCents = 120000;
   static const courseInstallments = 24;
+
+  static const investmentMonths = 24;
+  static const _monthlyBuys = [
+    ('HGLG11', 2, 1),
+    ('MXRF11', 30, 1),
+    ('KNRI11', 1, 2),
+    ('ITSA4', 20, 1),
+    ('TAEE11', 8, 2),
+    ('WEGE3', 5, 3),
+  ];
+
+  static const pastFixedMonths = 3;
+
+  static void seedReserve(DemoDatabase database) {
+    final reserve = database.reserve;
+    final firstMonth = Dates.firstOfMonth(database.today);
+    DateTime monthsAgo(int months, int day) =>
+        Dates.addMonths(firstMonth, -months).add(Duration(days: day - 1));
+    final treasury = reserve.createAccount({
+      'name': 'Tesouro Selic',
+      'kind': 'selic_treasury',
+    });
+    final idle = reserve.createAccount({
+      'name': 'Conta corrente',
+      'kind': 'idle',
+    });
+    for (final (account, kind, cents, movedOn) in [
+      (treasury, 'anchor', 1200000, monthsAgo(10, 5)),
+      (treasury, 'deposit', 200000, monthsAgo(4, 5)),
+      (idle, 'anchor', 150000, monthsAgo(1, 10)),
+    ]) {
+      reserve.createMovement({
+        'account_id': account['id'],
+        'kind': kind,
+        'moved_on': Dates.toIso(movedOn),
+        'amount_cents': cents,
+      });
+    }
+  }
+
+  static void seedInvestments(DemoDatabase database) {
+    final investments = database.investments;
+    final firstMonth = Dates.firstOfMonth(database.today);
+    Row trade(String ticker, String kind, int quantity, DateTime day) => {
+      'ticker': ticker,
+      'kind': kind,
+      'traded_on': Dates.toIso(day),
+      'quantity': quantity,
+      'price_cents': investments.closeCentsOn(
+        DemoInvestments.findAsset(ticker)!,
+        day,
+      ),
+      'fees_cents': 0,
+      if (ticker == 'TAEE11') 'goal': 'income',
+    };
+    for (var back = investmentMonths; back >= 1; back--) {
+      final day = Dates.addMonths(
+        firstMonth,
+        -back,
+      ).add(const Duration(days: 9));
+      for (final (ticker, quantity, every) in _monthlyBuys) {
+        if (back % every == 0) {
+          investments.createTransaction(trade(ticker, 'buy', quantity, day));
+        }
+      }
+      if (back == 4) {
+        investments.createTransaction(trade('ITSA4', 'sell', 60, day));
+      }
+    }
+  }
 
   static DemoDatabase build(DateTime today) {
     final database = DemoDatabase(today: today);
@@ -139,6 +214,15 @@ abstract final class DemoSeed {
     void add(String key, String description, int cents, DateTime dueOn) =>
         database.createEntry(fields(key, description, cents, dueOn));
 
+    for (var back = 1; back <= pastFixedMonths; back++) {
+      final month = Dates.addMonths(firstMonth, -back);
+      for (final (key, description, cents, day) in _monthly) {
+        if (fixedExpenses.containsKey(key)) {
+          add(key, description, cents, DateTime(month.year, month.month, day));
+        }
+      }
+    }
+
     for (var offset = 0; offset < months; offset++) {
       final month = Dates.addMonths(firstMonth, offset);
       if (month.month == 12) {
@@ -160,6 +244,8 @@ abstract final class DemoSeed {
       beforeTrip + tripShortfallCents,
       DateTime(tripMonth.year, tripMonth.month, 22),
     );
+    seedInvestments(database);
+    seedReserve(database);
     return database;
   }
 }
