@@ -346,7 +346,7 @@ void main() {
       expect(find.byType(NavigationBar), findsOneWidget);
       for (final (label, page) in [
         ('Lançamentos', EntriesPage),
-        ('Investimentos', InvestmentsPage),
+        ('Investir', InvestmentsPage),
         ('Projeção', ProjectionPage),
         ('Mais', MorePage),
       ]) {
@@ -384,11 +384,36 @@ void main() {
       verify(balances.latest).called(greaterThanOrEqualTo(2));
     });
 
+    testWidgets('uses a sidebar instead of the bottom bar on desktop', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await pumpRouter(tester);
+      session.signedIn(ana);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(NavigationRail), findsOneWidget);
+      expect(find.byType(NavigationBar), findsNothing);
+      expect(find.byType(FloatingActionButton), findsNothing);
+
+      await tester.tap(find.text('Projeção').last);
+      await tester.pumpAndSettle();
+      expect(find.byType(ProjectionPage), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Adicionar'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Despesa').last);
+      await tester.pumpAndSettle();
+      expect(find.byType(EntryFormPage), findsOneWidget);
+    });
+
     testWidgets('reloads every tab after a change', (tester) async {
       await pumpRouter(tester);
       session.signedIn(ana);
       await tester.pumpAndSettle();
-      for (final label in ['Lançamentos', 'Investimentos', 'Projeção']) {
+      for (final label in ['Lançamentos', 'Investir', 'Projeção']) {
         await tester.tap(find.text(label).last);
         await tester.pumpAndSettle();
       }

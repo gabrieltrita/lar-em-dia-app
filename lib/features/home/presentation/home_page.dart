@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lar_em_dia/core/dates/dates.dart';
 import 'package:lar_em_dia/core/forms/error_messages.dart';
+import 'package:lar_em_dia/core/layout/breakpoints.dart';
 import 'package:lar_em_dia/core/money/money.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/core/state/load_state.dart';
@@ -15,6 +16,7 @@ import 'package:lar_em_dia/core/widgets/money_text.dart';
 import 'package:lar_em_dia/core/widgets/month_switcher.dart';
 import 'package:lar_em_dia/core/widgets/skeleton.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
+import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/presentation/widgets/category_label.dart';
 import 'package:lar_em_dia/features/home/presentation/cubits/home_cubit.dart';
 import 'package:lar_em_dia/features/projection/presentation/widgets/negative_months_alert.dart';
@@ -64,30 +66,158 @@ class HomePage extends StatelessWidget {
                   onPrevious: () => unawaited(cubit.previous()),
                   onNext: () => unawaited(cubit.next()),
                 ),
-                _MonthHero(summary: summary),
-                const SizedBox(height: 12),
-                _Indicators(summary: summary),
-                const SizedBox(height: 12),
-                const ReserveCardView(padding: EdgeInsets.only(bottom: 12)),
-                if (summary case HomeSummary(
-                  :final firstNegativeMonth?,
-                  :final negativeMonthsCount,
-                )) ...[
-                  NegativeMonthsAlert(
-                    firstMonth: firstNegativeMonth,
-                    count: negativeMonthsCount,
-                    onTap: () => context.go(AppRoutes.projection),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                _WhereMoneyGoes(summary: summary),
-                const SizedBox(height: 12),
-                _DueShortcut(summary: summary),
+                _HomeLayout(summary: summary),
               ],
             ),
           ),
         },
       ),
+    );
+  }
+}
+
+class _HomeLayout extends StatelessWidget {
+  const new({required this.summary});
+
+  final HomeSummary summary;
+
+  static const _gap = SizedBox(height: 12, width: 20);
+
+  @override
+  Widget build(BuildContext context) {
+    final alert = switch (summary) {
+      HomeSummary(:final firstNegativeMonth?, :final negativeMonthsCount) =>
+        NegativeMonthsAlert(
+          firstMonth: firstNegativeMonth,
+          count: negativeMonthsCount,
+          onTap: () => context.go(AppRoutes.projection),
+        ),
+      _ => null,
+    };
+    final main = [
+      _MonthHero(summary: summary),
+      _gap,
+      _Indicators(summary: summary),
+      _gap,
+      const ReserveCardView(padding: EdgeInsets.only(bottom: 12)),
+    ];
+    final side = [
+      const _QuickActions(),
+      _gap,
+      if (alert != null) ...[alert, _gap],
+      _WhereMoneyGoes(summary: summary),
+      _gap,
+      _DueShortcut(summary: summary),
+    ];
+    if (!Breakpoints.isDesktop(context)) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          main.first,
+          _gap,
+          ...side.take(2),
+          ...main.skip(2),
+          ...side.skip(2),
+        ],
+      );
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: main,
+          ),
+        ),
+        _gap,
+        SizedBox(
+          width: 360,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: side,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _QuickActions extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final colors = FinanceColors.of(context);
+    final changes = context.read<FinanceChanges>();
+    Future<void> open(String route) async {
+      final saved = await context.push<bool>(route);
+      if (saved ?? false) {
+        changes.notify();
+      }
+    }
+
+    return Row(
+      children: [
+        for (final (icon, color, label, route) in [
+          (
+            Icons.south_east,
+            colors.negative,
+            l10n.entryKindExpense,
+            AppRoutes.entryForm(EntryKind.expense),
+          ),
+          (
+            Icons.north_east,
+            colors.positive,
+            l10n.entryKindIncome,
+            AppRoutes.entryForm(EntryKind.income),
+          ),
+          (
+            Icons.account_balance_wallet_outlined,
+            theme.colorScheme.primary,
+            l10n.homeActionBalance,
+            AppRoutes.balanceForm,
+          ),
+          (
+            Icons.science_outlined,
+            theme.colorScheme.primary,
+            l10n.simulationTitle,
+            AppRoutes.simulation,
+          ),
+        ])
+          Expanded(
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () => unawaited(open(route)),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Column(
+                  children: [
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Icon(icon, color: color),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      label,
+                      style: theme.textTheme.labelMedium,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -108,60 +238,69 @@ class _MonthHero extends StatelessWidget {
     final expense = summary.expenses.totalCents;
     final result = summary.resultCents;
     final largest = income > expense ? income : expense;
-    Widget bar(String label, int cents, Color color) => Padding(
-      padding: const EdgeInsets.only(top: 8),
+    const onHero = Colors.white;
+    final label = theme.textTheme.bodySmall?.copyWith(
+      color: onHero.withValues(alpha: 0.9),
+    );
+    Widget bar(String text, int cents, double alpha) => Padding(
+      padding: const EdgeInsets.only(top: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Expanded(child: Text(label, style: theme.textTheme.bodySmall)),
-              MoneyText(cents, style: theme.textTheme.bodySmall),
+              Expanded(child: Text(text, style: label)),
+              MoneyText(
+                cents,
+                style: label?.copyWith(fontWeight: FontWeight.w600),
+              ),
             ],
           ),
           const SizedBox(height: 4),
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(99),
             child: LinearProgressIndicator(
               value: largest == 0 ? 0 : cents / largest,
               minHeight: 8,
-              color: color,
-              backgroundColor: theme.colorScheme.surfaceContainerHighest,
+              color: onHero.withValues(alpha: alpha),
+              backgroundColor: onHero.withValues(alpha: 0.22),
             ),
           ),
         ],
       ),
     );
-    return Card(
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: colors.heroGradient,
+        borderRadius: BorderRadius.circular(18),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              l10n.homeMonthResultTitle(month),
-              style: theme.textTheme.labelLarge,
-            ),
+            Text(l10n.homeMonthResultTitle(month), style: label),
             const SizedBox(height: 4),
             Row(
               children: [
                 Icon(
                   result < 0 ? Icons.trending_down : Icons.trending_up,
-                  color: result < 0 ? colors.negative : colors.positive,
+                  color: onHero,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: MoneyText(
                     result,
                     signed: true,
-                    colored: true,
-                    style: theme.textTheme.displaySmall,
+                    style: theme.textTheme.displaySmall?.copyWith(
+                      color: onHero,
+                    ),
                   ),
                 ),
               ],
             ),
-            bar(l10n.projectionWaterfallIncome, income, colors.positive),
-            bar(l10n.homeExpensesLabel, expense, colors.negative),
+            bar(l10n.projectionWaterfallIncome, income, 1),
+            bar(l10n.homeExpensesLabel, expense, 0.6),
             const SizedBox(height: 12),
             Text(
               l10n.homeMonthResultSentence(
@@ -169,7 +308,7 @@ class _MonthHero extends StatelessWidget {
                 Money.format(result.abs()),
                 Dates.display(Dates.lastOfMonth(summary.month)),
               ),
-              style: theme.textTheme.bodyMedium,
+              style: theme.textTheme.bodyMedium?.copyWith(color: onHero),
             ),
           ],
         ),
@@ -278,7 +417,11 @@ class _WhereMoneyGoes extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final palette = FinanceColors.of(context).categories.values.toList();
+    final categories = FinanceColors.of(context).categories;
+    final palette = [
+      for (final group in CategoryGroup.values)
+        if (group != CategoryGroup.income) categories[group]!,
+    ];
     final amounts = summary.expenseByCategory;
     final total = summary.expenses.totalCents;
     final shown = [
@@ -315,21 +458,30 @@ class _WhereMoneyGoes extends StatelessWidget {
                   SizedBox(
                     width: 112,
                     height: 112,
-                    child: PieChart(
-                      PieChartData(
-                        centerSpaceRadius: 34,
-                        sectionsSpace: 2,
-                        startDegreeOffset: -90,
-                        sections: [
-                          for (final (index, (_, cents)) in shown.indexed)
-                            PieChartSectionData(
-                              value: cents.toDouble(),
-                              color: palette[index % palette.length],
-                              radius: 20,
-                              showTitle: false,
-                            ),
-                        ],
-                      ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        PieChart(
+                          PieChartData(
+                            centerSpaceRadius: 40,
+                            sectionsSpace: 3,
+                            startDegreeOffset: -90,
+                            sections: [
+                              for (final (index, (_, cents)) in shown.indexed)
+                                PieChartSectionData(
+                                  value: cents.toDouble(),
+                                  color: palette[index % palette.length],
+                                  radius: 14,
+                                  showTitle: false,
+                                ),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          Money.compact(total),
+                          style: theme.textTheme.titleSmall,
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 16),

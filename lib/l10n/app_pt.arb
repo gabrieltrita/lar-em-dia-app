@@ -935,6 +935,7 @@
   },
   "homeMonthEnd": "Fim do mês",
   "homeMonthEndCaption": "saldo previsto",
+  "homeActionBalance": "Saldo",
   "homeOtherCategories": "Outras",
   "homeWhereMoneyGoes": "Para onde vai o dinheiro",
   "homeNoExpenses": "Nenhuma despesa neste mês.",
@@ -977,6 +978,7 @@
     }
   },
   "shellInvestments": "Investimentos",
+  "shellInvestmentsShort": "Investir",
   "categoryInvestmentContribution": "Aporte em investimentos",
   "categoryInvestmentRedemption": "Resgate de investimentos",
   "errorInsufficientQuantity": "Não dá para fazer isso: uma venda depois desta data ficaria sem cotas suficientes.",

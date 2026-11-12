@@ -1,6 +1,9 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:lar_em_dia/core/charts/chart_scale.dart';
+import 'package:lar_em_dia/core/charts/smooth_path.dart';
 import 'package:lar_em_dia/core/money/money.dart';
 import 'package:lar_em_dia/core/theme/finance_colors.dart';
 import 'package:lar_em_dia/features/projection/domain/projection.dart';
@@ -19,6 +22,7 @@ class CashFlowChart extends StatelessWidget {
 
   static const leftAxis = 44.0;
   static final _monthLabel = DateFormat.MMM('pt_BR');
+  static final _tooltipMonth = DateFormat.yMMM('pt_BR');
   static const bottomAxis = 24.0;
 
   final List<ProjectionMonth> months;
@@ -57,6 +61,10 @@ class CashFlowChart extends StatelessWidget {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
                 monthLabel: _monthLabel.format,
+                tooltipMonth: _tooltipMonth.format,
+                tooltipStyle: theme.textTheme.labelMedium!.copyWith(
+                  color: theme.colorScheme.onInverseSurface,
+                ),
               ),
             ),
           );
@@ -76,6 +84,8 @@ class CashFlowPainter extends CustomPainter {
     required this.scheme,
     required this.labelStyle,
     required this.monthLabel,
+    required this.tooltipMonth,
+    required this.tooltipStyle,
   });
 
   final List<ProjectionMonth> months;
@@ -86,6 +96,8 @@ class CashFlowPainter extends CustomPainter {
   final ColorScheme scheme;
   final TextStyle labelStyle;
   final String Function(DateTime month) monthLabel;
+  final String Function(DateTime month) tooltipMonth;
+  final TextStyle tooltipStyle;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -104,14 +116,24 @@ class CashFlowPainter extends CustomPainter {
     double y(int cents) => values.position(cents, top: top, bottom: bottom);
     final zero = y(0);
 
-    for (final tick in values.ticks) {
-      canvas.drawLine(
-        Offset(CashFlowChart.leftAxis, y(tick)),
-        Offset(size.width, y(tick)),
-        Paint()
-          ..color = scheme.outlineVariant
-          ..strokeWidth = tick == 0 ? 1.4 : 0.6,
+    if (values.min < 0) {
+      canvas.drawRect(
+        Rect.fromLTRB(CashFlowChart.leftAxis, zero, size.width, y(values.min)),
+        Paint()..color = colors.negative.withValues(alpha: 0.05),
       );
+    }
+    for (final tick in values.ticks) {
+      final start = Offset(CashFlowChart.leftAxis, y(tick));
+      final end = Offset(size.width, y(tick));
+      final grid = Paint()
+        ..color = scheme.outlineVariant
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = tick == 0 ? 1.4 : 1;
+      if (tick == 0) {
+        canvas.drawLine(start, end, grid);
+      } else {
+        canvas.drawPath(dashedLine(start, end), grid);
+      }
       paintLabel(
         canvas,
         Money.compact(tick),
@@ -122,34 +144,37 @@ class CashFlowPainter extends CustomPainter {
     }
 
     if (showFlow) {
-      final width = (bands.band * 0.32).clamp(2.0, 10.0);
+      final width = (bands.band * 0.3).clamp(3.0, 14.0);
+      final radius = Radius.circular(width / 2.5);
       for (final (index, month) in months.indexed) {
-        final dim = index == selected ? 1.0 : 0.55;
+        final alpha = index == selected ? 1.0 : 0.45;
         final center = bands.center(index);
         canvas
           ..drawRRect(
-            RRect.fromRectAndRadius(
+            RRect.fromRectAndCorners(
               Rect.fromLTRB(
-                center - width - 0.5,
+                center - width - 1,
                 y(month.incomeCents),
-                center - 0.5,
+                center - 1,
                 zero,
               ),
-              const Radius.circular(2),
+              topLeft: radius,
+              topRight: radius,
             ),
-            Paint()..color = colors.positive.withValues(alpha: 0.7 * dim),
+            Paint()..color = colors.positive.withValues(alpha: alpha),
           )
           ..drawRRect(
-            RRect.fromRectAndRadius(
+            RRect.fromRectAndCorners(
               Rect.fromLTRB(
-                center + 0.5,
+                center + 1,
                 zero,
-                center + width + 0.5,
+                center + width + 1,
                 y(-month.expenseCents),
               ),
-              const Radius.circular(2),
+              bottomLeft: radius,
+              bottomRight: radius,
             ),
-            Paint()..color = colors.negative.withValues(alpha: 0.6 * dim),
+            Paint()..color = colors.negative.withValues(alpha: alpha),
           );
       }
     }
@@ -159,13 +184,10 @@ class CashFlowPainter extends CustomPainter {
         for (final (index, month) in months.indexed)
           Offset(bands.center(index), y(month.closingCents)),
       ];
-      final line = Path()..addPolygon(points, false);
-      final area = Path()..moveTo(points.first.dx, zero);
-      for (final point in points) {
-        area.lineTo(point.dx, point.dy);
-      }
-      area
+      final line = smoothPath(points);
+      final area = Path.from(line)
         ..lineTo(points.last.dx, zero)
+        ..lineTo(points.first.dx, zero)
         ..close();
       final above = Rect.fromLTRB(0, 0, size.width, zero);
       final below = Rect.fromLTRB(0, zero, size.width, size.height);
@@ -176,13 +198,30 @@ class CashFlowPainter extends CustomPainter {
         canvas
           ..save()
           ..clipRect(region)
-          ..drawPath(area, Paint()..color = color.withValues(alpha: 0.12))
+          ..drawPath(
+            area,
+            Paint()
+              ..shader = LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: region == above
+                    ? [
+                        color.withValues(alpha: 0.28),
+                        color.withValues(alpha: 0),
+                      ]
+                    : [
+                        color.withValues(alpha: 0),
+                        color.withValues(alpha: 0.2),
+                      ],
+              ).createShader(region),
+          )
           ..drawPath(
             line,
             Paint()
               ..color = color
               ..style = PaintingStyle.stroke
               ..strokeWidth = 2.5
+              ..strokeCap = StrokeCap.round
               ..strokeJoin = StrokeJoin.round,
           )
           ..restore();
@@ -190,12 +229,11 @@ class CashFlowPainter extends CustomPainter {
     }
 
     final x = bands.center(selected);
-    canvas.drawLine(
-      Offset(x, top),
-      Offset(x, bottom),
+    canvas.drawPath(
+      dashedLine(Offset(x, top), Offset(x, bottom), dash: 3, gap: 3),
       Paint()
         ..color = scheme.onSurface.withValues(alpha: 0.35)
-        ..strokeWidth = 1,
+        ..style = PaintingStyle.stroke,
     );
     if (showBalance) {
       final month = months[selected];
@@ -210,6 +248,7 @@ class CashFlowPainter extends CustomPainter {
             ..style = PaintingStyle.stroke
             ..strokeWidth = 3,
         );
+      _paintTooltip(canvas, size, center, month);
     }
 
     for (final index in bands.labelIndexes()) {
@@ -220,6 +259,50 @@ class CashFlowPainter extends CustomPainter {
         style: labelStyle,
       );
     }
+  }
+
+  void _paintTooltip(
+    Canvas canvas,
+    Size size,
+    Offset anchor,
+    ProjectionMonth month,
+  ) {
+    final painter = TextPainter(
+      text: TextSpan(
+        style: tooltipStyle,
+        children: [
+          TextSpan(text: '${tooltipMonth(month.month)}\n'),
+          TextSpan(
+            text: Money.format(month.closingCents),
+            style: tooltipStyle.copyWith(fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    const padding = 8.0;
+    final width = painter.width + padding * 2;
+    final height = painter.height + padding * 2;
+    final left = (anchor.dx - width / 2)
+        .clamp(
+          CashFlowChart.leftAxis,
+          math.max(CashFlowChart.leftAxis, size.width - width),
+        )
+        .toDouble();
+    final above = anchor.dy - height - 12;
+    final bubble = Rect.fromLTWH(
+      left,
+      above < 0 ? anchor.dy + 12 : above,
+      width,
+      height,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(bubble, const Radius.circular(10)),
+      Paint()..color = scheme.inverseSurface,
+    );
+    painter
+      ..paint(canvas, bubble.topLeft + const Offset(padding, padding))
+      ..dispose();
   }
 
   @override
