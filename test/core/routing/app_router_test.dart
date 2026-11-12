@@ -404,9 +404,11 @@ void main() {
 
       await tester.tap(find.widgetWithText(FilledButton, 'Adicionar'));
       await tester.pumpAndSettle();
+      expect(find.byType(SimpleDialog), findsOneWidget);
       await tester.tap(find.text('Despesa').last);
       await tester.pumpAndSettle();
       expect(find.byType(EntryFormPage), findsOneWidget);
+      expect(find.byType(Dialog), findsOneWidget);
     });
 
     testWidgets('reloads every tab after a change', (tester) async {

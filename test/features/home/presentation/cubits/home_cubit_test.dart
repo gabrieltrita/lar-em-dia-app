@@ -65,6 +65,7 @@ void main() {
           ],
           fixedCents: 200000,
           variableCents: 80000,
+          months: projection.months,
         ),
       ),
     ],

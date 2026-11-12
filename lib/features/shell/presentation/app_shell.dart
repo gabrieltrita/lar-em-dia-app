@@ -196,50 +196,59 @@ class AddButton extends StatelessWidget {
 Future<void> showAddSheet(BuildContext context, FinanceChanges changes) async {
   final l10n = AppLocalizations.of(context);
   final colors = FinanceColors.of(context);
-  final route = await showModalBottomSheet<String>(
-    context: context,
-    showDragHandle: true,
-    builder: (context) => SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final (icon, color, label, route) in [
-              (
-                Icons.south_east,
-                colors.negative,
-                l10n.entryKindExpense,
-                AppRoutes.entryForm(EntryKind.expense),
-              ),
-              (
-                Icons.north_east,
-                colors.positive,
-                l10n.entryKindIncome,
-                AppRoutes.entryForm(EntryKind.income),
-              ),
-              (
-                Icons.account_balance_wallet_outlined,
-                Theme.of(context).colorScheme.primary,
-                l10n.homeInformBalance,
-                AppRoutes.balanceForm,
-              ),
-            ])
-              ListTile(
-                minTileHeight: 64,
-                leading: CircleAvatar(
-                  backgroundColor: color.withValues(alpha: 0.15),
-                  foregroundColor: color,
-                  child: Icon(icon),
-                ),
-                title: Text(label),
-                onTap: () => Navigator.of(context).pop(route),
-              ),
-          ],
+  Widget options(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      for (final (icon, color, label, route) in [
+        (
+          Icons.south_east,
+          colors.negative,
+          l10n.entryKindExpense,
+          AppRoutes.entryForm(EntryKind.expense),
         ),
-      ),
-    ),
+        (
+          Icons.north_east,
+          colors.positive,
+          l10n.entryKindIncome,
+          AppRoutes.entryForm(EntryKind.income),
+        ),
+        (
+          Icons.account_balance_wallet_outlined,
+          Theme.of(context).colorScheme.primary,
+          l10n.homeInformBalance,
+          AppRoutes.balanceForm,
+        ),
+      ])
+        ListTile(
+          minTileHeight: 64,
+          leading: CircleAvatar(
+            backgroundColor: color.withValues(alpha: 0.15),
+            foregroundColor: color,
+            child: Icon(icon),
+          ),
+          title: Text(label),
+          onTap: () => Navigator.of(context).pop(route),
+        ),
+    ],
   );
+  final route = Breakpoints.isDesktop(context)
+      ? await showDialog<String>(
+          context: context,
+          builder: (context) => SimpleDialog(
+            title: Text(l10n.shellAdd),
+            children: [options(context)],
+          ),
+        )
+      : await showModalBottomSheet<String>(
+          context: context,
+          showDragHandle: true,
+          builder: (context) => SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: options(context),
+            ),
+          ),
+        );
   if (route == null || !context.mounted) {
     return;
   }

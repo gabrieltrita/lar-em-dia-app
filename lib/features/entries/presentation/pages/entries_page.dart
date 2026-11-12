@@ -5,10 +5,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lar_em_dia/core/dates/dates.dart';
 import 'package:lar_em_dia/core/forms/error_messages.dart';
+import 'package:lar_em_dia/core/layout/breakpoints.dart';
 import 'package:lar_em_dia/core/money/money.dart';
 import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/core/state/load_state.dart';
+import 'package:lar_em_dia/core/theme/finance_colors.dart';
 import 'package:lar_em_dia/core/widgets/confirm_dialog.dart';
 import 'package:lar_em_dia/core/widgets/empty_state.dart';
 import 'package:lar_em_dia/core/widgets/form_widgets.dart';
@@ -275,6 +277,14 @@ class _EntryList extends StatelessWidget {
         Expanded(
           child: entries.isEmpty
               ? Center(child: Text(l10n.entriesEmptyFilter))
+              : Breakpoints.isDesktop(context)
+              ? _EntryTable(
+                  entries: entries,
+                  categories: data.categories,
+                  onOpen: onOpen,
+                  onDelete: onDelete,
+                  onPaid: onPaid,
+                )
               : ListView.separated(
                   padding: const EdgeInsets.only(bottom: 88),
                   itemCount: entries.length,
@@ -450,30 +460,9 @@ class _EntryTile extends StatelessWidget {
   final Future<bool> Function(Entry entry) onDelete;
   final PaidChanged onPaid;
 
-  String _title(AppLocalizations l10n) => switch (entry) {
-    Entry(isInstallment: true, :final seriesPosition?, :final seriesCount?) =>
-      '${entry.description} '
-          '${l10n.entryInstallmentShort(seriesPosition, seriesCount)}',
-    _ => entry.description,
-  };
+  String _title(AppLocalizations l10n) => entryTitle(l10n, entry);
 
-  Widget? _seriesIcon(AppLocalizations l10n) => switch (entry) {
-    Entry(isInstallment: true, :final seriesPosition?, :final seriesCount?) =>
-      Padding(
-        padding: const EdgeInsetsDirectional.only(start: 4),
-        child: Icon(
-          Icons.credit_card,
-          size: 16,
-          semanticLabel: l10n.entryInstallment(seriesPosition, seriesCount),
-        ),
-      ),
-    Entry(isRecurring: true) => Padding(
-      padding: const EdgeInsetsDirectional.only(start: 4),
-      child: Icon(Icons.repeat, size: 16, semanticLabel: l10n.entryRecurring),
-    ),
-    _ => null,
-  };
-
+  Widget? _seriesIcon(AppLocalizations l10n) => entrySeriesIcon(l10n, entry);
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -522,6 +511,186 @@ class _EntryTile extends StatelessWidget {
           ],
         ),
         onTap: () => onOpen(entry),
+      ),
+    );
+  }
+}
+
+String entryTitle(AppLocalizations l10n, Entry entry) => switch (entry) {
+  Entry(isInstallment: true, :final seriesPosition?, :final seriesCount?) =>
+    '${entry.description} '
+        '${l10n.entryInstallmentShort(seriesPosition, seriesCount)}',
+  _ => entry.description,
+};
+
+Widget? entrySeriesIcon(AppLocalizations l10n, Entry entry) => switch (entry) {
+  Entry(isInstallment: true, :final seriesPosition?, :final seriesCount?) =>
+    Padding(
+      padding: const EdgeInsetsDirectional.only(start: 4),
+      child: Icon(
+        Icons.credit_card,
+        size: 16,
+        semanticLabel: l10n.entryInstallment(seriesPosition, seriesCount),
+      ),
+    ),
+  Entry(isRecurring: true) => Padding(
+    padding: const EdgeInsetsDirectional.only(start: 4),
+    child: Icon(Icons.repeat, size: 16, semanticLabel: l10n.entryRecurring),
+  ),
+  _ => null,
+};
+
+class _EntryTable extends StatelessWidget {
+  const new({
+    required this.entries,
+    required this.categories,
+    required this.onOpen,
+    required this.onDelete,
+    required this.onPaid,
+  });
+
+  final List<Entry> entries;
+  final Map<String, Category> categories;
+  final ValueChanged<Entry> onOpen;
+  final Future<bool> Function(Entry entry) onDelete;
+  final PaidChanged onPaid;
+
+  static const _columns = [4, 3, 2, 2, 2];
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final header = theme.textTheme.labelMedium?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      children: [
+        Card(
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                child: _cells([
+                  Text(l10n.entriesColumnDescription, style: header),
+                  Text(l10n.entriesColumnCategory, style: header),
+                  Text(l10n.entriesColumnDue, style: header),
+                  Text(l10n.entriesColumnStatus, style: header),
+                  Text(
+                    l10n.entriesColumnAmount,
+                    style: header,
+                    textAlign: TextAlign.end,
+                  ),
+                ], trailing: const SizedBox(width: 96)),
+              ),
+              for (final entry in entries) ...[
+                const Divider(height: 1),
+                _row(context, l10n, entry),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _cells(List<Widget> cells, {required Widget trailing}) => Row(
+    children: [
+      for (final (index, cell) in cells.indexed)
+        Expanded(flex: _columns[index], child: cell),
+      trailing,
+    ],
+  );
+
+  Widget _row(BuildContext context, AppLocalizations l10n, Entry entry) {
+    final theme = Theme.of(context);
+    final colors = FinanceColors.of(context);
+    final category = categories[entry.categoryId];
+    final kind = entry.kind.name;
+    final status = entry.isPaid
+        ? (l10n.entrySettled(kind), colors.positive, colors.positiveContainer)
+        : (l10n.entryPending(kind), colors.warning, colors.warningContainer);
+    final muted = theme.textTheme.bodyMedium?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    return InkWell(
+      onTap: () => onOpen(entry),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: _cells(
+          [
+            Row(
+              children: [
+                CategoryAvatar(category: category),
+                const SizedBox(width: 12),
+                Flexible(
+                  child: Text(
+                    entryTitle(l10n, entry),
+                    style: theme.textTheme.titleSmall,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                ?entrySeriesIcon(l10n, entry),
+              ],
+            ),
+            Text(
+              [
+                categoryLabel(l10n, category),
+                if (entry.nature case final nature?) natureLabel(l10n, nature),
+              ].join(' · '),
+              style: muted,
+              overflow: TextOverflow.ellipsis,
+            ),
+            Text(Dates.display(entry.dueOn), style: muted),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: status.$3,
+                  borderRadius: BorderRadius.circular(99),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 3,
+                  ),
+                  child: Text(
+                    status.$1,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: status.$2,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            MoneyText(
+              entry.kind == EntryKind.expense
+                  ? -entry.amountCents
+                  : entry.amountCents,
+              signed: true,
+              colored: true,
+              textAlign: TextAlign.end,
+              style: theme.textTheme.titleSmall,
+            ),
+          ],
+          trailing: SizedBox(
+            width: 96,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                PaidCheckbox(entry: entry, onChanged: onPaid),
+                IconButton(
+                  tooltip: l10n.delete,
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () => unawaited(onDelete(entry)),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

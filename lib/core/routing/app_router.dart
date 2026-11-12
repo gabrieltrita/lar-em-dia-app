@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lar_em_dia/core/dates/dates.dart';
 import 'package:lar_em_dia/core/di/injection.dart';
+import 'package:lar_em_dia/core/routing/adaptive_page.dart';
 import 'package:lar_em_dia/core/routing/stream_listenable.dart';
 import 'package:lar_em_dia/features/account/presentation/cubits/account_cubits.dart';
 import 'package:lar_em_dia/features/account/presentation/pages/notification_settings_page.dart';
@@ -148,7 +149,7 @@ BlocProvider<LatestBalanceCubit> _latestBalanceProvider() => BlocProvider(
   create: (_) => _started(getIt<LatestBalanceCubit>(), (cubit) => cubit.load()),
 );
 
-GoRoute _entryFormRoute(EntryKind kind) => GoRoute(
+GoRoute _entryFormRoute(EntryKind kind) => formRoute(
   path: AppRoutes.entryForm(kind),
   builder: (context, state) => MultiBlocProvider(
     providers: [
@@ -262,7 +263,7 @@ GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
         ),
       ),
     ),
-    GoRoute(
+    formRoute(
       path: AppRoutes.investmentForm,
       builder: (context, state) => MultiBlocProvider(
         providers: [
@@ -309,7 +310,7 @@ GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
         ),
       ),
     ),
-    GoRoute(
+    formRoute(
       path: AppRoutes.reserveAccountForm,
       builder: (context, state) => BlocProvider(
         create: (_) => getIt<ReserveAccountFormCubit>(),
@@ -320,7 +321,7 @@ GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
         ),
       ),
     ),
-    GoRoute(
+    formRoute(
       path: AppRoutes.reserveMovementForm,
       redirect: (context, state) =>
           state.extra is ReserveMovementFormArgs ? null : AppRoutes.reserve,
@@ -351,7 +352,7 @@ GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
         child: const BalancesPage(),
       ),
     ),
-    GoRoute(
+    formRoute(
       path: AppRoutes.balanceForm,
       builder: (context, state) => BlocProvider(
         create: (_) => getIt<BalanceFormCubit>(),
@@ -374,7 +375,7 @@ GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
       ),
     ),
     for (final kind in EntryKind.values)
-      GoRoute(
+      formRoute(
         path: AppRoutes.simulationEntry(kind),
         builder: (context, state) => MultiBlocProvider(
           providers: [
@@ -406,7 +407,7 @@ GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
         child: const AdminCategoriesPage(),
       ),
     ),
-    GoRoute(
+    formRoute(
       path: AppRoutes.adminCategoryForm,
       builder: (context, state) => BlocProvider(
         create: (_) => getIt<AdminCategoryFormCubit>(),
