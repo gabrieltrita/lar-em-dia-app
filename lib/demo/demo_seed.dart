@@ -26,6 +26,7 @@ abstract final class DemoSeed {
     'reimbursement': 'Reimbursement',
     'other_income': 'Other income',
     'investment_redemption': 'Investment redemption',
+    'reserve_withdrawal': 'Emergency reserve withdrawal',
   };
 
   static const fixedExpenses = {
@@ -53,6 +54,7 @@ abstract final class DemoSeed {
     'taxes_fees': 'Taxes and fees',
     'other_expense': 'Other expense',
     'investment_contribution': 'Investment contribution',
+    'reserve_deposit': 'Emergency reserve deposit',
   };
 
   static const _monthly = [
@@ -82,6 +84,35 @@ abstract final class DemoSeed {
     ('TAEE11', 8, 2),
     ('WEGE3', 5, 3),
   ];
+
+  static const pastFixedMonths = 3;
+
+  static void seedReserve(DemoDatabase database) {
+    final reserve = database.reserve;
+    final firstMonth = Dates.firstOfMonth(database.today);
+    DateTime monthsAgo(int months, int day) =>
+        Dates.addMonths(firstMonth, -months).add(Duration(days: day - 1));
+    final treasury = reserve.createAccount({
+      'name': 'Tesouro Selic',
+      'kind': 'selic_treasury',
+    });
+    final idle = reserve.createAccount({
+      'name': 'Conta corrente',
+      'kind': 'idle',
+    });
+    for (final (account, kind, cents, movedOn) in [
+      (treasury, 'anchor', 1200000, monthsAgo(10, 5)),
+      (treasury, 'deposit', 200000, monthsAgo(4, 5)),
+      (idle, 'anchor', 150000, monthsAgo(1, 10)),
+    ]) {
+      reserve.createMovement({
+        'account_id': account['id'],
+        'kind': kind,
+        'moved_on': Dates.toIso(movedOn),
+        'amount_cents': cents,
+      });
+    }
+  }
 
   static void seedInvestments(DemoDatabase database) {
     final investments = database.investments;
@@ -183,6 +214,15 @@ abstract final class DemoSeed {
     void add(String key, String description, int cents, DateTime dueOn) =>
         database.createEntry(fields(key, description, cents, dueOn));
 
+    for (var back = 1; back <= pastFixedMonths; back++) {
+      final month = Dates.addMonths(firstMonth, -back);
+      for (final (key, description, cents, day) in _monthly) {
+        if (fixedExpenses.containsKey(key)) {
+          add(key, description, cents, DateTime(month.year, month.month, day));
+        }
+      }
+    }
+
     for (var offset = 0; offset < months; offset++) {
       final month = Dates.addMonths(firstMonth, offset);
       if (month.month == 12) {
@@ -205,6 +245,7 @@ abstract final class DemoSeed {
       DateTime(tripMonth.year, tripMonth.month, 22),
     );
     seedInvestments(database);
+    seedReserve(database);
     return database;
   }
 }

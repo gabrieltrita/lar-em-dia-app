@@ -7,12 +7,14 @@ import 'package:lar_em_dia/features/entries/data/finance_cache.dart';
 import 'package:lar_em_dia/features/investments/presentation/cubits/investment_cubits.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/investment_form_page.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/investments_page.dart';
+import 'package:lar_em_dia/features/reserve/domain/reserve.dart';
 import 'package:lar_em_dia/features/shell/presentation/finance_changes.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/auth_fixtures.dart';
 import '../../../../helpers/investment_fixtures.dart';
 import '../../../../helpers/pump_page.dart';
+import '../../../../helpers/reserve_fixtures.dart';
 
 void main() {
   late AuthHarness harness;
@@ -31,20 +33,42 @@ void main() {
   });
   tearDown(() => harness.dispose());
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(
+    WidgetTester tester, {
+    ReserveSummary reserveCard = emptyReserve,
+  }) async {
     tester.view.physicalSize = const Size(2400, 4800);
     addTearDown(tester.view.resetPhysicalSize);
     await pumpPage(
       tester,
-      BlocProvider(
-        create: (_) =>
-            started(PortfolioCubit(repository), (cubit) => cubit.load()),
-        child: const InvestmentsPage(),
+      withReserveCard(
+        BlocProvider(
+          create: (_) =>
+              started(PortfolioCubit(repository), (cubit) => cubit.load()),
+          child: const InvestmentsPage(),
+        ),
+        summary: reserveCard,
       ),
       session: harness.session,
       changes: changes,
     );
   }
+
+  testWidgets('opens the reserve from the top card', (tester) async {
+    await pump(tester, reserveCard: reserveSummary);
+
+    expect(find.byKey(const Key('reserve_card')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('reserve_card')));
+    await tester.pumpAndSettle();
+    expect(find.text(routeMarker(AppRoutes.reserve)), findsOneWidget);
+  });
+
+  testWidgets('introduces the reserve on an empty portfolio', (tester) async {
+    when(repository.portfolio).thenAnswer((_) async => emptyPortfolio);
+    await pump(tester, reserveCard: noReserve);
+
+    expect(find.textContaining('cobre imprevistos'), findsOneWidget);
+  });
 
   testWidgets('shows the summary, the goal split and the positions', (
     tester,

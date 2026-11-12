@@ -39,6 +39,7 @@ abstract class ProjectionMonth with _$ProjectionMonth {
     required int closingCents,
     required int savingsCents,
     @Default([]) List<CategoryAmount> expenseByCategory,
+    @Default(0) int reserveCents,
   }) = _ProjectionMonth;
 
   const new _();
@@ -48,6 +49,10 @@ abstract class ProjectionMonth with _$ProjectionMonth {
   int get resultCents => incomeCents - expenseCents;
 
   bool get isSaving => savingsCents >= 0;
+
+  bool get hasReserve => reserveCents > 0;
+
+  int get closingWithReserveCents => closingCents + reserveCents;
 }
 
 @freezed

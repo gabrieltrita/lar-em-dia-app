@@ -79,7 +79,7 @@ void main() {
 
     test('lists categories by kind', () {
       final response = call('GET', '/categories', query: {'kind': 'expense'});
-      expect(data(response), hasLength(21));
+      expect(data(response), hasLength(22));
     });
 
     test('creates, reads, updates and deletes balances', () {

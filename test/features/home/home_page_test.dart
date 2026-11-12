@@ -14,12 +14,16 @@ import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/domain/entry_repository.dart';
 import 'package:lar_em_dia/features/home/presentation/cubits/home_cubit.dart';
 import 'package:lar_em_dia/features/home/presentation/home_page.dart';
+import 'package:lar_em_dia/features/reserve/domain/reserve.dart';
+import 'package:lar_em_dia/features/reserve/domain/reserve_dismissal.dart';
+import 'package:lar_em_dia/features/reserve/domain/reserve_repository.dart';
 import 'package:lar_em_dia/features/shell/presentation/finance_changes.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../helpers/auth_fixtures.dart';
 import '../../helpers/finance_fixtures.dart';
 import '../../helpers/pump_page.dart';
+import '../../helpers/reserve_fixtures.dart';
 
 void main() {
   setUpAll(registerFinanceFallbacks);
@@ -57,22 +61,35 @@ void main() {
     });
     tearDown(() => harness.dispose());
 
-    Future<void> pump(WidgetTester tester) {
+    Future<void> pump(
+      WidgetTester tester, {
+      ReserveSummary reserveCard = emptyReserve,
+    }) {
       tester.view.physicalSize = const Size(1200, 4200);
       addTearDown(tester.view.resetPhysicalSize);
       return pumpPage(
         tester,
-        BlocProvider(
-          create: (_) => started(
-            HomeCubit(balances, entries, projections),
-            (cubit) => cubit.load(today: DateTime(2026, 11, 6)),
+        withReserveCard(
+          BlocProvider(
+            create: (_) => started(
+              HomeCubit(balances, entries, projections),
+              (cubit) => cubit.load(today: DateTime(2026, 11, 6)),
+            ),
+            child: const HomePage(),
           ),
-          child: const HomePage(),
+          summary: reserveCard,
         ),
         session: harness.session,
         changes: changes,
       );
     }
+
+    testWidgets('shows the reserve card below the indicators', (tester) async {
+      await pump(tester, reserveCard: reserveSummary);
+
+      expect(find.byKey(const Key('reserve_card')), findsOneWidget);
+      expect(find.text('4,5 de 6 meses'), findsOneWidget);
+    });
 
     testWidgets('leads with the result of the month', (tester) async {
       await pump(tester);
@@ -285,7 +302,11 @@ void main() {
         ..allowReassignment = true
         ..registerSingleton<AuthRepository>(repository)
         ..registerSingleton<BalanceRepository>(balances)
-        ..registerSingleton<EntryRepository>(entries);
+        ..registerSingleton<EntryRepository>(entries)
+        ..registerSingleton<ReserveRepository>(
+          reserveRepositoryWith(emptyReserve),
+        )
+        ..registerSingleton<ReserveDismissal>(dismissalUntil(null));
     });
 
     testWidgets('greets the signed in user and logs out from Mais', (

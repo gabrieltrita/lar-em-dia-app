@@ -155,6 +155,35 @@ void main() {
     ).called(1);
   });
 
+  testWidgets('adds the reserve to the balance when there is one', (
+    tester,
+  ) async {
+    answer(
+      () => projection.copyWith(
+        months: [
+          for (final month in projection.months)
+            month.copyWith(reserveCents: 1390000),
+        ],
+      ),
+    );
+    await pump(tester);
+
+    expect(find.text(r'Saldo + reserva: R$ 12.834,56'), findsOneWidget);
+    expect(find.text('Saldo + reserva'), findsOneWidget);
+    expect(find.text(r'R$ 13.900,00'), findsOneWidget);
+
+    await tester.tap(find.text('dezembro de 2026'));
+    await tester.pump();
+    expect(find.text('Reserva'), findsNWidgets(2));
+  });
+
+  testWidgets('leaves the reserve out when there is none', (tester) async {
+    await pump(tester);
+
+    expect(find.textContaining('Saldo + reserva'), findsNothing);
+    expect(find.text('Reserva'), findsNothing);
+  });
+
   testWidgets('expands a month with its details', (tester) async {
     await pump(tester);
 

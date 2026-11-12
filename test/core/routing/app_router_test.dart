@@ -47,6 +47,9 @@ import 'package:lar_em_dia/features/projection/domain/projection_repository.dart
 import 'package:lar_em_dia/features/projection/presentation/pages/projection_details_page.dart';
 import 'package:lar_em_dia/features/projection/presentation/pages/projection_page.dart';
 import 'package:lar_em_dia/features/projection/presentation/pages/simulation_page.dart';
+import 'package:lar_em_dia/features/reserve/domain/reserve_dismissal.dart';
+import 'package:lar_em_dia/features/reserve/domain/reserve_repository.dart';
+import 'package:lar_em_dia/features/reserve/presentation/pages/reserve_movement_form_page.dart';
 import 'package:lar_em_dia/features/security/domain/security_repository.dart';
 import 'package:lar_em_dia/features/security/presentation/pages/security_page.dart';
 import 'package:lar_em_dia/features/security/presentation/pages/two_factor_enrollment_page.dart';
@@ -60,6 +63,7 @@ import '../../helpers/admin_fixtures.dart';
 import '../../helpers/auth_fixtures.dart';
 import '../../helpers/finance_fixtures.dart';
 import '../../helpers/investment_fixtures.dart';
+import '../../helpers/reserve_fixtures.dart';
 import '../../helpers/security_fixtures.dart';
 
 void main() {
@@ -119,10 +123,12 @@ void main() {
     late MockSecurityRepository security;
     late MockAccountRepository account;
     late MockInvestmentRepository investments;
+    late MockReserveRepository reserve;
 
     setUpAll(() {
       registerFinanceFallbacks();
       registerInvestmentFallbacks();
+      registerReserveFallbacks();
       configureDependencies();
       getIt.allowReassignment = true;
     });
@@ -146,6 +152,11 @@ void main() {
       security = MockSecurityRepository();
       account = MockAccountRepository();
       investments = MockInvestmentRepository();
+      reserve = reserveRepositoryWith(reserveSummary);
+      when(() => reserve.projection(any()))
+          .thenAnswer((_) async => reserveProjection);
+      when(() => reserve.movements(treasury.id))
+          .thenAnswer((_) async => [anchorMovement]);
       when(investments.portfolio).thenAnswer((_) async => portfolio);
       when(investments.history).thenAnswer((_) async => history);
       when(() => investments.asset('HGLG11')).thenAnswer((_) async => hglg);
@@ -179,7 +190,9 @@ void main() {
         ..registerSingleton<AdminRepository>(admin)
         ..registerSingleton<SecurityRepository>(security)
         ..registerSingleton<AccountRepository>(account)
-        ..registerSingleton<InvestmentRepository>(investments);
+        ..registerSingleton<InvestmentRepository>(investments)
+        ..registerSingleton<ReserveRepository>(reserve)
+        ..registerSingleton<ReserveDismissal>(dismissalUntil(null));
       events = SessionEvents();
       session = SessionCubit(repository, events);
       router = buildRouter(session);
@@ -417,6 +430,47 @@ void main() {
       verify(() => entries.between(any(), any(), kind: EntryKind.expense))
           .called(2);
       verify(() => investments.asset('HGLG11')).called(1);
+    });
+
+    testWidgets('opens the reserve pages and reloads them after a change', (
+      tester,
+    ) async {
+      await pumpRouter(tester);
+      session.signedIn(ana);
+      await tester.pumpAndSettle();
+      unawaited(router.push(AppRoutes.reserve));
+      await tester.pumpAndSettle();
+      expect(find.text('Total líquido'), findsOneWidget);
+      unawaited(router.push(AppRoutes.reserveAccount(treasury.id)));
+      await tester.pumpAndSettle();
+      expect(find.text('Movimentos'), findsOneWidget);
+      clearInteractions(reserve);
+
+      getIt<FinanceChanges>().notify();
+      await tester.pumpAndSettle();
+      verify(() => reserve.movements(treasury.id)).called(1);
+
+      unawaited(router.push(AppRoutes.reserveAccountForm, extra: treasury));
+      await tester.pumpAndSettle();
+      expect(find.text('Editar pote'), findsOneWidget);
+      router.pop();
+      await tester.pumpAndSettle();
+      unawaited(router.push(AppRoutes.reserveAccountForm));
+      await tester.pumpAndSettle();
+      expect(find.text('Novo pote'), findsOneWidget);
+      router.pop();
+      await tester.pumpAndSettle();
+      unawaited(
+        router.push(
+          AppRoutes.reserveMovementForm,
+          extra: const ReserveMovementFormArgs(accounts: [treasury]),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Registrar movimento'), findsWidgets);
+      router.go(AppRoutes.reserveMovementForm);
+      await tester.pumpAndSettle();
+      expect(find.text('Total líquido'), findsOneWidget);
     });
 
     testWidgets('opens the projection details only with a projection', (

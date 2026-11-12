@@ -35,6 +35,7 @@ void main() {
       'only_for_single_entry': l10n.errorOnlyForSingleEntry,
       'installment_amount_locked': l10n.errorInstallmentAmountLocked,
       'insufficient_quantity': l10n.errorInsufficientQuantity,
+      'insufficient_reserve': l10n.errorInsufficientReserve,
       ApiError.networkErrorCode: l10n.errorNetwork,
       'something_new': l10n.errorUnknown,
     };
@@ -66,6 +67,10 @@ void main() {
       'insufficient_quantity': l10n.validationInsufficientQuantity,
       'unknown_asset': l10n.validationUnknownAsset,
       'only_for_trades': l10n.validationOnlyForTrades,
+      'insufficient_reserve': l10n.validationInsufficientReserve,
+      'anchor_not_allowed': l10n.validationAnchorNotAllowed,
+      'rate_required': l10n.validationRateRequired,
+      'rate_not_allowed': l10n.validationRateNotAllowed,
       'greater_than': l10n.validationAmountRequired,
       'not_an_integer': l10n.validationAmountRequired,
       'whatever': l10n.validationInvalid,
