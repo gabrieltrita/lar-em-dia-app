@@ -935,6 +935,7 @@
   },
   "homeMonthEnd": "Fim do mês",
   "homeMonthEndCaption": "saldo previsto",
+  "homeActionBalance": "Saldo",
   "homeOtherCategories": "Outras",
   "homeWhereMoneyGoes": "Para onde vai o dinheiro",
   "homeNoExpenses": "Nenhuma despesa neste mês.",
