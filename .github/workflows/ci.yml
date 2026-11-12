@@ -9,8 +9,11 @@ on:
 permissions:
   contents: read
 
+env:
+  TEST_SHARDS: 2
+
 jobs:
-  test:
+  analyze:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -35,12 +38,6 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
-      - name: Run tests
-        run: flutter test --coverage
-
-      - name: Enforce lib/core coverage
-        run: tool/check_core_coverage.sh
-
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
@@ -49,8 +46,62 @@ jobs:
       - name: Test web content scripts
         run: node --test 'test/web/*.test.mjs'
 
-      - name: Build web
-        run: flutter build web --dart-define=API_BASE_URL=https://example.invalid/api/v1
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [ 0, 1 ]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.9
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Run tests
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          mapfile -t files < <(tool/test_files.sh "$SHARD" "$TEST_SHARDS")
+          flutter test --coverage --coverage-path "coverage/shard-$SHARD.info" --concurrency "$(nproc)" "${files[@]}"
+
+      - name: Upload shard coverage
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-shard-${{ matrix.shard }}
+          path: coverage/shard-${{ matrix.shard }}.info
+          retention-days: 1
+
+  coverage:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Download shard coverage
+        uses: actions/download-artifact@v8
+        with:
+          pattern: coverage-shard-*
+          path: coverage
+          merge-multiple: true
+
+      - name: Merge coverage
+        run: tool/merge_coverage.sh coverage/lcov.info coverage/shard-*.info
+
+      - name: Enforce lib/core coverage
+        run: tool/check_core_coverage.sh
 
       - name: Upload coverage report
         if: always()
@@ -58,3 +109,25 @@ jobs:
         with:
           name: coverage
           path: coverage/lcov.info
+
+  build_web:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.9
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Build web
+        run: flutter build web --dart-define=API_BASE_URL=https://example.invalid/api/v1
