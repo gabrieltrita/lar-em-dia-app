@@ -978,6 +978,7 @@
     }
   },
   "shellInvestments": "Investimentos",
+  "shellInvestmentsShort": "Investir",
   "categoryInvestmentContribution": "Aporte em investimentos",
   "categoryInvestmentRedemption": "Resgate de investimentos",
   "errorInsufficientQuantity": "Não dá para fazer isso: uma venda depois desta data ficaria sem cotas suficientes.",

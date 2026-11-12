@@ -417,7 +417,11 @@ class _WhereMoneyGoes extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final palette = FinanceColors.of(context).categories.values.toList();
+    final categories = FinanceColors.of(context).categories;
+    final palette = [
+      for (final group in CategoryGroup.values)
+        if (group != CategoryGroup.income) categories[group]!,
+    ];
     final amounts = summary.expenseByCategory;
     final total = summary.expenses.totalCents;
     final shown = [

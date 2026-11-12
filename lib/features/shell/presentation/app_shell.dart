@@ -65,7 +65,7 @@ class AppShell extends StatelessWidget {
               NavigationDestination(
                 icon: Icon(destination.icon),
                 selectedIcon: Icon(destination.selectedIcon),
-                label: destination.label,
+                label: destination.shortLabel,
               ),
           ],
         ),
@@ -80,18 +80,25 @@ class AppShell extends StatelessWidget {
       Icons.receipt_long,
       l10n.shellEntries,
     ),
-    _Destination(Icons.savings_outlined, Icons.savings, l10n.shellInvestments),
+    _Destination(
+      Icons.savings_outlined,
+      Icons.savings,
+      l10n.shellInvestments,
+      shortLabel: l10n.shellInvestmentsShort,
+    ),
     _Destination(Icons.show_chart, Icons.show_chart, l10n.shellProjection),
     _Destination(Icons.menu, Icons.menu, l10n.shellMore),
   ];
 }
 
 class _Destination {
-  const new(this.icon, this.selectedIcon, this.label);
+  const new(this.icon, this.selectedIcon, this.label, {String? shortLabel})
+    : shortLabel = shortLabel ?? label;
 
   final IconData icon;
   final IconData selectedIcon;
   final String label;
+  final String shortLabel;
 }
 
 class _Sidebar extends StatelessWidget {

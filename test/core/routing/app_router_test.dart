@@ -346,7 +346,7 @@ void main() {
       expect(find.byType(NavigationBar), findsOneWidget);
       for (final (label, page) in [
         ('Lançamentos', EntriesPage),
-        ('Investimentos', InvestmentsPage),
+        ('Investir', InvestmentsPage),
         ('Projeção', ProjectionPage),
         ('Mais', MorePage),
       ]) {
@@ -413,7 +413,7 @@ void main() {
       await pumpRouter(tester);
       session.signedIn(ana);
       await tester.pumpAndSettle();
-      for (final label in ['Lançamentos', 'Investimentos', 'Projeção']) {
+      for (final label in ['Lançamentos', 'Investir', 'Projeção']) {
         await tester.tap(find.text(label).last);
         await tester.pumpAndSettle();
       }
