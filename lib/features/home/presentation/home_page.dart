@@ -315,21 +315,30 @@ class _WhereMoneyGoes extends StatelessWidget {
                   SizedBox(
                     width: 112,
                     height: 112,
-                    child: PieChart(
-                      PieChartData(
-                        centerSpaceRadius: 34,
-                        sectionsSpace: 2,
-                        startDegreeOffset: -90,
-                        sections: [
-                          for (final (index, (_, cents)) in shown.indexed)
-                            PieChartSectionData(
-                              value: cents.toDouble(),
-                              color: palette[index % palette.length],
-                              radius: 20,
-                              showTitle: false,
-                            ),
-                        ],
-                      ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        PieChart(
+                          PieChartData(
+                            centerSpaceRadius: 40,
+                            sectionsSpace: 3,
+                            startDegreeOffset: -90,
+                            sections: [
+                              for (final (index, (_, cents)) in shown.indexed)
+                                PieChartSectionData(
+                                  value: cents.toDouble(),
+                                  color: palette[index % palette.length],
+                                  radius: 14,
+                                  showTitle: false,
+                                ),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          Money.compact(total),
+                          style: theme.textTheme.titleSmall,
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 16),
