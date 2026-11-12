@@ -13,6 +13,7 @@ import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/domain/entry_repository.dart';
 import 'package:lar_em_dia/features/home/presentation/cubits/home_cubit.dart';
 import 'package:lar_em_dia/features/home/presentation/home_page.dart';
+import 'package:lar_em_dia/features/projection/presentation/widgets/cash_flow_chart.dart';
 import 'package:lar_em_dia/features/reserve/domain/reserve.dart';
 import 'package:lar_em_dia/features/reserve/domain/reserve_dismissal.dart';
 import 'package:lar_em_dia/features/reserve/domain/reserve_repository.dart';
@@ -94,6 +95,7 @@ void main() {
       await pump(tester);
 
       expect(find.text('Olá, Ana!'), findsOneWidget);
+      expect(find.byType(CashFlowChart), findsNothing);
       expect(find.text('Balanço de novembro de 2026'), findsOneWidget);
       final result = tester.widget<Text>(find.text(r'+R$ 3.700,00'));
       expect(result.style?.color, Colors.white);
@@ -247,6 +249,13 @@ void main() {
       final actions = tester.getTopLeft(find.text('Simular'));
       expect(actions.dx, greaterThan(hero.dx + 400));
       expect(actions.dy, lessThan(hero.dy + 100));
+
+      expect(find.byType(CashFlowChart), findsOneWidget);
+      await tester.tapAt(tester.getCenter(find.byType(CashFlowChart)));
+      await tester.pump();
+      await tester.tap(find.text('Ver projeção'));
+      await tester.pumpAndSettle();
+      expect(find.text(routeMarker(AppRoutes.projection)), findsOneWidget);
     });
 
     testWidgets('says when nothing is due', (tester) async {

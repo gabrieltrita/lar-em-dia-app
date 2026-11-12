@@ -19,6 +19,8 @@ import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart'
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/presentation/widgets/category_label.dart';
 import 'package:lar_em_dia/features/home/presentation/cubits/home_cubit.dart';
+import 'package:lar_em_dia/features/projection/domain/projection.dart';
+import 'package:lar_em_dia/features/projection/presentation/widgets/cash_flow_chart.dart';
 import 'package:lar_em_dia/features/projection/presentation/widgets/negative_months_alert.dart';
 import 'package:lar_em_dia/features/reserve/presentation/widgets/reserve_card.dart';
 import 'package:lar_em_dia/features/shell/presentation/app_shell.dart';
@@ -100,6 +102,7 @@ class _HomeLayout extends StatelessWidget {
       _Indicators(summary: summary),
       _gap,
       const ReserveCardView(padding: EdgeInsets.only(bottom: 12)),
+      if (summary.months.isNotEmpty) _ForecastCard(months: summary.months),
     ];
     final side = [
       const _QuickActions(),
@@ -116,7 +119,7 @@ class _HomeLayout extends StatelessWidget {
           main.first,
           _gap,
           ...side.take(2),
-          ...main.skip(2),
+          ...main.skip(2).take(3),
           ...side.skip(2),
         ],
       );
@@ -139,6 +142,60 @@ class _HomeLayout extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ForecastCard extends StatefulWidget {
+  const new({required this.months});
+
+  final List<ProjectionMonth> months;
+
+  @override
+  State<_ForecastCard> createState() => _ForecastCardState();
+}
+
+class _ForecastCardState extends State<_ForecastCard> {
+  var _selected = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final selected = _selected.clamp(0, widget.months.length - 1);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l10n.homeForecastTitle,
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => context.go(AppRoutes.projection),
+                  child: Text(l10n.homeSeeProjection),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 240,
+              child: CashFlowChart(
+                months: widget.months,
+                selected: selected,
+                semanticsLabel: l10n.projectionCashFlowLabel,
+                onSelect: (index) => setState(() => _selected = index),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

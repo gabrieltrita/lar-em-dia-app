@@ -474,6 +474,79 @@ void main() {
     });
   });
 
+  group('on desktop', () {
+    Future<void> pumpDesktop(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await pump(tester);
+    }
+
+    testWidgets('shows the entries as a table', (tester) async {
+      await pumpDesktop(tester);
+
+      expect(find.byType(Dismissible), findsNothing);
+      for (final header in [
+        'Descrição',
+        'Categoria',
+        'Vencimento',
+        'Situação',
+        'Valor',
+      ]) {
+        expect(find.text(header), findsOneWidget);
+      }
+      expect(find.text('Recebida'), findsWidgets);
+      expect(find.text('A receber'), findsWidgets);
+
+      await tester.tap(find.text('Salário ACME'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          routeMarker(
+            AppRoutes.entryForm(EntryKind.income),
+            EntryEdit(entry: salary),
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('deletes and marks entries from the row buttons', (
+      tester,
+    ) async {
+      when(() => repository.delete(rent.id)).thenAnswer((_) async {});
+      when(() => repository.markPaid(rent.id, paidOn: any(named: 'paidOn')))
+          .thenAnswer(
+            (_) async => rent.copyWith(
+              status: EntryStatus.paid,
+              paidOn: DateTime(2026, 11, 10),
+            ),
+          );
+      await pumpDesktop(tester);
+      final row = find
+          .ancestor(
+            of: find.text('Aluguel apto 12'),
+            matching: find.byType(InkWell),
+          )
+          .first;
+
+      await tester.tap(
+        find.descendant(of: row, matching: find.byType(Checkbox)),
+      );
+      await tester.pumpAndSettle();
+      verify(() => repository.markPaid(rent.id, paidOn: any(named: 'paidOn')))
+          .called(1);
+
+      await tester.tap(
+        find.descendant(of: row, matching: find.byTooltip('Apagar')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Apagar').last);
+      await tester.pumpAndSettle();
+      verify(() => repository.delete(rent.id)).called(1);
+    });
+  });
+
   group('the paid checkbox', () {
     Finder checkboxOf(String description) => find.descendant(
       of: find.ancestor(
