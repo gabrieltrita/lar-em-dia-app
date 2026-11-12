@@ -18,6 +18,7 @@ import 'package:lar_em_dia/features/investments/presentation/widgets/goal_split_
 import 'package:lar_em_dia/features/investments/presentation/widgets/investment_labels.dart';
 import 'package:lar_em_dia/features/investments/presentation/widgets/investments_disclaimer.dart';
 import 'package:lar_em_dia/features/investments/presentation/widgets/position_tile.dart';
+import 'package:lar_em_dia/features/reserve/presentation/widgets/reserve_card.dart';
 import 'package:lar_em_dia/features/shell/presentation/finance_changes.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
@@ -91,6 +92,10 @@ class _EmptyInvestments extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const ReserveCardView(
+              alwaysShow: true,
+              padding: EdgeInsets.only(bottom: 24),
+            ),
             CircleAvatar(
               radius: 36,
               backgroundColor: theme.colorScheme.surfaceContainerHigh,
@@ -151,6 +156,10 @@ class _PortfolioContent extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.only(bottom: 88),
         children: [
+          const ReserveCardView(
+            alwaysShow: true,
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+          ),
           _Summary(totals: view.portfolio.totals),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),

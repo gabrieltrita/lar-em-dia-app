@@ -49,6 +49,12 @@ import 'package:lar_em_dia/features/projection/presentation/cubits/simulation_cu
 import 'package:lar_em_dia/features/projection/presentation/pages/projection_details_page.dart';
 import 'package:lar_em_dia/features/projection/presentation/pages/projection_page.dart';
 import 'package:lar_em_dia/features/projection/presentation/pages/simulation_page.dart';
+import 'package:lar_em_dia/features/reserve/domain/reserve.dart';
+import 'package:lar_em_dia/features/reserve/presentation/cubits/reserve_cubits.dart';
+import 'package:lar_em_dia/features/reserve/presentation/pages/reserve_account_form_page.dart';
+import 'package:lar_em_dia/features/reserve/presentation/pages/reserve_account_page.dart';
+import 'package:lar_em_dia/features/reserve/presentation/pages/reserve_movement_form_page.dart';
+import 'package:lar_em_dia/features/reserve/presentation/pages/reserve_page.dart';
 import 'package:lar_em_dia/features/security/presentation/cubits/security_cubits.dart';
 import 'package:lar_em_dia/features/security/presentation/pages/security_page.dart';
 import 'package:lar_em_dia/features/security/presentation/pages/two_factor_enrollment_page.dart';
@@ -75,6 +81,9 @@ abstract final class AppRoutes {
   static const investments = '/investments';
   static const investmentForm = '$investments/new';
   static const investmentHistory = '$investments/history';
+  static const reserve = '$investments/reserve';
+  static const reserveAccountForm = '$reserve/accounts/new';
+  static const reserveMovementForm = '$reserve/movements/new';
   static const more = '/more';
   static const projection = '/projection';
   static const simulation = '$projection/simulate';
@@ -92,6 +101,8 @@ abstract final class AppRoutes {
   static String adminUser(String id) => '$adminUsers/$id';
 
   static String assetDetail(String ticker) => '$investments/assets/$ticker';
+
+  static String reserveAccount(String id) => '$reserve/accounts/$id';
 
   static String simulationEntry(EntryKind kind) => '$simulation/${kind.name}';
 
@@ -173,6 +184,12 @@ Widget _reloading<C extends StateStreamableSource<Object?>>({
   ),
 );
 
+Widget _reserveCard(Widget child) => _reloading(
+  create: getIt.get<ReserveCardCubit>,
+  reload: (cubit) => cubit.load(),
+  child: child,
+);
+
 Widget _withChanges(Widget child) =>
     RepositoryProvider.value(value: getIt<FinanceChanges>(), child: child);
 
@@ -199,7 +216,7 @@ GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
             create: getIt.get<HomeCubit>,
             start: (cubit) => cubit.load(),
             reload: (cubit) => cubit.load(quiet: true),
-            child: const HomePage(),
+            child: _reserveCard(const HomePage()),
           ),
         ),
         _branch(
@@ -219,7 +236,7 @@ GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
             create: getIt.get<PortfolioCubit>,
             start: (cubit) => cubit.load(),
             reload: (cubit) => cubit.load(quiet: true),
-            child: const InvestmentsPage(),
+            child: _reserveCard(const InvestmentsPage()),
           ),
         ),
         _branch(
@@ -278,6 +295,51 @@ GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
           start: (cubit) => cubit.load(),
           reload: (cubit) => cubit.load(quiet: true),
           child: const AssetDetailPage(),
+        ),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.reserve,
+      builder: (context, state) => _withChanges(
+        _reloading(
+          create: getIt.get<ReserveCubit>,
+          start: (cubit) => cubit.load(),
+          reload: (cubit) => cubit.load(quiet: true),
+          child: const ReservePage(),
+        ),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.reserveAccountForm,
+      builder: (context, state) => BlocProvider(
+        create: (_) => getIt<ReserveAccountFormCubit>(),
+        child: ReserveAccountFormPage(
+          existing: state.extra is ReserveAccount
+              ? state.extra! as ReserveAccount
+              : null,
+        ),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.reserveMovementForm,
+      redirect: (context, state) =>
+          state.extra is ReserveMovementFormArgs ? null : AppRoutes.reserve,
+      builder: (context, state) => BlocProvider(
+        create: (_) => getIt<ReserveMovementFormCubit>(),
+        child: ReserveMovementFormPage(
+          args: state.extra! as ReserveMovementFormArgs,
+        ),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.reserveAccount(':id'),
+      builder: (context, state) => _withChanges(
+        _reloading(
+          create: () =>
+              getIt<ReserveAccountCubit>(param1: state.pathParameters['id']),
+          start: (cubit) => cubit.load(),
+          reload: (cubit) => cubit.load(quiet: true),
+          child: const ReserveAccountPage(),
         ),
       ),
     ),

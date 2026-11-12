@@ -15,6 +15,12 @@ import 'package:lar_em_dia/features/auth/domain/auth_repository.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
 import 'package:lar_em_dia/features/reminders/data/local_notifications_scheduler.dart';
 import 'package:lar_em_dia/features/reminders/domain/reminder_scheduler.dart';
+import 'package:lar_em_dia/features/reserve/data/api_reserve_repository.dart';
+import 'package:lar_em_dia/features/reserve/data/prefs_reserve_dismissal.dart';
+import 'package:lar_em_dia/features/reserve/domain/reserve_dismissal.dart';
+import 'package:lar_em_dia/features/reserve/domain/reserve_repository.dart';
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
 void main() {
   setUpAll(configureDependencies);
@@ -44,5 +50,13 @@ void main() {
       same(FlutterLocalNotificationsPlugin()),
     );
     expect(getIt<ReminderScheduler>(), isA<LocalNotificationsScheduler>());
+  });
+
+  test('registers the reserve repository and its dismissal', () {
+    SharedPreferencesAsyncPlatform.instance =
+        InMemorySharedPreferencesAsync.empty();
+
+    expect(getIt<ReserveRepository>(), isA<ApiReserveRepository>());
+    expect(getIt<ReserveDismissal>(), isA<PrefsReserveDismissal>());
   });
 }

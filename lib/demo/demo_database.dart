@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:lar_em_dia/core/dates/dates.dart';
 import 'package:lar_em_dia/demo/demo_investments.dart';
+import 'package:lar_em_dia/demo/demo_reserve.dart';
 
 typedef Row = Map<String, Object?>;
 typedef FieldErrors = Map<String, List<String>>;
@@ -31,6 +32,7 @@ class DemoDatabase {
   final List<Row> entries = [];
   final List<Row> series = [];
   late final DemoInvestments investments = DemoInvestments(this);
+  late final DemoReserve reserve = DemoReserve(this);
   int _sequence = 0;
 
   static const minSeriesCount = 2;
@@ -413,6 +415,7 @@ class DemoDatabase {
         for (final MapEntry(:key, :value) in sorted)
           {'category_key': key, 'amount_cents': value},
       ],
+      'reserve_cents': reserve.netCentsOn(Dates.lastOfMonth(month)),
     };
   }
 

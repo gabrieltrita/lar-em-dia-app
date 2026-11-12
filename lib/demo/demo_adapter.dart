@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:lar_em_dia/core/dates/dates.dart';
 import 'package:lar_em_dia/demo/demo_database.dart';
+import 'package:lar_em_dia/demo/demo_reserve.dart';
 import 'package:lar_em_dia/demo/demo_seed.dart';
 
 final class DemoBadRequest implements Exception {
@@ -146,6 +147,38 @@ class DemoServer {
         ('PATCH', ['investment_positions', final ticker]) => _data(
           database.investments.updateGoal(ticker, body),
         ),
+        ('GET', ['reserve']) => _data(database.reserve.summary()),
+        ('PATCH', ['reserve']) => _data(database.reserve.updateGoal(body)),
+        ('GET', ['reserve', 'projection']) => _reserveProjection(query),
+        ('GET', ['reserve_accounts']) => _data(database.reserve.accounts),
+        ('POST', ['reserve_accounts']) => _data(
+          database.reserve.createAccount(body),
+          201,
+        ),
+        ('GET', ['reserve_accounts', final id]) => _data(
+          database.reserve.findAccount(id),
+        ),
+        ('PATCH', ['reserve_accounts', final id]) => _data(
+          database.reserve.updateAccount(id, body),
+        ),
+        ('DELETE', ['reserve_accounts', final id]) => _deleteReserveAccount(id),
+        ('GET', ['reserve_movements']) => _page(
+          database.reserve.listMovements(query['account_id']),
+          query,
+        ),
+        ('POST', ['reserve_movements']) => _data(
+          database.reserve.createMovement(body),
+          201,
+        ),
+        ('GET', ['reserve_movements', final id]) => _data(
+          database.reserve.showMovement(id),
+        ),
+        ('PATCH', ['reserve_movements', final id]) => _data(
+          database.reserve.updateMovement(id, body),
+        ),
+        ('DELETE', ['reserve_movements', final id]) => _deleteReserveMovement(
+          id,
+        ),
         ('GET', ['projection']) => _projection(query),
         ('POST', ['projection', 'simulation']) => _simulation(body),
         _ => throw const DemoNotFound(),
@@ -170,6 +203,26 @@ class DemoServer {
     } on DemoBadRequest catch (error) {
       return _error(400, error.code, 'Invalid query parameter');
     }
+  }
+
+  DemoResponse _deleteReserveAccount(String id) {
+    database.reserve.deleteAccount(id);
+    return _data({'deleted_id': id});
+  }
+
+  DemoResponse _deleteReserveMovement(String id) {
+    database.reserve.deleteMovement(id);
+    return _data({'deleted_id': id});
+  }
+
+  DemoResponse _reserveProjection(Map<String, String> query) {
+    final months = int.tryParse(query['months'] ?? '12');
+    if (months == null ||
+        months < 1 ||
+        months > DemoReserve.maxProjectionMonths) {
+      throw const DemoBadRequest('invalid_months');
+    }
+    return _data(database.reserve.projection(months));
   }
 
   DemoResponse _deleteInvestment(String id) {

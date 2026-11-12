@@ -14,11 +14,15 @@ import 'package:lar_em_dia/core/storage/token_storage.dart';
 import 'package:lar_em_dia/demo/demo_mode.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
 import 'package:lar_em_dia/features/entries/data/finance_cache.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 @module
 abstract class RegisterModule {
   @lazySingleton
   FlutterSecureStorage get secureStorage => const FlutterSecureStorage();
+
+  @lazySingleton
+  SharedPreferencesAsync get preferences => SharedPreferencesAsync();
 
   @lazySingleton
   LocalCache localCache(FinanceCache cache) => cache;

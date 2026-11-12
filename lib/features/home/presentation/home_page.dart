@@ -18,6 +18,7 @@ import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart'
 import 'package:lar_em_dia/features/entries/presentation/widgets/category_label.dart';
 import 'package:lar_em_dia/features/home/presentation/cubits/home_cubit.dart';
 import 'package:lar_em_dia/features/projection/presentation/widgets/negative_months_alert.dart';
+import 'package:lar_em_dia/features/reserve/presentation/widgets/reserve_card.dart';
 import 'package:lar_em_dia/features/shell/presentation/app_shell.dart';
 import 'package:lar_em_dia/features/shell/presentation/finance_changes.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
@@ -67,6 +68,7 @@ class HomePage extends StatelessWidget {
                 const SizedBox(height: 12),
                 _Indicators(summary: summary),
                 const SizedBox(height: 12),
+                const ReserveCardView(padding: EdgeInsets.only(bottom: 12)),
                 if (summary case HomeSummary(
                   :final firstNegativeMonth?,
                   :final negativeMonthsCount,
