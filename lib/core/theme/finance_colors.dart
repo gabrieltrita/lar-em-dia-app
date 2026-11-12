@@ -21,46 +21,52 @@ class FinanceColors extends ThemeExtension<FinanceColors> {
     required this.negativeContainer,
     required this.warning,
     required this.warningContainer,
+    required this.heroStart,
+    required this.heroEnd,
     required this.categories,
   });
 
   static const light = FinanceColors(
-    positive: Color(0xFF1B7F4C),
-    positiveContainer: Color(0xFFD5F2E0),
-    negative: Color(0xFFBA1A1A),
-    negativeContainer: Color(0xFFFFDAD6),
-    warning: Color(0xFF8A5A00),
-    warningContainer: Color(0xFFFFDDB0),
+    positive: Color(0xFF16855B),
+    positiveContainer: Color(0xFFE3F5EE),
+    negative: Color(0xFFC8414A),
+    negativeContainer: Color(0xFFFCE9EA),
+    warning: Color(0xFF9A6200),
+    warningContainer: Color(0xFFFBF0DE),
+    heroStart: Color(0xFF6676DC),
+    heroEnd: Color(0xFF8E9CEB),
     categories: {
-      CategoryGroup.income: Color(0xFF1B7F4C),
-      CategoryGroup.home: Color(0xFF3B6EA8),
-      CategoryGroup.food: Color(0xFFB45F14),
-      CategoryGroup.transport: Color(0xFF00796B),
-      CategoryGroup.health: Color(0xFFC2185B),
-      CategoryGroup.leisure: Color(0xFF7B4FB0),
-      CategoryGroup.personal: Color(0xFF8D6E00),
-      CategoryGroup.financial: Color(0xFF455A64),
-      CategoryGroup.other: Color(0xFF6D6D6D),
+      CategoryGroup.income: Color(0xFF16855B),
+      CategoryGroup.home: Color(0xFF5F6FD6),
+      CategoryGroup.food: Color(0xFFD9892A),
+      CategoryGroup.transport: Color(0xFF2B9C99),
+      CategoryGroup.health: Color(0xFFD2577F),
+      CategoryGroup.leisure: Color(0xFF8D6BD1),
+      CategoryGroup.personal: Color(0xFFB08A1E),
+      CategoryGroup.financial: Color(0xFF5C6B82),
+      CategoryGroup.other: Color(0xFF9A9EB3),
     },
   );
 
   static const dark = FinanceColors(
-    positive: Color(0xFF7AD9A0),
-    positiveContainer: Color(0xFF0E5233),
-    negative: Color(0xFFFFB4AB),
-    negativeContainer: Color(0xFF93000A),
-    warning: Color(0xFFF4BE5C),
-    warningContainer: Color(0xFF684300),
+    positive: Color(0xFF5CCB9C),
+    positiveContainer: Color(0xFF173A2E),
+    negative: Color(0xFFF08A8D),
+    negativeContainer: Color(0xFF3F2125),
+    warning: Color(0xFFF0B35A),
+    warningContainer: Color(0xFF3B2E17),
+    heroStart: Color(0xFF4A57B0),
+    heroEnd: Color(0xFF6773C9),
     categories: {
-      CategoryGroup.income: Color(0xFF7AD9A0),
-      CategoryGroup.home: Color(0xFF9EC4F0),
-      CategoryGroup.food: Color(0xFFFFB77A),
-      CategoryGroup.transport: Color(0xFF6FD8C8),
-      CategoryGroup.health: Color(0xFFFF9EC0),
-      CategoryGroup.leisure: Color(0xFFCDB0F5),
+      CategoryGroup.income: Color(0xFF5CCB9C),
+      CategoryGroup.home: Color(0xFF8F9CF2),
+      CategoryGroup.food: Color(0xFFF0B35A),
+      CategoryGroup.transport: Color(0xFF5DC8C4),
+      CategoryGroup.health: Color(0xFFEE90B2),
+      CategoryGroup.leisure: Color(0xFFB49CEB),
       CategoryGroup.personal: Color(0xFFE6C75A),
-      CategoryGroup.financial: Color(0xFFB0C4CE),
-      CategoryGroup.other: Color(0xFFC4C4C4),
+      CategoryGroup.financial: Color(0xFFA9B4C8),
+      CategoryGroup.other: Color(0xFF8A8FA8),
     },
   );
 
@@ -70,6 +76,8 @@ class FinanceColors extends ThemeExtension<FinanceColors> {
   final Color negativeContainer;
   final Color warning;
   final Color warningContainer;
+  final Color heroStart;
+  final Color heroEnd;
   final Map<CategoryGroup, Color> categories;
 
   static FinanceColors of(BuildContext context) {
@@ -80,6 +88,12 @@ class FinanceColors extends ThemeExtension<FinanceColors> {
           negativeContainer: theme.colorScheme.errorContainer,
         );
   }
+
+  LinearGradient get heroGradient => LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [heroStart, heroEnd],
+  );
 
   Color? forAmount(int cents) => switch (cents) {
     > 0 => positive,
@@ -95,6 +109,8 @@ class FinanceColors extends ThemeExtension<FinanceColors> {
     Color? negativeContainer,
     Color? warning,
     Color? warningContainer,
+    Color? heroStart,
+    Color? heroEnd,
     Map<CategoryGroup, Color>? categories,
   }) => FinanceColors(
     positive: positive ?? this.positive,
@@ -103,6 +119,8 @@ class FinanceColors extends ThemeExtension<FinanceColors> {
     negativeContainer: negativeContainer ?? this.negativeContainer,
     warning: warning ?? this.warning,
     warningContainer: warningContainer ?? this.warningContainer,
+    heroStart: heroStart ?? this.heroStart,
+    heroEnd: heroEnd ?? this.heroEnd,
     categories: categories ?? this.categories,
   );
 
@@ -130,6 +148,8 @@ class FinanceColors extends ThemeExtension<FinanceColors> {
         other.warningContainer,
         t,
       )!,
+      heroStart: Color.lerp(heroStart, other.heroStart, t)!,
+      heroEnd: Color.lerp(heroEnd, other.heroEnd, t)!,
       categories: {
         for (final group in CategoryGroup.values)
           group: Color.lerp(categories[group], other.categories[group], t)!,

@@ -21,8 +21,36 @@ void main() {
       );
     });
 
-    test('uses flat cards', () {
-      expect(AppTheme.light.cardTheme.elevation, 0);
+    test('uses flat outlined cards', () {
+      for (final theme in [AppTheme.light, AppTheme.dark]) {
+        expect(theme.cardTheme.elevation, 0);
+        final shape = theme.cardTheme.shape! as RoundedRectangleBorder;
+        expect(shape.borderRadius, BorderRadius.circular(AppTheme.cardRadius));
+        expect(shape.side.color, theme.colorScheme.outlineVariant);
+      }
+    });
+
+    test('uses the soft blue palette and the Inter font', () {
+      expect(AppTheme.light.colorScheme, AppTheme.lightScheme);
+      expect(AppTheme.dark.colorScheme, AppTheme.darkScheme);
+      expect(AppTheme.light.colorScheme.primary, const Color(0xFF5F6FD6));
+      expect(
+        AppTheme.light.textTheme.bodyMedium?.fontFamily,
+        AppTheme.fontFamily,
+      );
+      expect(
+        AppTheme.dark.scaffoldBackgroundColor,
+        AppTheme.darkScheme.surface,
+      );
+    });
+
+    test('colors the selected navigation icon with the primary color', () {
+      final icons = AppTheme.light.navigationBarTheme.iconTheme!;
+      expect(
+        icons.resolve({WidgetState.selected})?.color,
+        AppTheme.lightScheme.primary,
+      );
+      expect(icons.resolve({})?.color, AppTheme.lightScheme.onSurfaceVariant);
     });
   });
 
@@ -49,6 +77,8 @@ void main() {
         negativeContainer: color,
         warning: color,
         warningContainer: color,
+        heroStart: color,
+        heroEnd: color,
         categories: {CategoryGroup.other: color},
       );
       expect(copy.positive, color);
@@ -57,6 +87,7 @@ void main() {
       expect(copy.negativeContainer, color);
       expect(copy.warning, color);
       expect(copy.warningContainer, color);
+      expect(copy.heroGradient.colors, [color, color]);
       expect(copy.categories, {CategoryGroup.other: color});
       expect(
         FinanceColors.light.copyWith().positive,
@@ -75,6 +106,8 @@ void main() {
       expect(middle.negativeContainer, dark.negativeContainer);
       expect(middle.warning, dark.warning);
       expect(middle.warningContainer, dark.warningContainer);
+      expect(middle.heroStart, dark.heroStart);
+      expect(middle.heroEnd, dark.heroEnd);
       expect(middle.categories, dark.categories);
     });
 
