@@ -40,6 +40,9 @@ abstract class ProjectionMonth with _$ProjectionMonth {
     required int savingsCents,
     @Default([]) List<CategoryAmount> expenseByCategory,
     @Default(0) int reserveCents,
+    @Default(0) int investmentIncomeCents,
+    @Default(0) int investmentsValueCents,
+    @Default(0) int netWorthCents,
   }) = _ProjectionMonth;
 
   const new _();
@@ -53,6 +56,17 @@ abstract class ProjectionMonth with _$ProjectionMonth {
   bool get hasReserve => reserveCents > 0;
 
   int get closingWithReserveCents => closingCents + reserveCents;
+
+  bool get hasInvestments => investmentsValueCents > 0;
+
+  ProjectionMonth shifted(int forecastBefore) => copyWith(
+    openingCents: openingCents - forecastBefore,
+    incomeCents: incomeCents - investmentIncomeCents,
+    closingCents: closingCents - forecastBefore - investmentIncomeCents,
+    savingsCents: savingsCents - forecastBefore - investmentIncomeCents,
+    netWorthCents: netWorthCents - forecastBefore - investmentIncomeCents,
+    investmentIncomeCents: 0,
+  );
 }
 
 @freezed
@@ -64,6 +78,29 @@ abstract class Projection with _$Projection {
     DateTime? lastEntryMonth,
     @Default(0) int negativeMonthsCount,
   }) = _Projection;
+
+  const new _();
+
+  bool get hasInvestmentIncome =>
+      months.any((month) => month.investmentIncomeCents > 0);
+
+  Projection withoutInvestmentIncome() {
+    var forecast = 0;
+    final adjusted = <ProjectionMonth>[];
+    for (final month in months) {
+      adjusted.add(month.shifted(forecast));
+      forecast += month.investmentIncomeCents;
+    }
+    final negative = [
+      for (final month in adjusted)
+        if (month.isNegative) month.month,
+    ];
+    return copyWith(
+      months: adjusted,
+      firstNegativeMonth: negative.firstOrNull,
+      negativeMonthsCount: negative.length,
+    );
+  }
 }
 
 @freezed

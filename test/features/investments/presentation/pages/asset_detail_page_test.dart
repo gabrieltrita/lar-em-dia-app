@@ -165,6 +165,93 @@ void main() {
     );
   });
 
+  testWidgets('shows the FII report and its CVM income', (tester) async {
+    when(() => repository.asset('HGLG11'))
+        .thenAnswer((_) async => hglgWithIncome);
+    await pump(tester);
+
+    expect(find.text('Informe mensal de setembro de 2026'), findsOneWidget);
+    expect(find.text(r'R$ 165,4766'), findsOneWidget);
+    expect(find.text('0,97'), findsOneWidget);
+    expect(find.text('613.837'), findsOneWidget);
+    expect(find.text(r'Rendimento · R$ 1,1669'), findsOneWidget);
+    expect(
+      find.text('Data com 30/09/2026 · pago no mês seguinte'),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('distribution_add')), findsNothing);
+  });
+
+  testWidgets('says when an FII has no income in the period', (tester) async {
+    await pump(tester);
+
+    expect(find.textContaining('rendimentos informados'), findsOneWidget);
+  });
+
+  group('a stock in the portfolio', () {
+    setUp(() {
+      when(() => repository.asset('HGLG11')).thenAnswer(
+        (_) async => itsa.copyWith(ticker: 'HGLG11', distributions: [itsaJcp]),
+      );
+      when(repository.portfolio).thenAnswer(
+        (_) async => portfolio.copyWith(
+          positions: [itsaPosition.copyWith(ticker: 'HGLG11')],
+        ),
+      );
+    });
+
+    testWidgets('lists its distributions and opens the form', (tester) async {
+      await pump(tester);
+
+      expect(find.text(r'JCP · R$ 0,2833'), findsOneWidget);
+      expect(
+        find.text('Data com 20/08/2026 · pago em 25/11/2026'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(const Key('distribution_add')));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('route:${AppRoutes.distributionForm}'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text(closedAndBack));
+      await tester.pumpAndSettle();
+      expect(notified, 0);
+
+      await tester.tap(find.text(r'JCP · R$ 0,2833'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(savedAndBack));
+      await tester.pumpAndSettle();
+      expect(notified, 1);
+    });
+
+    testWidgets('deletes a distribution after confirming', (tester) async {
+      when(() => repository.deleteDistribution(itsaJcp))
+          .thenAnswer((_) async {});
+      await pump(tester);
+
+      await tester.tap(find.byTooltip('Mais opções').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Apagar'));
+      await tester.pumpAndSettle();
+      expect(find.text('Excluir provento?'), findsOneWidget);
+      await tester.tap(find.text('Apagar').last);
+      await tester.pumpAndSettle();
+
+      verify(() => repository.deleteDistribution(itsaJcp)).called(1);
+      expect(notified, 1);
+    });
+
+    testWidgets('invites to record the first distribution', (tester) async {
+      when(() => repository.asset('HGLG11'))
+          .thenAnswer((_) async => itsa.copyWith(ticker: 'HGLG11'));
+      await pump(tester);
+
+      expect(find.textContaining('Nenhum provento registrado'), findsOneWidget);
+    });
+  });
+
   testWidgets('retries a failed load', (tester) async {
     when(() => repository.asset('HGLG11'))
         .thenThrow(const ApiError(code: 'network_error'));

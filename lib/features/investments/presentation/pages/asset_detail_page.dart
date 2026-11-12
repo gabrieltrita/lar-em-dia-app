@@ -2,19 +2,25 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:lar_em_dia/core/dates/dates.dart';
 import 'package:lar_em_dia/core/forms/error_messages.dart';
 import 'package:lar_em_dia/core/money/money.dart';
 import 'package:lar_em_dia/core/money/per_share.dart';
 import 'package:lar_em_dia/core/network/api_error.dart';
+import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/core/state/load_state.dart';
 import 'package:lar_em_dia/core/widgets/confirm_dialog.dart';
 import 'package:lar_em_dia/core/widgets/form_widgets.dart';
 import 'package:lar_em_dia/core/widgets/money_text.dart';
 import 'package:lar_em_dia/core/widgets/skeleton.dart';
+import 'package:lar_em_dia/features/investments/domain/asset.dart';
+import 'package:lar_em_dia/features/investments/domain/distribution.dart';
 import 'package:lar_em_dia/features/investments/domain/investment_transaction.dart';
 import 'package:lar_em_dia/features/investments/domain/portfolio.dart';
 import 'package:lar_em_dia/features/investments/presentation/cubits/investment_cubits.dart';
+import 'package:lar_em_dia/features/investments/presentation/pages/distribution_form_page.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/investment_form_page.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/investments_page.dart';
 import 'package:lar_em_dia/features/investments/presentation/widgets/investment_labels.dart';
@@ -54,6 +60,41 @@ class AssetDetailPage extends StatelessWidget {
     );
     if (confirmed && context.mounted) {
       await _report(context, cubit.delete(transaction));
+    }
+  }
+
+  Future<void> _openDistribution(
+    BuildContext context,
+    DistributionFormArgs args,
+  ) async {
+    final cubit = context.read<AssetDetailCubit>();
+    final changes = context.read<FinanceChanges>();
+    final saved = await context.push<bool>(
+      AppRoutes.distributionForm,
+      extra: args,
+    );
+    if (saved ?? false) {
+      changes.notify();
+      await cubit.load(quiet: true);
+    }
+  }
+
+  Future<void> _deleteDistribution(
+    BuildContext context,
+    AssetDistribution distribution,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final cubit = context.read<AssetDetailCubit>();
+    final confirmed = await confirmDeletion(
+      context,
+      title: l10n.distributionDeleteTitle,
+      message: l10n.distributionDeleteMessage(
+        distribution.kind.label(l10n),
+        Dates.display(distribution.recordOn),
+      ),
+    );
+    if (confirmed && context.mounted) {
+      await _report(context, cubit.deleteDistribution(distribution));
     }
   }
 
@@ -113,6 +154,28 @@ class AssetDetailPage extends StatelessWidget {
                 ),
               ),
             ],
+            if (detail.asset.fundReport case final report?)
+              _FundReportFigures(report: report, quote: detail.asset.quote),
+            _DistributionsSection(
+              detail: detail,
+              onAdd: () => unawaited(
+                _openDistribution(
+                  context,
+                  DistributionFormArgs(ticker: detail.asset.ticker),
+                ),
+              ),
+              onEdit: (distribution) => unawaited(
+                _openDistribution(
+                  context,
+                  DistributionFormArgs(
+                    ticker: detail.asset.ticker,
+                    existing: distribution,
+                  ),
+                ),
+              ),
+              onDelete: (distribution) =>
+                  unawaited(_deleteDistribution(context, distribution)),
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
               child: Text(
@@ -226,6 +289,162 @@ class _PositionFigures extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+class _FundReportFigures extends StatelessWidget {
+  const new({required this.report, this.quote});
+
+  static final _month = DateFormat.yMMMM('pt_BR');
+  static final _grouping = NumberFormat.decimalPattern('pt_BR');
+
+  static String _ratio(int bps) {
+    final hundredths = PerShare.roundedDivision(bps, 100);
+    final fraction = (hundredths % 100).toString().padLeft(2, '0');
+    return '${hundredths ~/ 100},$fraction';
+  }
+
+  final FundReport report;
+  final AssetQuote? quote;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final priceToBook = switch (quote) {
+      final quote? => PerShare.basisPoints(
+        quote.closeCents * PerShare.centsToE8,
+        report.bookValuePerShareE8,
+      ),
+      null => null,
+    };
+    Widget figure(String label, String value) => SizedBox(
+      width: 150,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: theme.textTheme.labelMedium),
+          const SizedBox(height: 2),
+          Text(value),
+        ],
+      ),
+    );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.fundReportTitle(_month.format(report.referenceMonth)),
+            style: theme.textTheme.titleSmall,
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 16,
+            runSpacing: 12,
+            children: [
+              figure(
+                l10n.fundReportBookValue,
+                PerShare.formatE8(report.bookValuePerShareE8),
+              ),
+              if (priceToBook case final bps?)
+                figure(l10n.fundReportPriceToBook, _ratio(bps)),
+              figure(
+                l10n.fundReportShareholders,
+                _grouping.format(report.shareholdersCount),
+              ),
+              figure(l10n.fundReportEquity, Money.format(report.equityCents)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(l10n.fundReportSource, style: theme.textTheme.bodySmall),
+        ],
+      ),
+    );
+  }
+}
+
+class _DistributionsSection extends StatelessWidget {
+  const new({
+    required this.detail,
+    required this.onAdd,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final AssetDetail detail;
+  final VoidCallback onAdd;
+  final ValueChanged<AssetDistribution> onEdit;
+  final ValueChanged<AssetDistribution> onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final asset = detail.asset;
+    final canAdd = asset.type == AssetType.stock && detail.position != null;
+    final distributions = asset.distributions;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 24, 8, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l10n.distributionsTitle,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+              if (canAdd)
+                TextButton.icon(
+                  key: const Key('distribution_add'),
+                  icon: const Icon(Icons.add),
+                  label: Text(l10n.distributionAdd),
+                  onPressed: onAdd,
+                ),
+            ],
+          ),
+        ),
+        if (distributions.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              asset.type == AssetType.stock
+                  ? l10n.distributionsEmptyStock
+                  : l10n.distributionsEmptyFii,
+            ),
+          ),
+        for (final distribution in distributions)
+          ListTile(
+            onTap: distribution.manual ? () => onEdit(distribution) : null,
+            title: Text(
+              '${distribution.kind.label(l10n)} · '
+              '${PerShare.formatE8(distribution.netAmountPerShareE8)}',
+            ),
+            subtitle: Text(
+              [
+                l10n.distributionRecordOn(Dates.display(distribution.recordOn)),
+                if (distribution.paidOn case final paidOn?)
+                  l10n.distributionPaidOn(Dates.display(paidOn))
+                else
+                  l10n.distributionPaidNextMonth,
+              ].join(' · '),
+            ),
+            trailing: distribution.manual
+                ? PopupMenuButton<void>(
+                    tooltip: l10n.investmentTransactionMenu,
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        onTap: () => onDelete(distribution),
+                        child: Text(l10n.delete),
+                      ),
+                    ],
+                  )
+                : null,
+          ),
+      ],
     );
   }
 }

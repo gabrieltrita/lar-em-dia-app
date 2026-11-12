@@ -41,8 +41,10 @@ import 'package:lar_em_dia/features/home/presentation/cubits/home_cubit.dart';
 import 'package:lar_em_dia/features/home/presentation/home_page.dart';
 import 'package:lar_em_dia/features/investments/presentation/cubits/investment_cubits.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/asset_detail_page.dart';
+import 'package:lar_em_dia/features/investments/presentation/pages/distribution_form_page.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/investment_form_page.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/investments_page.dart';
+import 'package:lar_em_dia/features/investments/presentation/pages/passive_income_page.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/portfolio_history_page.dart';
 import 'package:lar_em_dia/features/projection/domain/projection.dart';
 import 'package:lar_em_dia/features/projection/presentation/cubits/projection_cubit.dart';
@@ -82,6 +84,8 @@ abstract final class AppRoutes {
   static const investments = '/investments';
   static const investmentForm = '$investments/new';
   static const investmentHistory = '$investments/history';
+  static const passiveIncome = '$investments/income';
+  static const distributionForm = '$investments/distributions/new';
   static const reserve = '$investments/reserve';
   static const reserveAccountForm = '$reserve/accounts/new';
   static const reserveMovementForm = '$reserve/movements/new';
@@ -284,6 +288,23 @@ GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
         create: (_) =>
             _started(getIt<PortfolioHistoryCubit>(), (cubit) => cubit.load()),
         child: const PortfolioHistoryPage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.passiveIncome,
+      builder: (context, state) => BlocProvider(
+        create: (_) =>
+            _started(getIt<PassiveIncomeCubit>(), (cubit) => cubit.load()),
+        child: const PassiveIncomePage(),
+      ),
+    ),
+    formRoute(
+      path: AppRoutes.distributionForm,
+      redirect: (context, state) =>
+          state.extra is DistributionFormArgs ? null : AppRoutes.investments,
+      builder: (context, state) => BlocProvider(
+        create: (_) => getIt<DistributionFormCubit>(),
+        child: DistributionFormPage(args: state.extra! as DistributionFormArgs),
       ),
     ),
     GoRoute(

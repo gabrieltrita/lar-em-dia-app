@@ -4,6 +4,7 @@ import 'package:lar_em_dia/core/network/api_client.dart';
 import 'package:lar_em_dia/features/entries/data/finance_cache.dart';
 import 'package:lar_em_dia/features/investments/data/investment_dtos.dart';
 import 'package:lar_em_dia/features/investments/domain/asset.dart';
+import 'package:lar_em_dia/features/investments/domain/distribution.dart';
 import 'package:lar_em_dia/features/investments/domain/investment_repository.dart';
 import 'package:lar_em_dia/features/investments/domain/investment_transaction.dart';
 import 'package:lar_em_dia/features/investments/domain/portfolio.dart';
@@ -13,6 +14,7 @@ class ApiInvestmentRepository implements InvestmentRepository {
   new(this._client, this._cache);
 
   static const transactionsPath = '/investment_transactions';
+  static const distributionsPath = '/asset_distributions';
   static const searchLimit = 20;
   static const transactionsLimit = 100;
 
@@ -113,6 +115,46 @@ class ApiInvestmentRepository implements InvestmentRepository {
     );
   }
 
+  @override
+  Future<PassiveIncome> income() async {
+    final response = await _client.get<PassiveIncome>(
+      '/portfolio/income',
+      decode: (data) => PassiveIncomeDto.fromJson(data! as Json).toDomain(),
+    );
+    return response.data;
+  }
+
+  @override
+  Future<AssetDistribution> createDistribution(DistributionDraft draft) async {
+    final response = await _client.post<AssetDistribution>(
+      distributionsPath,
+      decode: _distribution,
+      body: {'ticker': draft.ticker, ..._distributionBody(draft)},
+    );
+    _cache.clear();
+    return response.data;
+  }
+
+  @override
+  Future<AssetDistribution> updateDistribution(
+    AssetDistribution existing,
+    DistributionDraft draft,
+  ) async {
+    final response = await _client.patch<AssetDistribution>(
+      '$distributionsPath/${existing.id}',
+      decode: _distribution,
+      body: _distributionBody(draft),
+    );
+    _cache.clear();
+    return response.data;
+  }
+
+  @override
+  Future<void> deleteDistribution(AssetDistribution distribution) async {
+    await _client.delete('$distributionsPath/${distribution.id}');
+    _cache.clear();
+  }
+
   void _changed(bool balance) {
     if (balance) {
       _cache.clear();
@@ -131,6 +173,16 @@ class ApiInvestmentRepository implements InvestmentRepository {
     },
     if (draft.goal case final goal?) 'goal': goal.name,
   };
+
+  static Json _distributionBody(DistributionDraft draft) => {
+    'kind': InvestmentWire.distributionKind(draft.kind),
+    'record_on': Dates.toIso(draft.recordOn),
+    'paid_on': Dates.toIso(draft.paidOn),
+    'amount_per_share_e8': draft.amountPerShareE8,
+  };
+
+  static AssetDistribution _distribution(Object? data) =>
+      AssetDistributionDto.fromJson(data! as Json).toDomain();
 
   static Asset _asset(Object? data) =>
       AssetDto.fromJson(data! as Json).toDomain();
