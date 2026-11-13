@@ -55,8 +55,17 @@ class ProjectionPage extends StatelessWidget {
                 ),
               ),
             ),
+            if (state.offersInvestmentIncome)
+              SwitchListTile(
+                key: const Key('projection_investment_income'),
+                title: Text(l10n.projectionIncludeInvestmentIncome),
+                subtitle: Text(l10n.projectionIncludeInvestmentIncomeHint),
+                value: state.includeInvestmentIncome,
+                onChanged: (include) =>
+                    unawaited(cubit.includeInvestmentIncome(include: include)),
+              ),
             Expanded(
-              child: switch (state.data) {
+              child: switch (state.visible) {
                 Loading() => SkeletonList(label: l10n.loadingLabel),
                 LoadFailure(:final error) => RetryMessage(
                   message: error.localized(l10n),

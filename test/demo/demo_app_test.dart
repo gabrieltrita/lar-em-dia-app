@@ -12,7 +12,10 @@ import 'package:lar_em_dia/core/storage/token_storage.dart';
 import 'package:lar_em_dia/demo/demo_mode.dart';
 import 'package:lar_em_dia/demo/demo_seed.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
+import 'package:lar_em_dia/features/projection/domain/projection_preferences.dart';
 import 'package:lar_em_dia/features/reserve/domain/reserve_dismissal.dart';
+
+import '../helpers/finance_fixtures.dart';
 
 import '../helpers/memory_token_storage.dart';
 import '../helpers/reserve_fixtures.dart';
@@ -30,6 +33,7 @@ void main() {
       ..registerSingleton<TokenStorage>(storage)
       ..registerSingleton<TokenTransport>(TokenTransport.body)
       ..registerSingleton<ReserveDismissal>(dismissalUntil(null))
+      ..registerSingleton<ProjectionPreferences>(FakeProjectionPreferences())
       ..registerSingleton<Dio>(
         demoDio()
           ..interceptors.add(

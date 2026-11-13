@@ -6,6 +6,7 @@ import 'package:lar_em_dia/features/entries/data/finance_cache.dart';
 import 'package:lar_em_dia/features/investments/data/api_investment_repository.dart';
 import 'package:lar_em_dia/features/investments/data/investment_dtos.dart';
 import 'package:lar_em_dia/features/investments/domain/asset.dart';
+import 'package:lar_em_dia/features/investments/domain/distribution.dart';
 import 'package:lar_em_dia/features/investments/domain/investment_transaction.dart';
 import 'package:lar_em_dia/features/investments/domain/portfolio.dart';
 
@@ -119,6 +120,106 @@ void main() {
     expect(await repository.asset('HGLG11'), hglg);
     expect(adapter.requests.single.path, '/assets/HGLG11');
   });
+
+  test('reads an FII with its report and distributions', () async {
+    final repository = build(
+      (_) => ok({
+        ...assetJson,
+        'fund_report': {
+          'reference_month': '2026-09',
+          'equity_cents': 754601779739,
+          'book_value_per_share_e8': 16547663017,
+          'shares_count': 45601713,
+          'shareholders_count': 613837,
+        },
+        'distributions': [
+          {
+            'id': 'distribution-1',
+            'ticker': 'HGLG11',
+            'kind': 'fii_income',
+            'source': 'cvm',
+            'record_on': '2026-09-30',
+            'paid_on': null,
+            'amount_per_share_e8': 116691920,
+            'net_amount_per_share_e8': 116691920,
+          },
+        ],
+      }),
+    );
+
+    expect(await repository.asset('HGLG11'), hglgWithIncome);
+  });
+
+  test('reads the passive income', () async {
+    final repository = build(
+      (_) => ok({
+        'monthly_average_cents': 1250,
+        'received': [
+          {'month': '2026-10', 'amount_cents': 15000},
+          {'month': '2026-11', 'amount_cents': 0},
+        ],
+        'forecast': [
+          {'month': '2026-12', 'amount_cents': 1167},
+        ],
+        'positions': [
+          {
+            'ticker': 'HGLG11',
+            'goal': 'income',
+            'quantity': 10,
+            'received_12m_cents': 15000,
+            'monthly_forecast_cents': 1167,
+          },
+        ],
+      }),
+    );
+
+    expect(await repository.income(), passiveIncome);
+    expect(adapter.requests.single.path, '/portfolio/income');
+  });
+
+  test(
+    'records, edits and deletes a distribution, clearing the cache',
+    () async {
+      const jcpJson = {
+        'id': 'distribution-2',
+        'ticker': 'ITSA4',
+        'kind': 'jcp',
+        'source': 'manual',
+        'record_on': '2026-08-20',
+        'paid_on': '2026-11-25',
+        'amount_per_share_e8': 33333333,
+        'net_amount_per_share_e8': 28333333,
+      };
+      final repository = build((_) => ok(jcpJson));
+      final body = {
+        'kind': 'jcp',
+        'record_on': '2026-08-20',
+        'paid_on': '2026-11-25',
+        'amount_per_share_e8': 33333333,
+      };
+
+      expect(await repository.createDistribution(itsaJcpDraft), itsaJcp);
+      expect(adapter.requests.last.method, 'POST');
+      expect(adapter.requests.last.path, '/asset_distributions');
+      expect(adapter.requests.last.data, {'ticker': 'ITSA4', ...body});
+      expect(cache.latestBalanceKnown, isFalse);
+
+      cache.latestBalance = balance;
+      expect(
+        await repository.updateDistribution(itsaJcp, itsaJcpDraft),
+        itsaJcp,
+      );
+      expect(adapter.requests.last.method, 'PATCH');
+      expect(adapter.requests.last.path, '/asset_distributions/distribution-2');
+      expect(adapter.requests.last.data, body);
+      expect(cache.latestBalanceKnown, isFalse);
+
+      cache.latestBalance = balance;
+      await repository.deleteDistribution(itsaJcp);
+      expect(adapter.requests.last.method, 'DELETE');
+      expect(cache.latestBalanceKnown, isFalse);
+    },
+  );
 
   test('reads the portfolio and fills missing goals', () async {
     final repository = build((_) => ok(portfolioJson));
@@ -282,5 +383,13 @@ void main() {
       expect(InvestmentWire.parseKind(InvestmentWire.kind(kind)), kind);
     }
     expect(InvestmentWire.parseType('stock'), AssetType.stock);
+    for (final kind in DistributionKind.values) {
+      expect(
+        InvestmentWire.parseDistributionKind(
+          InvestmentWire.distributionKind(kind),
+        ),
+        kind,
+      );
+    }
   });
 }

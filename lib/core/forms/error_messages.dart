@@ -52,6 +52,8 @@ extension ApiErrorMessages on ApiError {
       'immutable' => l10n.validationImmutable,
       'insufficient_quantity' => l10n.validationInsufficientQuantity,
       'unknown_asset' => l10n.validationUnknownAsset,
+      'stock_only' => l10n.validationStockOnly,
+      'before_record_on' => l10n.validationBeforeRecordOn,
       'only_for_trades' => l10n.validationOnlyForTrades,
       'insufficient_reserve' => l10n.validationInsufficientReserve,
       'anchor_not_allowed' => l10n.validationAnchorNotAllowed,

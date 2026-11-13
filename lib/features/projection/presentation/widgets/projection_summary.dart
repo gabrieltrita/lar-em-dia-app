@@ -56,6 +56,13 @@ class ProjectionHero extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
+        if (last.hasInvestments)
+          Text(
+            l10n.projectionHeroNetWorth(Money.format(last.netWorthCents)),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
         if (onSeeMore != null)
           TextButton(
             style: TextButton.styleFrom(padding: EdgeInsets.zero),
@@ -200,6 +207,21 @@ class MonthReadout extends StatelessWidget {
                     cell(
                       l10n.projectionReadoutWithReserve,
                       MoneyText(month.closingWithReserveCents, style: value),
+                    ),
+                  ],
+                ),
+              ],
+              if (month.hasInvestments) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    cell(
+                      l10n.projectionReadoutInvestments,
+                      MoneyText(month.investmentsValueCents, style: value),
+                    ),
+                    cell(
+                      l10n.projectionReadoutNetWorth,
+                      MoneyText(month.netWorthCents, style: value),
                     ),
                   ],
                 ),
@@ -371,6 +393,30 @@ class MonthSummaryTile extends StatelessWidget {
                   children: [
                     Text(l10n.projectionReadoutReserve, style: muted),
                     MoneyText(month.reserveCents, style: muted),
+                  ],
+                ),
+              ],
+              if (month.investmentIncomeCents > 0) ...[
+                const SizedBox(height: 6),
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    Text(l10n.projectionMonthInvestmentIncome, style: muted),
+                    MoneyText(month.investmentIncomeCents, style: muted),
+                  ],
+                ),
+              ],
+              if (month.hasInvestments) ...[
+                const SizedBox(height: 6),
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    Text(l10n.projectionReadoutNetWorth, style: muted),
+                    MoneyText(month.netWorthCents, style: muted),
                   ],
                 ),
               ],

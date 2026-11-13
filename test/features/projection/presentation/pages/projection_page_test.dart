@@ -41,8 +41,10 @@ void main() {
     await pumpPage(
       tester,
       BlocProvider(
-        create: (_) =>
-            started(ProjectionCubit(repository), (cubit) => cubit.load()),
+        create: (_) => started(
+          ProjectionCubit(repository, FakeProjectionPreferences()),
+          (cubit) => cubit.load(),
+        ),
         child: const ProjectionPage(),
       ),
       session: harness.session,
@@ -307,5 +309,34 @@ void main() {
     await tester.tap(find.text(savedAndBack));
     await tester.pumpAndSettle();
     verifyLoads(1);
+  });
+
+  testWidgets('shows the net worth and switches the forecast income off', (
+    tester,
+  ) async {
+    answer(() => investedProjection);
+    await pump(tester);
+
+    expect(find.text(r'Patrimônio total: R$ 2.334,56'), findsOneWidget);
+    expect(find.text('Patrimônio total'), findsWidgets);
+    expect(find.text('Carteira'), findsOneWidget);
+    expect(
+      find.text(r'Saldo previsto em dezembro de 2026: -R$ 965,44'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('dezembro de 2026').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Proventos previstos'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('projection_investment_income')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(r'Saldo previsto em dezembro de 2026: -R$ 1.065,44'),
+      findsOneWidget,
+    );
+    expect(find.text(r'Patrimônio total: R$ 2.234,56'), findsOneWidget);
+    expect(find.text('Proventos previstos'), findsNothing);
   });
 }

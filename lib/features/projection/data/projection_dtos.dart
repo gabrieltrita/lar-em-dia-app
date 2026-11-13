@@ -46,6 +46,9 @@ abstract class ProjectionMonthDto with _$ProjectionMonthDto {
     required int savingsCents,
     @Default([]) List<CategoryAmountDto> expenseByCategory,
     @Default(0) int reserveCents,
+    @Default(0) int investmentIncomeCents,
+    @Default(0) int investmentsValueCents,
+    @Default(0) int netWorthCents,
   }) = _ProjectionMonthDto;
 
   const new _();
@@ -66,6 +69,9 @@ abstract class ProjectionMonthDto with _$ProjectionMonthDto {
       for (final amount in expenseByCategory) amount.toDomain(),
     ],
     reserveCents: reserveCents,
+    investmentIncomeCents: investmentIncomeCents,
+    investmentsValueCents: investmentsValueCents,
+    netWorthCents: netWorthCents,
   );
 }
 

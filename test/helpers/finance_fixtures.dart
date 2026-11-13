@@ -4,6 +4,7 @@ import 'package:lar_em_dia/features/entries/domain/category.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/domain/entry_repository.dart';
 import 'package:lar_em_dia/features/projection/domain/projection.dart';
+import 'package:lar_em_dia/features/projection/domain/projection_preferences.dart';
 import 'package:lar_em_dia/features/projection/domain/projection_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -12,6 +13,19 @@ class MockBalanceRepository extends Mock implements BalanceRepository;
 class MockEntryRepository extends Mock implements EntryRepository;
 
 class MockProjectionRepository extends Mock implements ProjectionRepository;
+
+class FakeProjectionPreferences implements ProjectionPreferences {
+  new({this.include = true});
+
+  bool include;
+
+  @override
+  Future<bool> includeInvestmentIncome() async => include;
+
+  @override
+  Future<void> setIncludeInvestmentIncome({required bool include}) async =>
+      this.include = include;
+}
 
 final november = DateTime(2026, 11);
 
@@ -129,6 +143,27 @@ final decemberProjection = ProjectionMonth(
 final projection = Projection(
   anchor: ProjectionAnchor(amountCents: 123456, asOf: DateTime(2026, 11, 3)),
   months: [novemberProjection, decemberProjection],
+  firstNegativeMonth: DateTime(2026, 12),
+  lastEntryMonth: DateTime(2027, 3),
+  negativeMonthsCount: 1,
+);
+
+final investedProjection = Projection(
+  anchor: ProjectionAnchor(amountCents: 123456, asOf: DateTime(2026, 11, 3)),
+  months: [
+    novemberProjection.copyWith(
+      investmentsValueCents: 330000,
+      netWorthCents: 823456,
+    ),
+    decemberProjection.copyWith(
+      incomeCents: 10000,
+      investmentIncomeCents: 10000,
+      closingCents: -96544,
+      savingsCents: -220000,
+      investmentsValueCents: 330000,
+      netWorthCents: 233456,
+    ),
+  ],
   firstNegativeMonth: DateTime(2026, 12),
   lastEntryMonth: DateTime(2027, 3),
   negativeMonthsCount: 1,

@@ -7,6 +7,7 @@ import 'package:lar_em_dia/core/forms/submission.dart';
 import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/core/state/load_state.dart';
 import 'package:lar_em_dia/features/investments/domain/asset.dart';
+import 'package:lar_em_dia/features/investments/domain/distribution.dart';
 import 'package:lar_em_dia/features/investments/domain/investment_repository.dart';
 import 'package:lar_em_dia/features/investments/domain/investment_transaction.dart';
 import 'package:lar_em_dia/features/investments/domain/portfolio.dart';
@@ -19,6 +20,7 @@ abstract class PortfolioView with _$PortfolioView {
     required Portfolio portfolio,
     required List<PortfolioMonth> history,
     InvestmentGoal? filter,
+    PassiveIncome? income,
   }) = _PortfolioView;
 
   const new _();
@@ -52,6 +54,7 @@ class PortfolioCubit extends Cubit<LoadState<PortfolioView>> {
     try {
       final portfolio = _repository.portfolio();
       final history = _repository.history();
+      final income = _income();
       await Future.wait([portfolio, history]);
       emit(
         LoadState.loaded(
@@ -59,11 +62,20 @@ class PortfolioCubit extends Cubit<LoadState<PortfolioView>> {
             portfolio: await portfolio,
             history: await history,
             filter: filter,
+            income: await income,
           ),
         ),
       );
     } on ApiError catch (error) {
       emit(LoadState.failure(error));
+    }
+  }
+
+  Future<PassiveIncome?> _income() async {
+    try {
+      return await _repository.income();
+    } on ApiError {
+      return null;
     }
   }
 
@@ -85,6 +97,22 @@ class PortfolioHistoryCubit extends Cubit<LoadState<List<PortfolioMonth>>> {
     emit(const LoadState<List<PortfolioMonth>>.loading());
     try {
       emit(LoadState.loaded(await _repository.history()));
+    } on ApiError catch (error) {
+      emit(LoadState.failure(error));
+    }
+  }
+}
+
+@injectable
+class PassiveIncomeCubit extends Cubit<LoadState<PassiveIncome>> {
+  new(this._repository) : super(const LoadState<PassiveIncome>.loading());
+
+  final InvestmentRepository _repository;
+
+  Future<void> load() async {
+    emit(const LoadState<PassiveIncome>.loading());
+    try {
+      emit(LoadState.loaded(await _repository.income()));
     } on ApiError catch (error) {
       emit(LoadState.failure(error));
     }
@@ -136,6 +164,9 @@ class AssetDetailCubit extends Cubit<LoadState<AssetDetail>> {
 
   Future<ApiError?> delete(InvestmentTransaction transaction) =>
       _change(() => _repository.delete(transaction));
+
+  Future<ApiError?> deleteDistribution(AssetDistribution distribution) =>
+      _change(() => _repository.deleteDistribution(distribution));
 
   Future<ApiError?> _change(Future<void> Function() action) async {
     try {
@@ -200,5 +231,19 @@ class InvestmentFormCubit extends SubmissionCubit<InvestmentTransaction> {
         () => existing == null
             ? _repository.create(draft)
             : _repository.update(existing, draft),
+      );
+}
+
+@injectable
+class DistributionFormCubit extends SubmissionCubit<AssetDistribution> {
+  new(this._repository);
+
+  final InvestmentRepository _repository;
+
+  Future<void> save(DistributionDraft draft, {AssetDistribution? existing}) =>
+      run(
+        () => existing == null
+            ? _repository.createDistribution(draft)
+            : _repository.updateDistribution(existing, draft),
       );
 }

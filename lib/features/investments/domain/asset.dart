@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lar_em_dia/features/investments/domain/distribution.dart';
 
 part 'asset.freezed.dart';
 
@@ -18,5 +19,7 @@ abstract class Asset with _$Asset {
     required AssetType type,
     String? sector,
     AssetQuote? quote,
+    FundReport? fundReport,
+    @Default([]) List<AssetDistribution> distributions,
   }) = _Asset;
 }

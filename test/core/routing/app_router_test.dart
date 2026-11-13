@@ -40,9 +40,12 @@ import 'package:lar_em_dia/features/entries/presentation/pages/entry_form_page.d
 import 'package:lar_em_dia/features/home/presentation/home_page.dart';
 import 'package:lar_em_dia/features/investments/domain/investment_repository.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/asset_detail_page.dart';
+import 'package:lar_em_dia/features/investments/presentation/pages/distribution_form_page.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/investment_form_page.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/investments_page.dart';
+import 'package:lar_em_dia/features/investments/presentation/pages/passive_income_page.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/portfolio_history_page.dart';
+import 'package:lar_em_dia/features/projection/domain/projection_preferences.dart';
 import 'package:lar_em_dia/features/projection/domain/projection_repository.dart';
 import 'package:lar_em_dia/features/projection/presentation/pages/projection_details_page.dart';
 import 'package:lar_em_dia/features/projection/presentation/pages/projection_page.dart';
@@ -159,6 +162,7 @@ void main() {
           .thenAnswer((_) async => [anchorMovement]);
       when(investments.portfolio).thenAnswer((_) async => portfolio);
       when(investments.history).thenAnswer((_) async => history);
+      when(investments.income).thenAnswer((_) async => passiveIncome);
       when(() => investments.asset('HGLG11')).thenAnswer((_) async => hglg);
       when(() => investments.transactions('HGLG11'))
           .thenAnswer((_) async => [hglgBuy]);
@@ -192,7 +196,8 @@ void main() {
         ..registerSingleton<AccountRepository>(account)
         ..registerSingleton<InvestmentRepository>(investments)
         ..registerSingleton<ReserveRepository>(reserve)
-        ..registerSingleton<ReserveDismissal>(dismissalUntil(null));
+        ..registerSingleton<ReserveDismissal>(dismissalUntil(null))
+        ..registerSingleton<ProjectionPreferences>(FakeProjectionPreferences());
       events = SessionEvents();
       session = SessionCubit(repository, events);
       router = buildRouter(session);
@@ -302,6 +307,7 @@ void main() {
         AppRoutes.investments: InvestmentsPage,
         AppRoutes.investmentForm: InvestmentFormPage,
         AppRoutes.investmentHistory: PortfolioHistoryPage,
+        AppRoutes.passiveIncome: PassiveIncomePage,
         AppRoutes.assetDetail('hglg11'): AssetDetailPage,
       };
       for (final MapEntry(key: location, value: page) in pages.entries) {
@@ -310,6 +316,16 @@ void main() {
         expect(find.byType(page), findsOneWidget, reason: location);
       }
       verify(() => entries.month(DateTime(2026, 2))).called(1);
+
+      router.go(
+        AppRoutes.distributionForm,
+        extra: const DistributionFormArgs(ticker: 'ITSA4'),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(DistributionFormPage), findsOneWidget);
+      router.go(AppRoutes.distributionForm);
+      await tester.pumpAndSettle();
+      expect(find.byType(InvestmentsPage), findsOneWidget);
 
       router.go(AppRoutes.balanceForm, extra: balance);
       await tester.pumpAndSettle();

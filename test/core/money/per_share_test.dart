@@ -32,4 +32,20 @@ void main() {
     expect(PerShare.roundedDivision(5, -2), -3);
     expect(PerShare.roundedDivision(4, 3), 1);
   });
+
+  test('parses a value per share with up to eight decimals', () {
+    expect(PerShare.parseE8('0,33333333'), 33333333);
+    expect(PerShare.parseE8(r'R$ 1.234,5'), 123450000000);
+    expect(PerShare.parseE8('1.10'), 110000000);
+    expect(PerShare.parseE8(' 2 '), 200000000);
+    expect(PerShare.parseE8('0,00'), isNull);
+    expect(PerShare.parseE8('0,123456789'), isNull);
+    expect(PerShare.parseE8('abc'), isNull);
+  });
+
+  test('writes a value per share for editing, keeping two decimals', () {
+    expect(PerShare.inputE8(33333333), '0,33333333');
+    expect(PerShare.inputE8(110000000), '1,10');
+    expect(PerShare.inputE8(123450000000), '1234,50');
+  });
 }

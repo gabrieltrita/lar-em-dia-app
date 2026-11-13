@@ -1,4 +1,5 @@
 import 'package:lar_em_dia/features/investments/domain/asset.dart';
+import 'package:lar_em_dia/features/investments/domain/distribution.dart';
 import 'package:lar_em_dia/features/investments/domain/investment_repository.dart';
 import 'package:lar_em_dia/features/investments/domain/investment_transaction.dart';
 import 'package:lar_em_dia/features/investments/domain/portfolio.dart';
@@ -127,7 +128,77 @@ final hglgDraft = InvestmentDraft(
   debitBalance: true,
 );
 
+final hglgReport = FundReport(
+  referenceMonth: DateTime(2026, 9),
+  equityCents: 754601779739,
+  bookValuePerShareE8: 16547663017,
+  sharesCount: 45601713,
+  shareholdersCount: 613837,
+);
+
+final hglgIncome = AssetDistribution(
+  id: 'distribution-1',
+  ticker: 'HGLG11',
+  kind: DistributionKind.fiiIncome,
+  manual: false,
+  recordOn: DateTime(2026, 9, 30),
+  amountPerShareE8: 116691920,
+  netAmountPerShareE8: 116691920,
+);
+
+final itsaJcp = AssetDistribution(
+  id: 'distribution-2',
+  ticker: 'ITSA4',
+  kind: DistributionKind.jcp,
+  manual: true,
+  recordOn: DateTime(2026, 8, 20),
+  paidOn: DateTime(2026, 11, 25),
+  amountPerShareE8: 33333333,
+  netAmountPerShareE8: 28333333,
+);
+
+final itsaJcpDraft = DistributionDraft(
+  ticker: 'ITSA4',
+  kind: DistributionKind.jcp,
+  recordOn: DateTime(2026, 8, 20),
+  paidOn: DateTime(2026, 11, 25),
+  amountPerShareE8: 33333333,
+);
+
+final Asset hglgWithIncome = hglg.copyWith(
+  fundReport: hglgReport,
+  distributions: [hglgIncome],
+);
+
+const itsa = Asset(ticker: 'ITSA4', name: 'ITAUSA', type: AssetType.stock);
+
+final passiveIncome = PassiveIncome(
+  monthlyAverageCents: 1250,
+  received: [
+    IncomeMonth(month: DateTime(2026, 10), amountCents: 15000),
+    IncomeMonth(month: DateTime(2026, 11), amountCents: 0),
+  ],
+  forecast: [IncomeMonth(month: DateTime(2026, 12), amountCents: 1167)],
+  positions: const [
+    PositionIncome(
+      ticker: 'HGLG11',
+      quantity: 10,
+      received12mCents: 15000,
+      monthlyForecastCents: 1167,
+    ),
+  ],
+);
+
+const noIncome = PassiveIncome(
+  monthlyAverageCents: 0,
+  received: [],
+  forecast: [],
+  positions: [],
+);
+
 void registerInvestmentFallbacks() {
+  registerFallbackValue(itsaJcpDraft);
+  registerFallbackValue(itsaJcp);
   registerFallbackValue(hglgDraft);
   registerFallbackValue(hglgBuy);
   registerFallbackValue(InvestmentGoal.income);
