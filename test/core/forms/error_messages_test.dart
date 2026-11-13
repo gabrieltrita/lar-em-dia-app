@@ -36,6 +36,8 @@ void main() {
       'installment_amount_locked': l10n.errorInstallmentAmountLocked,
       'insufficient_quantity': l10n.errorInsufficientQuantity,
       'insufficient_reserve': l10n.errorInsufficientReserve,
+      'invalid_filter': l10n.errorInvalidFilter,
+      'invalid_sort': l10n.errorInvalidFilter,
       ApiError.networkErrorCode: l10n.errorNetwork,
       'something_new': l10n.errorUnknown,
     };
@@ -67,6 +69,7 @@ void main() {
       'insufficient_quantity': l10n.validationInsufficientQuantity,
       'unknown_asset': l10n.validationUnknownAsset,
       'stock_only': l10n.validationStockOnly,
+      'no_income_data': l10n.validationNoIncomeData,
       'before_record_on': l10n.validationBeforeRecordOn,
       'only_for_trades': l10n.validationOnlyForTrades,
       'insufficient_reserve': l10n.validationInsufficientReserve,

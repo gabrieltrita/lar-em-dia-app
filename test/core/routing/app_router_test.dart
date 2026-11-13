@@ -39,12 +39,15 @@ import 'package:lar_em_dia/features/entries/presentation/pages/entries_page.dart
 import 'package:lar_em_dia/features/entries/presentation/pages/entry_form_page.dart';
 import 'package:lar_em_dia/features/home/presentation/home_page.dart';
 import 'package:lar_em_dia/features/investments/domain/investment_repository.dart';
+import 'package:lar_em_dia/features/investments/domain/screener.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/asset_detail_page.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/distribution_form_page.dart';
+import 'package:lar_em_dia/features/investments/presentation/pages/explore_page.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/investment_form_page.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/investments_page.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/passive_income_page.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/portfolio_history_page.dart';
+import 'package:lar_em_dia/features/investments/presentation/pages/simulator_page.dart';
 import 'package:lar_em_dia/features/projection/domain/projection_preferences.dart';
 import 'package:lar_em_dia/features/projection/domain/projection_repository.dart';
 import 'package:lar_em_dia/features/projection/presentation/pages/projection_details_page.dart';
@@ -163,6 +166,8 @@ void main() {
       when(investments.portfolio).thenAnswer((_) async => portfolio);
       when(investments.history).thenAnswer((_) async => history);
       when(investments.income).thenAnswer((_) async => passiveIncome);
+      when(() => investments.screen(any()))
+          .thenAnswer((_) async => ScreenerPage(assets: [hglgScreened]));
       when(() => investments.asset('HGLG11')).thenAnswer((_) async => hglg);
       when(() => investments.transactions('HGLG11'))
           .thenAnswer((_) async => [hglgBuy]);
@@ -308,6 +313,8 @@ void main() {
         AppRoutes.investmentForm: InvestmentFormPage,
         AppRoutes.investmentHistory: PortfolioHistoryPage,
         AppRoutes.passiveIncome: PassiveIncomePage,
+        AppRoutes.explore: ExplorePage,
+        AppRoutes.investmentSimulator: SimulatorPage,
         AppRoutes.assetDetail('hglg11'): AssetDetailPage,
       };
       for (final MapEntry(key: location, value: page) in pages.entries) {

@@ -3,6 +3,8 @@ import 'package:lar_em_dia/features/investments/domain/distribution.dart';
 import 'package:lar_em_dia/features/investments/domain/investment_repository.dart';
 import 'package:lar_em_dia/features/investments/domain/investment_transaction.dart';
 import 'package:lar_em_dia/features/investments/domain/portfolio.dart';
+import 'package:lar_em_dia/features/investments/domain/screener.dart';
+import 'package:lar_em_dia/features/investments/domain/simulation.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockInvestmentRepository extends Mock implements InvestmentRepository;
@@ -202,4 +204,105 @@ void registerInvestmentFallbacks() {
   registerFallbackValue(hglgDraft);
   registerFallbackValue(hglgBuy);
   registerFallbackValue(InvestmentGoal.income);
+  registerFallbackValue(const ScreenerQuery());
+  registerFallbackValue(incomeInput);
+  registerFallbackValue(growthInput);
 }
+
+final hglgIndicators = AssetIndicators(
+  computedOn: DateTime(2026, 11, 11),
+  priceCents: 16000,
+  dividendYieldBps: 825,
+  distributionAverageE8: 110000000,
+  distributionMedianE8: 108000000,
+  yearsPaying: 3,
+  priceToBookE2: 97,
+  liquidityCents: 2854943689,
+);
+
+final petrIndicators = AssetIndicators(
+  computedOn: DateTime(2026, 11, 11),
+  priceCents: 3200,
+  dividendYieldBps: 1095,
+  yearsPaying: 5,
+  payoutBps: 4087,
+  priceToBookE2: 99,
+  priceToEarningsE2: 373,
+  roeAverageBps: 2210,
+  earningsGrowthBps: -350,
+  equityGrowthBps: 812,
+  yearsWithProfit: 5,
+  netMarginBps: 2223,
+  netDebtToEquityBps: 7984,
+  liquidityCents: 150000000000,
+  financialYears: 5,
+);
+
+final Asset hglgScreened = hglg.copyWith(
+  quote: null,
+  indicators: hglgIndicators,
+);
+
+final Asset petrScreened = petr.copyWith(
+  sector: 'Petróleo e Gás',
+  indicators: petrIndicators,
+);
+
+const btlg = Asset(ticker: 'BTLG11', name: 'BTG LOG', type: AssetType.fii);
+
+const incomeInput = IncomeSimulationInput(
+  months: 24,
+  initialCents: 100000,
+  monthlyCents: 15000,
+  ticker: 'HGLG11',
+  targetMonthlyIncomeCents: 1000,
+);
+
+const incomeSimulation = IncomeSimulation(
+  ticker: 'HGLG11',
+  priceCents: 10000,
+  monthlyIncomePerShareE8: 100000000,
+  reinvest: true,
+  sharesForTarget: 10,
+  capitalForTargetCents: 100000,
+  monthsToTarget: 1,
+  targetMonthlyIncomeCents: 1000,
+  months: [
+    IncomeSimulationMonth(
+      month: 12,
+      contributedCents: 280000,
+      shares: 28,
+      valueCents: 285000,
+      incomeCents: 2800,
+      receivedCents: 22000,
+    ),
+    IncomeSimulationMonth(
+      month: 24,
+      contributedCents: 460000,
+      shares: 48,
+      valueCents: 485000,
+      incomeCents: 4800,
+      receivedCents: 70000,
+    ),
+  ],
+);
+
+const growthInput = GrowthSimulationInput(
+  months: 12,
+  annualRateBps: 1200,
+  initialCents: 100000,
+  monthlyCents: 10000,
+);
+
+const growthSimulation = GrowthSimulation(
+  annualRateBps: 1200,
+  monthlyRateE8: 948879,
+  months: [
+    GrowthSimulationMonth(
+      month: 12,
+      contributedCents: 220000,
+      valueCents: 238465,
+      earningsCents: 18465,
+    ),
+  ],
+);

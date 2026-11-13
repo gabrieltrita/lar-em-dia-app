@@ -51,7 +51,24 @@ class InvestmentsPage extends StatelessWidget {
       _ => null,
     };
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.investmentsTitle)),
+      appBar: AppBar(
+        title: Text(l10n.investmentsTitle),
+        actions: [
+          IconButton(
+            key: const Key('investments_explore'),
+            tooltip: l10n.exploreOpen,
+            icon: const Icon(Icons.travel_explore),
+            onPressed: () => unawaited(context.push<void>(AppRoutes.explore)),
+          ),
+          IconButton(
+            key: const Key('investments_simulator'),
+            tooltip: l10n.simulatorOpen,
+            icon: const Icon(Icons.calculate_outlined),
+            onPressed: () =>
+                unawaited(context.push<void>(AppRoutes.investmentSimulator)),
+          ),
+        ],
+      ),
       bottomNavigationBar: const InvestmentsDisclaimer(),
       floatingActionButton: loaded == null
           ? null

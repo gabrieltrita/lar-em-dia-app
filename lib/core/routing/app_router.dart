@@ -42,10 +42,12 @@ import 'package:lar_em_dia/features/home/presentation/home_page.dart';
 import 'package:lar_em_dia/features/investments/presentation/cubits/investment_cubits.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/asset_detail_page.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/distribution_form_page.dart';
+import 'package:lar_em_dia/features/investments/presentation/pages/explore_page.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/investment_form_page.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/investments_page.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/passive_income_page.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/portfolio_history_page.dart';
+import 'package:lar_em_dia/features/investments/presentation/pages/simulator_page.dart';
 import 'package:lar_em_dia/features/projection/domain/projection.dart';
 import 'package:lar_em_dia/features/projection/presentation/cubits/projection_cubit.dart';
 import 'package:lar_em_dia/features/projection/presentation/cubits/simulation_cubit.dart';
@@ -85,6 +87,8 @@ abstract final class AppRoutes {
   static const investmentForm = '$investments/new';
   static const investmentHistory = '$investments/history';
   static const passiveIncome = '$investments/income';
+  static const explore = '$investments/explore';
+  static const investmentSimulator = '$investments/simulator';
   static const distributionForm = '$investments/distributions/new';
   static const reserve = '$investments/reserve';
   static const reserveAccountForm = '$reserve/accounts/new';
@@ -288,6 +292,23 @@ GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
         create: (_) =>
             _started(getIt<PortfolioHistoryCubit>(), (cubit) => cubit.load()),
         child: const PortfolioHistoryPage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.explore,
+      builder: (context, state) => BlocProvider(
+        create: (_) => _started(getIt<ExploreCubit>(), (cubit) => cubit.load()),
+        child: const ExplorePage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.investmentSimulator,
+      builder: (context, state) => MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => getIt<IncomeSimulatorCubit>()),
+          BlocProvider(create: (_) => getIt<GrowthSimulatorCubit>()),
+        ],
+        child: const SimulatorPage(),
       ),
     ),
     GoRoute(

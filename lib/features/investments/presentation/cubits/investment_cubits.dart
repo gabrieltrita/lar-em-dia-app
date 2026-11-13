@@ -11,6 +11,8 @@ import 'package:lar_em_dia/features/investments/domain/distribution.dart';
 import 'package:lar_em_dia/features/investments/domain/investment_repository.dart';
 import 'package:lar_em_dia/features/investments/domain/investment_transaction.dart';
 import 'package:lar_em_dia/features/investments/domain/portfolio.dart';
+import 'package:lar_em_dia/features/investments/domain/screener.dart';
+import 'package:lar_em_dia/features/investments/domain/simulation.dart';
 
 part 'investment_cubits.freezed.dart';
 
@@ -246,4 +248,101 @@ class DistributionFormCubit extends SubmissionCubit<AssetDistribution> {
             ? _repository.createDistribution(draft)
             : _repository.updateDistribution(existing, draft),
       );
+}
+
+@freezed
+abstract class ExploreState with _$ExploreState {
+  const factory({
+    required ScreenerQuery query,
+    required LoadState<List<Asset>> results,
+    int? nextPage,
+    @Default(false) bool loadingMore,
+  }) = _ExploreState;
+}
+
+@injectable
+class ExploreCubit extends Cubit<ExploreState> {
+  new(this._repository)
+    : super(
+        const ExploreState(
+          query: ScreenerQuery(),
+          results: LoadState<List<Asset>>.loading(),
+        ),
+      );
+
+  final InvestmentRepository _repository;
+  int _request = 0;
+
+  Future<void> load() => apply(state.query);
+
+  Future<void> apply(ScreenerQuery query) async {
+    final request = ++_request;
+    emit(
+      ExploreState(
+        query: query,
+        results: const LoadState<List<Asset>>.loading(),
+      ),
+    );
+    try {
+      final page = await _repository.screen(query);
+      if (request == _request) {
+        emit(
+          state.copyWith(
+            results: LoadState.loaded(page.assets),
+            nextPage: page.nextPage,
+          ),
+        );
+      }
+    } on ApiError catch (error) {
+      if (request == _request) {
+        emit(state.copyWith(results: LoadState.failure(error)));
+      }
+    }
+  }
+
+  Future<void> loadMore() async {
+    final next = state.nextPage;
+    final results = state.results;
+    if (next == null || state.loadingMore || results is! Loaded<List<Asset>>) {
+      return;
+    }
+    final request = _request;
+    emit(state.copyWith(loadingMore: true));
+    try {
+      final page = await _repository.screen(state.query, page: next);
+      if (request == _request) {
+        emit(
+          state.copyWith(
+            results: LoadState.loaded([...results.value, ...page.assets]),
+            nextPage: page.nextPage,
+            loadingMore: false,
+          ),
+        );
+      }
+    } on ApiError {
+      if (request == _request) {
+        emit(state.copyWith(loadingMore: false));
+      }
+    }
+  }
+}
+
+@injectable
+class IncomeSimulatorCubit extends SubmissionCubit<IncomeSimulation> {
+  new(this._repository);
+
+  final InvestmentRepository _repository;
+
+  Future<void> simulate(IncomeSimulationInput input) =>
+      run(() => _repository.simulateIncome(input));
+}
+
+@injectable
+class GrowthSimulatorCubit extends SubmissionCubit<GrowthSimulation> {
+  new(this._repository);
+
+  final InvestmentRepository _repository;
+
+  Future<void> simulate(GrowthSimulationInput input) =>
+      run(() => _repository.simulateGrowth(input));
 }
