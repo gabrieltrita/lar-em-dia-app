@@ -19,10 +19,12 @@ import 'package:lar_em_dia/features/investments/domain/asset.dart';
 import 'package:lar_em_dia/features/investments/domain/distribution.dart';
 import 'package:lar_em_dia/features/investments/domain/investment_transaction.dart';
 import 'package:lar_em_dia/features/investments/domain/portfolio.dart';
+import 'package:lar_em_dia/features/investments/domain/screener.dart';
 import 'package:lar_em_dia/features/investments/presentation/cubits/investment_cubits.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/distribution_form_page.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/investment_form_page.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/investments_page.dart';
+import 'package:lar_em_dia/features/investments/presentation/widgets/indicator_labels.dart';
 import 'package:lar_em_dia/features/investments/presentation/widgets/investment_labels.dart';
 import 'package:lar_em_dia/features/investments/presentation/widgets/investments_disclaimer.dart';
 import 'package:lar_em_dia/features/investments/presentation/widgets/position_tile.dart';
@@ -156,6 +158,11 @@ class AssetDetailPage extends StatelessWidget {
             ],
             if (detail.asset.fundReport case final report?)
               _FundReportFigures(report: report, quote: detail.asset.quote),
+            if (detail.asset.indicators case final indicators?)
+              _IndicatorsSection(
+                indicators: indicators,
+                type: detail.asset.type,
+              ),
             _DistributionsSection(
               detail: detail,
               onAdd: () => unawaited(
@@ -359,6 +366,67 @@ class _FundReportFigures extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(l10n.fundReportSource, style: theme.textTheme.bodySmall),
+        ],
+      ),
+    );
+  }
+}
+
+class _IndicatorsSection extends StatelessWidget {
+  const new({required this.indicators, required this.type});
+
+  final AssetIndicators indicators;
+  final AssetType type;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final figures = [
+      for (final indicator in Indicator.forType(type))
+        if (indicators.value(indicator) case final value?)
+          (indicator.label(l10n), indicator.format(l10n, value)),
+      if (indicators.distributionAverageE8 case final average?)
+        (l10n.indicatorDistributionAverage, PerShare.formatE8(average)),
+      if (indicators.distributionMedianE8 case final median?)
+        (l10n.indicatorDistributionMedian, PerShare.formatE8(median)),
+    ];
+    if (figures.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      key: const Key('asset_indicators'),
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.indicatorsTitle, style: theme.textTheme.titleSmall),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 16,
+            runSpacing: 12,
+            children: [
+              for (final (label, value) in figures)
+                SizedBox(
+                  width: 150,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(label, style: theme.textTheme.labelMedium),
+                      const SizedBox(height: 2),
+                      Text(value),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            l10n.indicatorsComputedOn(Dates.display(indicators.computedOn)),
+            style: theme.textTheme.bodySmall,
+          ),
+          if (type == AssetType.stock)
+            Text(l10n.indicatorsStockSource, style: theme.textTheme.bodySmall),
         ],
       ),
     );

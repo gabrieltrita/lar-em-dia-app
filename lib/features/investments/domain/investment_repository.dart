@@ -2,6 +2,8 @@ import 'package:lar_em_dia/features/investments/domain/asset.dart';
 import 'package:lar_em_dia/features/investments/domain/distribution.dart';
 import 'package:lar_em_dia/features/investments/domain/investment_transaction.dart';
 import 'package:lar_em_dia/features/investments/domain/portfolio.dart';
+import 'package:lar_em_dia/features/investments/domain/screener.dart';
+import 'package:lar_em_dia/features/investments/domain/simulation.dart';
 
 abstract interface class InvestmentRepository {
   Future<List<Asset>> searchAssets(String query);
@@ -35,4 +37,10 @@ abstract interface class InvestmentRepository {
   );
 
   Future<void> deleteDistribution(AssetDistribution distribution);
+
+  Future<ScreenerPage> screen(ScreenerQuery query, {int page = 1});
+
+  Future<IncomeSimulation> simulateIncome(IncomeSimulationInput input);
+
+  Future<GrowthSimulation> simulateGrowth(GrowthSimulationInput input);
 }

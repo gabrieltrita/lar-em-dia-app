@@ -5,6 +5,7 @@ import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/features/entries/data/finance_cache.dart';
 import 'package:lar_em_dia/features/investments/domain/investment_transaction.dart';
+import 'package:lar_em_dia/features/investments/domain/screener.dart';
 import 'package:lar_em_dia/features/investments/presentation/cubits/investment_cubits.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/asset_detail_page.dart';
 import 'package:lar_em_dia/features/shell/presentation/finance_changes.dart';
@@ -250,6 +251,45 @@ void main() {
 
       expect(find.textContaining('Nenhum provento registrado'), findsOneWidget);
     });
+  });
+
+  testWidgets('shows the FII indicators with their source', (tester) async {
+    when(() => repository.asset('HGLG11'))
+        .thenAnswer((_) async => hglg.copyWith(indicators: hglgIndicators));
+    await pump(tester);
+
+    expect(find.byKey(const Key('asset_indicators')), findsOneWidget);
+    expect(find.text('8,25%'), findsOneWidget);
+    expect(find.text('0,97'), findsOneWidget);
+    expect(find.text('3 anos'), findsOneWidget);
+    expect(find.text(r'R$ 1,10'), findsOneWidget);
+    expect(find.text(r'R$ 1,08'), findsOneWidget);
+    expect(find.textContaining('Calculados em 11/11/2026'), findsOneWidget);
+    expect(find.textContaining('Ações: DY e payout'), findsNothing);
+  });
+
+  testWidgets('shows the stock indicators from the statements', (tester) async {
+    when(() => repository.asset('HGLG11')).thenAnswer(
+      (_) async => itsa.copyWith(ticker: 'HGLG11', indicators: petrIndicators),
+    );
+    await pump(tester);
+
+    expect(find.text('P/L'), findsOneWidget);
+    expect(find.text('3,73'), findsOneWidget);
+    expect(find.text('−3,5%'), findsOneWidget);
+    expect(find.text('ROE médio (5 anos)'), findsOneWidget);
+    expect(find.textContaining('Ações: DY e payout'), findsOneWidget);
+  });
+
+  testWidgets('hides the indicators when none was computed', (tester) async {
+    when(() => repository.asset('HGLG11')).thenAnswer(
+      (_) async => hglg.copyWith(
+        indicators: AssetIndicators(computedOn: DateTime(2026, 11, 11)),
+      ),
+    );
+    await pump(tester);
+
+    expect(find.byKey(const Key('asset_indicators')), findsNothing);
   });
 
   testWidgets('retries a failed load', (tester) async {

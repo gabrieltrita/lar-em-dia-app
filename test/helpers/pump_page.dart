@@ -37,6 +37,8 @@ Future<void> pumpPage(
         AppRoutes.investmentForm,
         AppRoutes.investmentHistory,
         AppRoutes.passiveIncome,
+        AppRoutes.explore,
+        AppRoutes.investmentSimulator,
         AppRoutes.distributionForm,
         AppRoutes.assetDetail(':ticker'),
         AppRoutes.reserve,

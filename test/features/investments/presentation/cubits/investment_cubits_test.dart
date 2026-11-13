@@ -7,6 +7,8 @@ import 'package:lar_em_dia/features/investments/domain/asset.dart';
 import 'package:lar_em_dia/features/investments/domain/distribution.dart';
 import 'package:lar_em_dia/features/investments/domain/investment_transaction.dart';
 import 'package:lar_em_dia/features/investments/domain/portfolio.dart';
+import 'package:lar_em_dia/features/investments/domain/screener.dart';
+import 'package:lar_em_dia/features/investments/domain/simulation.dart';
 import 'package:lar_em_dia/features/investments/presentation/cubits/investment_cubits.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -330,5 +332,246 @@ void main() {
         Submission.success(itsaJcp),
       ],
     );
+  });
+
+  group('ExploreCubit', () {
+    const query = ScreenerQuery();
+    const stocks = ScreenerQuery(type: AssetType.stock);
+    const initial = ExploreState(
+      query: query,
+      results: LoadState<List<Asset>>.loading(),
+    );
+
+    blocTest<ExploreCubit, ExploreState>(
+      'loads the first page of the default query',
+      setUp: () => when(() => repository.screen(query)).thenAnswer(
+        (_) async => ScreenerPage(assets: [hglgScreened], nextPage: 2),
+      ),
+      build: () => ExploreCubit(repository),
+      act: (cubit) => cubit.load(),
+      expect: () => [
+        initial,
+        ExploreState(
+          query: query,
+          results: LoadState.loaded([hglgScreened]),
+          nextPage: 2,
+        ),
+      ],
+    );
+
+    blocTest<ExploreCubit, ExploreState>(
+      'appends the next page and stops at the last one',
+      setUp: () {
+        when(() => repository.screen(query)).thenAnswer(
+          (_) async => ScreenerPage(assets: [hglgScreened], nextPage: 2),
+        );
+        when(() => repository.screen(query, page: 2))
+            .thenAnswer((_) async => const ScreenerPage(assets: [btlg]));
+      },
+      build: () => ExploreCubit(repository),
+      act: (cubit) async {
+        await cubit.load();
+        await cubit.loadMore();
+        await cubit.loadMore();
+      },
+      skip: 2,
+      expect: () => [
+        ExploreState(
+          query: query,
+          results: LoadState.loaded([hglgScreened]),
+          nextPage: 2,
+          loadingMore: true,
+        ),
+        ExploreState(
+          query: query,
+          results: LoadState.loaded([hglgScreened, btlg]),
+        ),
+      ],
+    );
+
+    blocTest<ExploreCubit, ExploreState>(
+      'keeps the page when the next one fails and waits for the first',
+      setUp: () {
+        when(() => repository.screen(query)).thenAnswer(
+          (_) async => ScreenerPage(assets: [hglgScreened], nextPage: 2),
+        );
+        when(() => repository.screen(query, page: 2)).thenThrow(failure);
+      },
+      build: () => ExploreCubit(repository),
+      act: (cubit) async {
+        await cubit.loadMore();
+        await cubit.load();
+        await cubit.loadMore();
+      },
+      skip: 2,
+      expect: () => [
+        ExploreState(
+          query: query,
+          results: LoadState.loaded([hglgScreened]),
+          nextPage: 2,
+          loadingMore: true,
+        ),
+        ExploreState(
+          query: query,
+          results: LoadState.loaded([hglgScreened]),
+          nextPage: 2,
+        ),
+      ],
+    );
+
+    blocTest<ExploreCubit, ExploreState>(
+      'shows only the latest query and reports a failure',
+      setUp: () {
+        when(() => repository.screen(query)).thenAnswer((_) async {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          return ScreenerPage(assets: [hglgScreened]);
+        });
+        when(() => repository.screen(stocks)).thenThrow(failure);
+      },
+      build: () => ExploreCubit(repository),
+      act: (cubit) async {
+        final first = cubit.load();
+        await cubit.apply(stocks);
+        await first;
+      },
+      expect: () => const [
+        initial,
+        ExploreState(query: stocks, results: LoadState<List<Asset>>.loading()),
+        ExploreState(
+          query: stocks,
+          results: LoadState<List<Asset>>.failure(failure),
+        ),
+      ],
+    );
+
+    blocTest<ExploreCubit, ExploreState>(
+      'drops a stale page or failure after the query changed',
+      setUp: () {
+        when(() => repository.screen(query)).thenAnswer(
+          (_) async => ScreenerPage(assets: [hglgScreened], nextPage: 2),
+        );
+        when(() => repository.screen(query, page: 2)).thenAnswer((_) async {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          return const ScreenerPage(assets: [btlg]);
+        });
+        when(() => repository.screen(stocks)).thenAnswer((_) async {
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+          throw failure;
+        });
+      },
+      build: () => ExploreCubit(repository),
+      act: (cubit) async {
+        await cubit.load();
+        final more = cubit.loadMore();
+        final stale = cubit.apply(stocks);
+        await more;
+        await cubit.apply(query);
+        await stale;
+      },
+      verify: (cubit) => expect(
+        cubit.state,
+        ExploreState(
+          query: query,
+          results: LoadState.loaded([hglgScreened]),
+          nextPage: 2,
+        ),
+      ),
+    );
+
+    blocTest<ExploreCubit, ExploreState>(
+      'drops a stale next page failure after the query changed',
+      setUp: () {
+        when(() => repository.screen(query)).thenAnswer(
+          (_) async => ScreenerPage(assets: [hglgScreened], nextPage: 2),
+        );
+        when(() => repository.screen(query, page: 2)).thenAnswer((_) async {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          throw failure;
+        });
+        when(() => repository.screen(stocks))
+            .thenAnswer((_) async => const ScreenerPage(assets: []));
+      },
+      build: () => ExploreCubit(repository),
+      act: (cubit) async {
+        await cubit.load();
+        final more = cubit.loadMore();
+        await cubit.apply(stocks);
+        await more;
+      },
+      verify: (cubit) => expect(
+        cubit.state,
+        const ExploreState(
+          query: stocks,
+          results: LoadState<List<Asset>>.loaded([]),
+        ),
+      ),
+    );
+
+    test('keeps only the ranges of the query type and resets its sort', () {
+      const mixed = ScreenerQuery(
+        sort: Indicator.priceToBook,
+        ranges: {
+          Indicator.dividendYield: IndicatorRange(min: 600),
+          Indicator.roe: IndicatorRange(min: 1500),
+          Indicator.liquidity: IndicatorRange(),
+        },
+      );
+
+      expect(mixed.activeRanges.keys, [Indicator.dividendYield]);
+      expect(mixed.withType(AssetType.stock).activeRanges.keys, [
+        Indicator.dividendYield,
+        Indicator.roe,
+      ]);
+      expect(mixed.withType(AssetType.stock).sort, Indicator.priceToBook);
+      expect(
+        mixed
+            .copyWith(type: AssetType.stock, sort: Indicator.roe)
+            .withType(AssetType.fii)
+            .sort,
+        Indicator.dividendYield,
+      );
+      expect(Indicator.forType(AssetType.fii), [
+        Indicator.dividendYield,
+        Indicator.priceToBook,
+        Indicator.yearsPaying,
+        Indicator.liquidity,
+      ]);
+      for (final indicator in Indicator.values) {
+        expect(petrIndicators.value(indicator), isNotNull);
+      }
+    });
+  });
+
+  group('simulators', () {
+    blocTest<IncomeSimulatorCubit, Submission<IncomeSimulation>>(
+      'simulates income',
+      setUp: () =>
+          when(() => repository.simulateIncome(incomeInput))
+              .thenAnswer((_) async => incomeSimulation),
+      build: () => IncomeSimulatorCubit(repository),
+      act: (cubit) => cubit.simulate(incomeInput),
+      expect: () => const [
+        Submission<IncomeSimulation>.inProgress(),
+        Submission.success(incomeSimulation),
+      ],
+    );
+
+    blocTest<GrowthSimulatorCubit, Submission<GrowthSimulation>>(
+      'simulates growth',
+      setUp: () =>
+          when(() => repository.simulateGrowth(growthInput))
+              .thenAnswer((_) async => growthSimulation),
+      build: () => GrowthSimulatorCubit(repository),
+      act: (cubit) => cubit.simulate(growthInput),
+      expect: () => const [
+        Submission<GrowthSimulation>.inProgress(),
+        Submission.success(growthSimulation),
+      ],
+    );
+
+    test('reads the last month', () {
+      expect(incomeSimulation.last.month, 24);
+      expect(growthSimulation.last.valueCents, 238465);
+    });
   });
 }

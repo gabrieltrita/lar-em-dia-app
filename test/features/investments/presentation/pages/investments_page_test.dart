@@ -165,6 +165,23 @@ void main() {
     expect(find.text(routeMarker(AppRoutes.passiveIncome)), findsOneWidget);
   });
 
+  testWidgets('opens the screener and the simulators', (tester) async {
+    await pump(tester);
+
+    await tester.tap(find.byKey(const Key('investments_explore')));
+    await tester.pumpAndSettle();
+    expect(find.text(routeMarker(AppRoutes.explore)), findsOneWidget);
+    await tester.tap(find.text(closedAndBack));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('investments_simulator')));
+    await tester.pumpAndSettle();
+    expect(
+      find.text(routeMarker(AppRoutes.investmentSimulator)),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('hides the income card without income', (tester) async {
     await pump(tester);
 
