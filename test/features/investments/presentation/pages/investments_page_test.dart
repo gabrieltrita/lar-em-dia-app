@@ -27,6 +27,7 @@ void main() {
     repository = MockInvestmentRepository();
     when(repository.portfolio).thenAnswer((_) async => portfolio);
     when(repository.history).thenAnswer((_) async => history);
+    when(repository.income).thenAnswer((_) async => noIncome);
     changes = FinanceChanges(FinanceCache());
     notified = 0;
     changes.addListener(() => notified++);
@@ -150,6 +151,41 @@ void main() {
     await tester.tap(find.text(savedAndBack));
     await tester.pumpAndSettle();
     expect(notified, 1);
+  });
+
+  testWidgets('summarizes the passive income and opens it', (tester) async {
+    when(repository.income).thenAnswer((_) async => passiveIncome);
+    await pump(tester);
+
+    expect(find.text(r'Média de R$ 12,50 por mês'), findsOneWidget);
+    expect(find.text(r'Previsão para o próximo mês: R$ 11,67'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('investments_income')));
+    await tester.pumpAndSettle();
+
+    expect(find.text(routeMarker(AppRoutes.passiveIncome)), findsOneWidget);
+  });
+
+  testWidgets('opens the screener and the simulators', (tester) async {
+    await pump(tester);
+
+    await tester.tap(find.byKey(const Key('investments_explore')));
+    await tester.pumpAndSettle();
+    expect(find.text(routeMarker(AppRoutes.explore)), findsOneWidget);
+    await tester.tap(find.text(closedAndBack));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('investments_simulator')));
+    await tester.pumpAndSettle();
+    expect(
+      find.text(routeMarker(AppRoutes.investmentSimulator)),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('hides the income card without income', (tester) async {
+    await pump(tester);
+
+    expect(find.byKey(const Key('investments_income')), findsNothing);
   });
 
   testWidgets('explains the tab when there is nothing yet', (tester) async {

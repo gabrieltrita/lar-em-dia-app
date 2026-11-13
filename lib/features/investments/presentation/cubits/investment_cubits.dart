@@ -7,9 +7,12 @@ import 'package:lar_em_dia/core/forms/submission.dart';
 import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/core/state/load_state.dart';
 import 'package:lar_em_dia/features/investments/domain/asset.dart';
+import 'package:lar_em_dia/features/investments/domain/distribution.dart';
 import 'package:lar_em_dia/features/investments/domain/investment_repository.dart';
 import 'package:lar_em_dia/features/investments/domain/investment_transaction.dart';
 import 'package:lar_em_dia/features/investments/domain/portfolio.dart';
+import 'package:lar_em_dia/features/investments/domain/screener.dart';
+import 'package:lar_em_dia/features/investments/domain/simulation.dart';
 
 part 'investment_cubits.freezed.dart';
 
@@ -19,6 +22,7 @@ abstract class PortfolioView with _$PortfolioView {
     required Portfolio portfolio,
     required List<PortfolioMonth> history,
     InvestmentGoal? filter,
+    PassiveIncome? income,
   }) = _PortfolioView;
 
   const new _();
@@ -52,6 +56,7 @@ class PortfolioCubit extends Cubit<LoadState<PortfolioView>> {
     try {
       final portfolio = _repository.portfolio();
       final history = _repository.history();
+      final income = _income();
       await Future.wait([portfolio, history]);
       emit(
         LoadState.loaded(
@@ -59,11 +64,20 @@ class PortfolioCubit extends Cubit<LoadState<PortfolioView>> {
             portfolio: await portfolio,
             history: await history,
             filter: filter,
+            income: await income,
           ),
         ),
       );
     } on ApiError catch (error) {
       emit(LoadState.failure(error));
+    }
+  }
+
+  Future<PassiveIncome?> _income() async {
+    try {
+      return await _repository.income();
+    } on ApiError {
+      return null;
     }
   }
 
@@ -85,6 +99,22 @@ class PortfolioHistoryCubit extends Cubit<LoadState<List<PortfolioMonth>>> {
     emit(const LoadState<List<PortfolioMonth>>.loading());
     try {
       emit(LoadState.loaded(await _repository.history()));
+    } on ApiError catch (error) {
+      emit(LoadState.failure(error));
+    }
+  }
+}
+
+@injectable
+class PassiveIncomeCubit extends Cubit<LoadState<PassiveIncome>> {
+  new(this._repository) : super(const LoadState<PassiveIncome>.loading());
+
+  final InvestmentRepository _repository;
+
+  Future<void> load() async {
+    emit(const LoadState<PassiveIncome>.loading());
+    try {
+      emit(LoadState.loaded(await _repository.income()));
     } on ApiError catch (error) {
       emit(LoadState.failure(error));
     }
@@ -136,6 +166,9 @@ class AssetDetailCubit extends Cubit<LoadState<AssetDetail>> {
 
   Future<ApiError?> delete(InvestmentTransaction transaction) =>
       _change(() => _repository.delete(transaction));
+
+  Future<ApiError?> deleteDistribution(AssetDistribution distribution) =>
+      _change(() => _repository.deleteDistribution(distribution));
 
   Future<ApiError?> _change(Future<void> Function() action) async {
     try {
@@ -201,4 +234,115 @@ class InvestmentFormCubit extends SubmissionCubit<InvestmentTransaction> {
             ? _repository.create(draft)
             : _repository.update(existing, draft),
       );
+}
+
+@injectable
+class DistributionFormCubit extends SubmissionCubit<AssetDistribution> {
+  new(this._repository);
+
+  final InvestmentRepository _repository;
+
+  Future<void> save(DistributionDraft draft, {AssetDistribution? existing}) =>
+      run(
+        () => existing == null
+            ? _repository.createDistribution(draft)
+            : _repository.updateDistribution(existing, draft),
+      );
+}
+
+@freezed
+abstract class ExploreState with _$ExploreState {
+  const factory({
+    required ScreenerQuery query,
+    required LoadState<List<Asset>> results,
+    int? nextPage,
+    @Default(false) bool loadingMore,
+  }) = _ExploreState;
+}
+
+@injectable
+class ExploreCubit extends Cubit<ExploreState> {
+  new(this._repository)
+    : super(
+        const ExploreState(
+          query: ScreenerQuery(),
+          results: LoadState<List<Asset>>.loading(),
+        ),
+      );
+
+  final InvestmentRepository _repository;
+  int _request = 0;
+
+  Future<void> load() => apply(state.query);
+
+  Future<void> apply(ScreenerQuery query) async {
+    final request = ++_request;
+    emit(
+      ExploreState(
+        query: query,
+        results: const LoadState<List<Asset>>.loading(),
+      ),
+    );
+    try {
+      final page = await _repository.screen(query);
+      if (request == _request) {
+        emit(
+          state.copyWith(
+            results: LoadState.loaded(page.assets),
+            nextPage: page.nextPage,
+          ),
+        );
+      }
+    } on ApiError catch (error) {
+      if (request == _request) {
+        emit(state.copyWith(results: LoadState.failure(error)));
+      }
+    }
+  }
+
+  Future<void> loadMore() async {
+    final next = state.nextPage;
+    final results = state.results;
+    if (next == null || state.loadingMore || results is! Loaded<List<Asset>>) {
+      return;
+    }
+    final request = _request;
+    emit(state.copyWith(loadingMore: true));
+    try {
+      final page = await _repository.screen(state.query, page: next);
+      if (request == _request) {
+        emit(
+          state.copyWith(
+            results: LoadState.loaded([...results.value, ...page.assets]),
+            nextPage: page.nextPage,
+            loadingMore: false,
+          ),
+        );
+      }
+    } on ApiError {
+      if (request == _request) {
+        emit(state.copyWith(loadingMore: false));
+      }
+    }
+  }
+}
+
+@injectable
+class IncomeSimulatorCubit extends SubmissionCubit<IncomeSimulation> {
+  new(this._repository);
+
+  final InvestmentRepository _repository;
+
+  Future<void> simulate(IncomeSimulationInput input) =>
+      run(() => _repository.simulateIncome(input));
+}
+
+@injectable
+class GrowthSimulatorCubit extends SubmissionCubit<GrowthSimulation> {
+  new(this._repository);
+
+  final InvestmentRepository _repository;
+
+  Future<void> simulate(GrowthSimulationInput input) =>
+      run(() => _repository.simulateGrowth(input));
 }

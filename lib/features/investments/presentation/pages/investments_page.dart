@@ -9,6 +9,7 @@ import 'package:lar_em_dia/core/state/load_state.dart';
 import 'package:lar_em_dia/core/widgets/form_widgets.dart';
 import 'package:lar_em_dia/core/widgets/money_text.dart';
 import 'package:lar_em_dia/core/widgets/skeleton.dart';
+import 'package:lar_em_dia/features/investments/domain/distribution.dart';
 import 'package:lar_em_dia/features/investments/domain/investment_transaction.dart';
 import 'package:lar_em_dia/features/investments/domain/portfolio.dart';
 import 'package:lar_em_dia/features/investments/presentation/cubits/investment_cubits.dart';
@@ -50,7 +51,24 @@ class InvestmentsPage extends StatelessWidget {
       _ => null,
     };
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.investmentsTitle)),
+      appBar: AppBar(
+        title: Text(l10n.investmentsTitle),
+        actions: [
+          IconButton(
+            key: const Key('investments_explore'),
+            tooltip: l10n.exploreOpen,
+            icon: const Icon(Icons.travel_explore),
+            onPressed: () => unawaited(context.push<void>(AppRoutes.explore)),
+          ),
+          IconButton(
+            key: const Key('investments_simulator'),
+            tooltip: l10n.simulatorOpen,
+            icon: const Icon(Icons.calculate_outlined),
+            onPressed: () =>
+                unawaited(context.push<void>(AppRoutes.investmentSimulator)),
+          ),
+        ],
+      ),
       bottomNavigationBar: const InvestmentsDisclaimer(),
       floatingActionButton: loaded == null
           ? null
@@ -165,6 +183,8 @@ class _PortfolioContent extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: GoalSplitBar(goals: view.portfolio.goals),
           ),
+          if (view.income case final income? when !income.isEmpty)
+            _IncomeCard(income: income),
           if (view.recentHistory.length > 1) _MiniEvolution(view: view),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -256,6 +276,53 @@ class _Summary extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _IncomeCard extends StatelessWidget {
+  const new({required this.income});
+
+  final PassiveIncome income;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return Card(
+      key: const Key('investments_income'),
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => unawaited(context.push<void>(AppRoutes.passiveIncome)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l10n.incomeTitle, style: theme.textTheme.titleSmall),
+                    const SizedBox(height: 4),
+                    Text(
+                      l10n.incomeCardAverage(
+                        MoneyText.format(income.monthlyAverageCents),
+                      ),
+                    ),
+                    if (income.nextMonthCents case final next?)
+                      Text(
+                        l10n.incomeCardNext(MoneyText.format(next)),
+                        style: theme.textTheme.bodySmall,
+                      ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right),
+            ],
+          ),
+        ),
       ),
     );
   }

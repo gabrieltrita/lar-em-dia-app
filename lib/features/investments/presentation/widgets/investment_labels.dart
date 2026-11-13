@@ -1,4 +1,5 @@
 import 'package:lar_em_dia/features/investments/domain/asset.dart';
+import 'package:lar_em_dia/features/investments/domain/distribution.dart';
 import 'package:lar_em_dia/features/investments/domain/investment_transaction.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
@@ -28,5 +29,13 @@ extension AssetTypeLabel on AssetType {
   InvestmentGoal get defaultGoal => switch (this) {
     AssetType.stock => InvestmentGoal.growth,
     AssetType.fii => InvestmentGoal.income,
+  };
+}
+
+extension DistributionKindLabel on DistributionKind {
+  String label(AppLocalizations l10n) => switch (this) {
+    DistributionKind.fiiIncome => l10n.distributionKindFiiIncome,
+    DistributionKind.dividend => l10n.distributionKindDividend,
+    DistributionKind.jcp => l10n.distributionKindJcp,
   };
 }

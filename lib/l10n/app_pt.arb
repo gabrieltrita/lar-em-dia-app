@@ -1346,5 +1346,272 @@
         "type": "String"
       }
     }
-  }
+  },
+  "projectionIncludeInvestmentIncome": "Incluir proventos",
+  "projectionIncludeInvestmentIncomeHint": "Soma a renda prevista da carteira aos meses seguintes",
+  "projectionHeroNetWorth": "Patrimônio total: {amount}",
+  "@projectionHeroNetWorth": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "projectionReadoutInvestments": "Carteira",
+  "projectionReadoutNetWorth": "Patrimônio total",
+  "projectionMonthInvestmentIncome": "Proventos previstos",
+  "distributionKindFiiIncome": "Rendimento",
+  "distributionKindDividend": "Dividendo",
+  "distributionKindJcp": "JCP",
+  "distributionsTitle": "Proventos",
+  "distributionAdd": "Registrar",
+  "distributionsEmptyStock": "Nenhum provento registrado. Ao receber dividendos ou JCP, registre aqui para acompanhar sua renda.",
+  "distributionsEmptyFii": "Ainda não há rendimentos informados à CVM neste período.",
+  "distributionRecordOn": "Data com {date}",
+  "@distributionRecordOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "distributionPaidOn": "pago em {date}",
+  "@distributionPaidOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "distributionPaidNextMonth": "pago no mês seguinte",
+  "distributionDeleteTitle": "Excluir provento?",
+  "distributionDeleteMessage": "{kind} com data com em {date} deixará de contar na sua renda.",
+  "@distributionDeleteMessage": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "distributionFormNewTitle": "Registrar provento",
+  "distributionFormEditTitle": "Editar provento",
+  "distributionFormHint": "Informe o valor bruto por ação que aparece no aviso da empresa ou da corretora. Ele conta só para você.",
+  "distributionFormRecordOn": "Data com",
+  "distributionFormPaidOn": "Data de pagamento",
+  "distributionFormAmount": "Valor bruto por ação",
+  "distributionFormAmountInvalid": "Informe um valor maior que zero, com até 8 casas",
+  "distributionFormJcpHelper": "O JCP aparece líquido dos 15% de imposto de renda",
+  "validationStockOnly": "Só ações aceitam proventos registrados à mão",
+  "validationBeforeRecordOn": "O pagamento não pode ser antes da data com",
+  "fundReportTitle": "Informe mensal de {month}",
+  "@fundReportTitle": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "fundReportBookValue": "Valor patrimonial por cota",
+  "fundReportPriceToBook": "P/VP",
+  "fundReportShareholders": "Cotistas",
+  "fundReportEquity": "Patrimônio líquido",
+  "fundReportSource": "Fonte: CVM, dados abertos (ODbL)",
+  "incomeTitle": "Renda passiva",
+  "incomeMonthlyAverage": "Média mensal (12 meses)",
+  "incomeReceived12m": "{amount} recebidos nos últimos 12 meses",
+  "@incomeReceived12m": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "incomeReceivedTitle": "Recebido por mês",
+  "incomeForecastTitle": "Previsão",
+  "incomeForecastHint": "Usa os proventos já anunciados ou a média por cota dos últimos 12 meses com as cotas de hoje. Não é garantia de pagamento.",
+  "incomeByAssetTitle": "Por ativo",
+  "incomeAssetForecast": "Previsão mensal: {amount}",
+  "@incomeAssetForecast": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "incomeEmptyTitle": "Sem proventos ainda",
+  "incomeEmptyMessage": "Os rendimentos dos FIIs chegam pela CVM, e os dividendos e JCP das ações você registra no detalhe de cada ação.",
+  "incomeCardAverage": "Média de {amount} por mês",
+  "@incomeCardAverage": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "incomeCardNext": "Previsão para o próximo mês: {amount}",
+  "@incomeCardNext": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreTitle": "Explorar",
+  "exploreOpen": "Explorar FIIs e ações",
+  "exploreFilters": "Filtros",
+  "exploreSort": "Ordenar por",
+  "exploreAscending": "Menor primeiro",
+  "exploreDescending": "Maior primeiro",
+  "explorePayingOnly": "Só os que pagaram nos últimos 12 meses",
+  "explorePayingOnlyHint": "Deixa de fora os FIIs em desenvolvimento, que ainda não distribuem rendimentos.",
+  "exploreMin": "Mínimo",
+  "exploreMax": "Máximo",
+  "exploreApply": "Aplicar",
+  "exploreClear": "Limpar",
+  "exploreEmptyTitle": "Nenhum papel encontrado",
+  "exploreEmptyMessage": "Afrouxe os filtros para ver mais papéis.",
+  "exploreLoadMore": "Carregar mais",
+  "exploreDisclaimer": "A lista só filtra e ordena pelos números de cada papel. Não é ranking nem recomendação de investimento. Fontes: B3 e CVM (dados abertos, ODbL).",
+  "exploreActiveFilters": "{count, plural, =0{Sem filtros} =1{1 filtro} other{{count} filtros}}",
+  "@exploreActiveFilters": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "indicatorDividendYield": "DY 12 meses",
+  "indicatorPriceToBook": "P/VP",
+  "indicatorYearsPaying": "Anos seguidos pagando",
+  "indicatorPayout": "Payout",
+  "indicatorPriceToEarnings": "P/L",
+  "indicatorRoe": "ROE médio (5 anos)",
+  "indicatorEarningsGrowth": "Crescimento do lucro (CAGR)",
+  "indicatorEquityGrowth": "Crescimento do patrimônio (CAGR)",
+  "indicatorYearsWithProfit": "Anos com lucro (de 5)",
+  "indicatorNetMargin": "Margem líquida",
+  "indicatorNetDebtToEquity": "Dívida líquida / patrimônio",
+  "indicatorLiquidity": "Liquidez diária média",
+  "indicatorDistributionAverage": "Rendimento médio por cota",
+  "indicatorDistributionMedian": "Rendimento mediano por cota",
+  "indicatorYears": "{count, plural, =1{1 ano} other{{count} anos}}",
+  "@indicatorYears": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "indicatorsTitle": "Indicadores",
+  "indicatorsComputedOn": "Calculados em {date} com a última cotação e os dados abertos da CVM. Não são recomendação de investimento.",
+  "@indicatorsComputedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "indicatorsStockSource": "Ações: DY e payout do último exercício (fluxo de caixa da DFP); balanços anuais da CVM.",
+  "simulatorTitle": "Simuladores",
+  "simulatorOpen": "Simular renda e crescimento",
+  "simulatorIncomeTab": "Renda",
+  "simulatorGrowthTab": "Crescimento",
+  "simulatorTicker": "Papel (opcional)",
+  "simulatorTickerHint": "Usa a última cotação e a média de proventos do papel",
+  "simulatorMonthlyYield": "Rendimento mensal (%)",
+  "simulatorMonthlyYieldHint": "Usado quando não há papel",
+  "simulatorInitial": "Valor inicial",
+  "simulatorMonthly": "Aporte mensal",
+  "simulatorYears": "Prazo (anos)",
+  "simulatorReinvest": "Reinvestir o que receber",
+  "simulatorTarget": "Renda mensal desejada (opcional)",
+  "simulatorAnnualRate": "Rentabilidade anual (%)",
+  "simulatorAnnualRateHint": "Você escolhe a taxa; ela não é prevista pelo app",
+  "simulatorRun": "Simular",
+  "simulatorInvalidYears": "Informe de 1 a 50 anos",
+  "simulatorInvalidPercent": "Informe um percentual válido",
+  "simulatorNeedAmount": "Informe o valor inicial ou o aporte mensal",
+  "simulatorNeedSource": "Informe um papel ou o rendimento mensal",
+  "simulatorFinalIncome": "Renda no último mês",
+  "simulatorReceived": "Total recebido",
+  "simulatorContributed": "Total aportado",
+  "simulatorFinalValue": "Valor ao final",
+  "simulatorEarnings": "Rendimento acumulado",
+  "simulatorShares": "{count, plural, =1{1 cota ao final} other{{count} cotas ao final}}",
+  "@simulatorShares": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "simulatorPricing": "Preço {price} · rendimento por cota {income} ao mês",
+  "@simulatorPricing": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "income": {
+        "type": "String"
+      }
+    }
+  },
+  "simulatorTargetShares": "Para {target} por mês: {shares} cotas, ou {capital} investidos hoje",
+  "@simulatorTargetShares": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      },
+      "shares": {
+        "type": "int"
+      },
+      "capital": {
+        "type": "String"
+      }
+    }
+  },
+  "simulatorTargetCapital": "Para {target} por mês: {capital} investidos hoje",
+  "@simulatorTargetCapital": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      },
+      "capital": {
+        "type": "String"
+      }
+    }
+  },
+  "simulatorTargetReached": "Meta atingida no mês {month}",
+  "@simulatorTargetReached": {
+    "placeholders": {
+      "month": {
+        "type": "int"
+      }
+    }
+  },
+  "simulatorTargetNotReached": "A meta não é atingida no prazo simulado",
+  "simulatorMonthlyRate": "Equivale a {rate} ao mês",
+  "@simulatorMonthlyRate": {
+    "placeholders": {
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "simulatorYearRow": "Ano {year}",
+  "@simulatorYearRow": {
+    "placeholders": {
+      "year": {
+        "type": "int"
+      }
+    }
+  },
+  "simulatorDisclaimer": "Simulação com preço constante e proventos ou taxa constantes. Resultados passados e taxas escolhidas não garantem resultados futuros. Não é recomendação de investimento.",
+  "validationNoIncomeData": "Esse papel ainda não tem cotação ou proventos para simular.",
+  "errorInvalidFilter": "Os filtros precisam ser números.",
+  "exploreTypeFii": "FIIs",
+  "exploreTypeStock": "Ações"
 }

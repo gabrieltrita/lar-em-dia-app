@@ -1,8 +1,11 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lar_em_dia/core/dates/dates.dart';
 import 'package:lar_em_dia/features/investments/domain/asset.dart';
+import 'package:lar_em_dia/features/investments/domain/distribution.dart';
 import 'package:lar_em_dia/features/investments/domain/investment_transaction.dart';
 import 'package:lar_em_dia/features/investments/domain/portfolio.dart';
+import 'package:lar_em_dia/features/investments/domain/screener.dart';
+import 'package:lar_em_dia/features/investments/domain/simulation.dart';
 
 part 'investment_dtos.freezed.dart';
 part 'investment_dtos.g.dart';
@@ -25,6 +28,305 @@ abstract final class InvestmentWire {
 
   static InvestmentGoal parseGoal(String value) =>
       InvestmentGoal.values.byName(value);
+
+  static const Map<DistributionKind, String> distributionKinds = {
+    DistributionKind.fiiIncome: 'fii_income',
+    DistributionKind.dividend: 'dividend',
+    DistributionKind.jcp: 'jcp',
+  };
+
+  static String distributionKind(DistributionKind kind) =>
+      distributionKinds[kind]!;
+
+  static DistributionKind parseDistributionKind(String value) =>
+      distributionKinds.entries.firstWhere((entry) => entry.value == value).key;
+
+  static const Map<Indicator, String> indicators = {
+    Indicator.dividendYield: 'dy_12m_bps',
+    Indicator.priceToBook: 'p_vp_e2',
+    Indicator.yearsPaying: 'years_paying',
+    Indicator.payout: 'payout_bps',
+    Indicator.priceToEarnings: 'p_l_e2',
+    Indicator.roe: 'roe_average_bps',
+    Indicator.earningsGrowth: 'earnings_cagr_bps',
+    Indicator.equityGrowth: 'equity_cagr_bps',
+    Indicator.yearsWithProfit: 'years_with_profit',
+    Indicator.netMargin: 'net_margin_bps',
+    Indicator.netDebtToEquity: 'net_debt_to_equity_bps',
+    Indicator.liquidity: 'liquidity_cents',
+  };
+
+  static String indicator(Indicator indicator) => indicators[indicator]!;
+}
+
+@freezed
+abstract class AssetIndicatorsDto with _$AssetIndicatorsDto {
+  const factory({
+    required String computedOn,
+    int? priceCents,
+    @JsonKey(name: 'dy_12m_bps') int? dy12mBps,
+    int? distributionAverageE8,
+    int? distributionMedianE8,
+    int? yearsPaying,
+    int? payoutBps,
+    @JsonKey(name: 'p_vp_e2') int? pVpE2,
+    @JsonKey(name: 'p_l_e2') int? pLE2,
+    int? roeAverageBps,
+    int? earningsCagrBps,
+    int? equityCagrBps,
+    int? yearsWithProfit,
+    int? netMarginBps,
+    int? netDebtToEquityBps,
+    int? liquidityCents,
+    int? financialYears,
+  }) = _AssetIndicatorsDto;
+
+  const new _();
+
+  factory fromJson(Map<String, dynamic> json) =>
+      _$AssetIndicatorsDtoFromJson(json);
+
+  AssetIndicators toDomain() => AssetIndicators(
+    computedOn: Dates.parseIso(computedOn),
+    priceCents: priceCents,
+    dividendYieldBps: dy12mBps,
+    distributionAverageE8: distributionAverageE8,
+    distributionMedianE8: distributionMedianE8,
+    yearsPaying: yearsPaying,
+    payoutBps: payoutBps,
+    priceToBookE2: pVpE2,
+    priceToEarningsE2: pLE2,
+    roeAverageBps: roeAverageBps,
+    earningsGrowthBps: earningsCagrBps,
+    equityGrowthBps: equityCagrBps,
+    yearsWithProfit: yearsWithProfit,
+    netMarginBps: netMarginBps,
+    netDebtToEquityBps: netDebtToEquityBps,
+    liquidityCents: liquidityCents,
+    financialYears: financialYears,
+  );
+}
+
+@freezed
+abstract class IncomeSimulationMonthDto with _$IncomeSimulationMonthDto {
+  const factory({
+    required int month,
+    required int contributedCents,
+    required int valueCents,
+    required int incomeCents,
+    required int receivedCents,
+    int? shares,
+  }) = _IncomeSimulationMonthDto;
+
+  const new _();
+
+  factory fromJson(Map<String, dynamic> json) =>
+      _$IncomeSimulationMonthDtoFromJson(json);
+
+  IncomeSimulationMonth toDomain() => IncomeSimulationMonth(
+    month: month,
+    contributedCents: contributedCents,
+    valueCents: valueCents,
+    incomeCents: incomeCents,
+    receivedCents: receivedCents,
+    shares: shares,
+  );
+}
+
+@freezed
+abstract class IncomeSimulationSummaryDto with _$IncomeSimulationSummaryDto {
+  const factory({
+    int? targetMonthlyIncomeCents,
+    int? sharesForTarget,
+    int? capitalForTargetCents,
+    int? monthsToTarget,
+  }) = _IncomeSimulationSummaryDto;
+
+  factory fromJson(Map<String, dynamic> json) =>
+      _$IncomeSimulationSummaryDtoFromJson(json);
+}
+
+@freezed
+abstract class IncomeSimulationDto with _$IncomeSimulationDto {
+  const factory({
+    required bool reinvest,
+    required List<IncomeSimulationMonthDto> months,
+    required IncomeSimulationSummaryDto summary,
+    String? ticker,
+    int? priceCents,
+    int? monthlyIncomePerShareE8,
+    int? monthlyYieldBps,
+  }) = _IncomeSimulationDto;
+
+  const new _();
+
+  factory fromJson(Map<String, dynamic> json) =>
+      _$IncomeSimulationDtoFromJson(json);
+
+  IncomeSimulation toDomain() => IncomeSimulation(
+    months: [for (final month in months) month.toDomain()],
+    reinvest: reinvest,
+    ticker: ticker,
+    priceCents: priceCents,
+    monthlyIncomePerShareE8: monthlyIncomePerShareE8,
+    monthlyYieldBps: monthlyYieldBps,
+    sharesForTarget: summary.sharesForTarget,
+    capitalForTargetCents: summary.capitalForTargetCents,
+    monthsToTarget: summary.monthsToTarget,
+    targetMonthlyIncomeCents: summary.targetMonthlyIncomeCents,
+  );
+}
+
+@freezed
+abstract class GrowthSimulationMonthDto with _$GrowthSimulationMonthDto {
+  const factory({
+    required int month,
+    required int contributedCents,
+    required int valueCents,
+    required int earningsCents,
+  }) = _GrowthSimulationMonthDto;
+
+  const new _();
+
+  factory fromJson(Map<String, dynamic> json) =>
+      _$GrowthSimulationMonthDtoFromJson(json);
+
+  GrowthSimulationMonth toDomain() => GrowthSimulationMonth(
+    month: month,
+    contributedCents: contributedCents,
+    valueCents: valueCents,
+    earningsCents: earningsCents,
+  );
+}
+
+@freezed
+abstract class GrowthSimulationDto with _$GrowthSimulationDto {
+  const factory({
+    required int annualRateBps,
+    required int monthlyRateE8,
+    required List<GrowthSimulationMonthDto> months,
+  }) = _GrowthSimulationDto;
+
+  const new _();
+
+  factory fromJson(Map<String, dynamic> json) =>
+      _$GrowthSimulationDtoFromJson(json);
+
+  GrowthSimulation toDomain() => GrowthSimulation(
+    annualRateBps: annualRateBps,
+    monthlyRateE8: monthlyRateE8,
+    months: [for (final month in months) month.toDomain()],
+  );
+}
+
+@freezed
+abstract class AssetDistributionDto with _$AssetDistributionDto {
+  const factory({
+    required String id,
+    required String ticker,
+    required String kind,
+    required String source,
+    required String recordOn,
+    required int amountPerShareE8,
+    required int netAmountPerShareE8,
+    String? paidOn,
+  }) = _AssetDistributionDto;
+
+  const new _();
+
+  factory fromJson(Map<String, dynamic> json) =>
+      _$AssetDistributionDtoFromJson(json);
+
+  AssetDistribution toDomain() => AssetDistribution(
+    id: id,
+    ticker: ticker,
+    kind: InvestmentWire.parseDistributionKind(kind),
+    manual: source == 'manual',
+    recordOn: Dates.parseIso(recordOn),
+    paidOn: paidOn == null ? null : Dates.parseIso(paidOn!),
+    amountPerShareE8: amountPerShareE8,
+    netAmountPerShareE8: netAmountPerShareE8,
+  );
+}
+
+@freezed
+abstract class FundReportDto with _$FundReportDto {
+  const factory({
+    required String referenceMonth,
+    required int equityCents,
+    required int bookValuePerShareE8,
+    required int sharesCount,
+    required int shareholdersCount,
+  }) = _FundReportDto;
+
+  const new _();
+
+  factory fromJson(Map<String, dynamic> json) => _$FundReportDtoFromJson(json);
+
+  FundReport toDomain() => FundReport(
+    referenceMonth: Dates.parseMonth(referenceMonth)!,
+    equityCents: equityCents,
+    bookValuePerShareE8: bookValuePerShareE8,
+    sharesCount: sharesCount,
+    shareholdersCount: shareholdersCount,
+  );
+}
+
+@freezed
+abstract class IncomeMonthDto with _$IncomeMonthDto {
+  const factory({required String month, required int amountCents}) =
+      _IncomeMonthDto;
+
+  const new _();
+
+  factory fromJson(Map<String, dynamic> json) => _$IncomeMonthDtoFromJson(json);
+
+  IncomeMonth toDomain() =>
+      IncomeMonth(month: Dates.parseMonth(month)!, amountCents: amountCents);
+}
+
+@freezed
+abstract class PositionIncomeDto with _$PositionIncomeDto {
+  const factory({
+    required String ticker,
+    required int quantity,
+    @JsonKey(name: 'received_12m_cents') required int received12mCents,
+    required int monthlyForecastCents,
+  }) = _PositionIncomeDto;
+
+  const new _();
+
+  factory fromJson(Map<String, dynamic> json) =>
+      _$PositionIncomeDtoFromJson(json);
+
+  PositionIncome toDomain() => PositionIncome(
+    ticker: ticker,
+    quantity: quantity,
+    received12mCents: received12mCents,
+    monthlyForecastCents: monthlyForecastCents,
+  );
+}
+
+@freezed
+abstract class PassiveIncomeDto with _$PassiveIncomeDto {
+  const factory({
+    required int monthlyAverageCents,
+    required List<IncomeMonthDto> received,
+    required List<IncomeMonthDto> forecast,
+    required List<PositionIncomeDto> positions,
+  }) = _PassiveIncomeDto;
+
+  const new _();
+
+  factory fromJson(Map<String, dynamic> json) =>
+      _$PassiveIncomeDtoFromJson(json);
+
+  PassiveIncome toDomain() => PassiveIncome(
+    monthlyAverageCents: monthlyAverageCents,
+    received: [for (final month in received) month.toDomain()],
+    forecast: [for (final month in forecast) month.toDomain()],
+    positions: [for (final position in positions) position.toDomain()],
+  );
 }
 
 @freezed
@@ -48,6 +350,9 @@ abstract class AssetDto with _$AssetDto {
     required String assetType,
     String? sector,
     AssetQuoteDto? quote,
+    FundReportDto? fundReport,
+    AssetIndicatorsDto? indicators,
+    @Default([]) List<AssetDistributionDto> distributions,
   }) = _AssetDto;
 
   const new _();
@@ -60,6 +365,11 @@ abstract class AssetDto with _$AssetDto {
     type: InvestmentWire.parseType(assetType),
     sector: sector,
     quote: quote?.toDomain(),
+    fundReport: fundReport?.toDomain(),
+    indicators: indicators?.toDomain(),
+    distributions: [
+      for (final distribution in distributions) distribution.toDomain(),
+    ],
   );
 }
 

@@ -1,7 +1,10 @@
 import 'package:lar_em_dia/features/investments/domain/asset.dart';
+import 'package:lar_em_dia/features/investments/domain/distribution.dart';
 import 'package:lar_em_dia/features/investments/domain/investment_repository.dart';
 import 'package:lar_em_dia/features/investments/domain/investment_transaction.dart';
 import 'package:lar_em_dia/features/investments/domain/portfolio.dart';
+import 'package:lar_em_dia/features/investments/domain/screener.dart';
+import 'package:lar_em_dia/features/investments/domain/simulation.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockInvestmentRepository extends Mock implements InvestmentRepository;
@@ -127,8 +130,179 @@ final hglgDraft = InvestmentDraft(
   debitBalance: true,
 );
 
+final hglgReport = FundReport(
+  referenceMonth: DateTime(2026, 9),
+  equityCents: 754601779739,
+  bookValuePerShareE8: 16547663017,
+  sharesCount: 45601713,
+  shareholdersCount: 613837,
+);
+
+final hglgIncome = AssetDistribution(
+  id: 'distribution-1',
+  ticker: 'HGLG11',
+  kind: DistributionKind.fiiIncome,
+  manual: false,
+  recordOn: DateTime(2026, 9, 30),
+  amountPerShareE8: 116691920,
+  netAmountPerShareE8: 116691920,
+);
+
+final itsaJcp = AssetDistribution(
+  id: 'distribution-2',
+  ticker: 'ITSA4',
+  kind: DistributionKind.jcp,
+  manual: true,
+  recordOn: DateTime(2026, 8, 20),
+  paidOn: DateTime(2026, 11, 25),
+  amountPerShareE8: 33333333,
+  netAmountPerShareE8: 28333333,
+);
+
+final itsaJcpDraft = DistributionDraft(
+  ticker: 'ITSA4',
+  kind: DistributionKind.jcp,
+  recordOn: DateTime(2026, 8, 20),
+  paidOn: DateTime(2026, 11, 25),
+  amountPerShareE8: 33333333,
+);
+
+final Asset hglgWithIncome = hglg.copyWith(
+  fundReport: hglgReport,
+  distributions: [hglgIncome],
+);
+
+const itsa = Asset(ticker: 'ITSA4', name: 'ITAUSA', type: AssetType.stock);
+
+final passiveIncome = PassiveIncome(
+  monthlyAverageCents: 1250,
+  received: [
+    IncomeMonth(month: DateTime(2026, 10), amountCents: 15000),
+    IncomeMonth(month: DateTime(2026, 11), amountCents: 0),
+  ],
+  forecast: [IncomeMonth(month: DateTime(2026, 12), amountCents: 1167)],
+  positions: const [
+    PositionIncome(
+      ticker: 'HGLG11',
+      quantity: 10,
+      received12mCents: 15000,
+      monthlyForecastCents: 1167,
+    ),
+  ],
+);
+
+const noIncome = PassiveIncome(
+  monthlyAverageCents: 0,
+  received: [],
+  forecast: [],
+  positions: [],
+);
+
 void registerInvestmentFallbacks() {
+  registerFallbackValue(itsaJcpDraft);
+  registerFallbackValue(itsaJcp);
   registerFallbackValue(hglgDraft);
   registerFallbackValue(hglgBuy);
   registerFallbackValue(InvestmentGoal.income);
+  registerFallbackValue(const ScreenerQuery());
+  registerFallbackValue(incomeInput);
+  registerFallbackValue(growthInput);
 }
+
+final hglgIndicators = AssetIndicators(
+  computedOn: DateTime(2026, 11, 11),
+  priceCents: 16000,
+  dividendYieldBps: 825,
+  distributionAverageE8: 110000000,
+  distributionMedianE8: 108000000,
+  yearsPaying: 3,
+  priceToBookE2: 97,
+  liquidityCents: 2854943689,
+);
+
+final petrIndicators = AssetIndicators(
+  computedOn: DateTime(2026, 11, 11),
+  priceCents: 3200,
+  dividendYieldBps: 1095,
+  yearsPaying: 5,
+  payoutBps: 4087,
+  priceToBookE2: 99,
+  priceToEarningsE2: 373,
+  roeAverageBps: 2210,
+  earningsGrowthBps: -350,
+  equityGrowthBps: 812,
+  yearsWithProfit: 5,
+  netMarginBps: 2223,
+  netDebtToEquityBps: 7984,
+  liquidityCents: 150000000000,
+  financialYears: 5,
+);
+
+final Asset hglgScreened = hglg.copyWith(
+  quote: null,
+  indicators: hglgIndicators,
+);
+
+final Asset petrScreened = petr.copyWith(
+  sector: 'Petróleo e Gás',
+  indicators: petrIndicators,
+);
+
+const btlg = Asset(ticker: 'BTLG11', name: 'BTG LOG', type: AssetType.fii);
+
+const incomeInput = IncomeSimulationInput(
+  months: 24,
+  initialCents: 100000,
+  monthlyCents: 15000,
+  ticker: 'HGLG11',
+  targetMonthlyIncomeCents: 1000,
+);
+
+const incomeSimulation = IncomeSimulation(
+  ticker: 'HGLG11',
+  priceCents: 10000,
+  monthlyIncomePerShareE8: 100000000,
+  reinvest: true,
+  sharesForTarget: 10,
+  capitalForTargetCents: 100000,
+  monthsToTarget: 1,
+  targetMonthlyIncomeCents: 1000,
+  months: [
+    IncomeSimulationMonth(
+      month: 12,
+      contributedCents: 280000,
+      shares: 28,
+      valueCents: 285000,
+      incomeCents: 2800,
+      receivedCents: 22000,
+    ),
+    IncomeSimulationMonth(
+      month: 24,
+      contributedCents: 460000,
+      shares: 48,
+      valueCents: 485000,
+      incomeCents: 4800,
+      receivedCents: 70000,
+    ),
+  ],
+);
+
+const growthInput = GrowthSimulationInput(
+  months: 12,
+  annualRateBps: 1200,
+  initialCents: 100000,
+  monthlyCents: 10000,
+);
+
+const growthSimulation = GrowthSimulation(
+  annualRateBps: 1200,
+  monthlyRateE8: 948879,
+  months: [
+    GrowthSimulationMonth(
+      month: 12,
+      contributedCents: 220000,
+      valueCents: 238465,
+      earningsCents: 18465,
+    ),
+  ],
+);
