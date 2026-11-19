@@ -21,7 +21,31 @@ abstract class Asset with _$Asset {
     String? sector,
     AssetQuote? quote,
     FundReport? fundReport,
+    FundComposition? composition,
     AssetIndicators? indicators,
     @Default([]) List<AssetDistribution> distributions,
   }) = _Asset;
+}
+
+enum FundPropertyKind { rent, rentConstruction, sale, saleConstruction }
+
+@freezed
+abstract class FundProperty with _$FundProperty {
+  const factory({
+    required String name,
+    required FundPropertyKind kind,
+    int? areaM2,
+    int? vacancyBps,
+    int? delinquencyBps,
+    int? revenueShareBps,
+  }) = _FundProperty;
+}
+
+@freezed
+abstract class FundComposition with _$FundComposition {
+  const factory({
+    required DateTime referenceOn,
+    int? largestTenantBps,
+    @Default([]) List<FundProperty> properties,
+  }) = _FundComposition;
 }

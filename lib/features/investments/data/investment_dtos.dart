@@ -54,9 +54,40 @@ abstract final class InvestmentWire {
     Indicator.netMargin: 'net_margin_bps',
     Indicator.netDebtToEquity: 'net_debt_to_equity_bps',
     Indicator.liquidity: 'liquidity_cents',
+    Indicator.monthsPaying: 'months_paying_12m',
+    Indicator.propertiesCount: 'properties_count',
+    Indicator.largestProperty: 'largest_property_bps',
+    Indicator.largestTenant: 'largest_tenant_bps',
+    Indicator.vacancy: 'vacancy_bps',
+    Indicator.delinquency: 'delinquency_bps',
+    Indicator.development: 'development_bps',
   };
 
   static String indicator(Indicator indicator) => indicators[indicator]!;
+
+  static const Map<FundCategory, String> categories = {
+    FundCategory.brick: 'brick',
+    FundCategory.paper: 'paper',
+    FundCategory.fundOfFunds: 'fund_of_funds',
+    FundCategory.hybrid: 'hybrid',
+  };
+
+  static String category(FundCategory category) => categories[category]!;
+
+  static FundCategory? parseCategory(String? value) => categories.entries
+      .where((entry) => entry.value == value)
+      .firstOrNull
+      ?.key;
+
+  static const Map<FundPropertyKind, String> propertyKinds = {
+    FundPropertyKind.rent: 'rent',
+    FundPropertyKind.rentConstruction: 'rent_construction',
+    FundPropertyKind.sale: 'sale',
+    FundPropertyKind.saleConstruction: 'sale_construction',
+  };
+
+  static FundPropertyKind parsePropertyKind(String value) =>
+      propertyKinds.entries.firstWhere((entry) => entry.value == value).key;
 }
 
 @freezed
@@ -79,6 +110,14 @@ abstract class AssetIndicatorsDto with _$AssetIndicatorsDto {
     int? netDebtToEquityBps,
     int? liquidityCents,
     int? financialYears,
+    String? fundCategory,
+    int? developmentBps,
+    int? propertiesCount,
+    int? largestPropertyBps,
+    int? vacancyBps,
+    int? delinquencyBps,
+    int? largestTenantBps,
+    @JsonKey(name: 'months_paying_12m') int? monthsPaying12m,
   }) = _AssetIndicatorsDto;
 
   const new _();
@@ -104,6 +143,60 @@ abstract class AssetIndicatorsDto with _$AssetIndicatorsDto {
     netDebtToEquityBps: netDebtToEquityBps,
     liquidityCents: liquidityCents,
     financialYears: financialYears,
+    fundCategory: InvestmentWire.parseCategory(fundCategory),
+    developmentBps: developmentBps,
+    propertiesCount: propertiesCount,
+    largestPropertyBps: largestPropertyBps,
+    vacancyBps: vacancyBps,
+    delinquencyBps: delinquencyBps,
+    largestTenantBps: largestTenantBps,
+    monthsPaying12m: monthsPaying12m,
+  );
+}
+
+@freezed
+abstract class FundPropertyDto with _$FundPropertyDto {
+  const factory({
+    required String name,
+    required String kind,
+    @JsonKey(name: 'area_m2') int? areaM2,
+    int? vacancyBps,
+    int? delinquencyBps,
+    int? revenueShareBps,
+  }) = _FundPropertyDto;
+
+  const new _();
+
+  factory fromJson(Map<String, dynamic> json) =>
+      _$FundPropertyDtoFromJson(json);
+
+  FundProperty toDomain() => FundProperty(
+    name: name,
+    kind: InvestmentWire.parsePropertyKind(kind),
+    areaM2: areaM2,
+    vacancyBps: vacancyBps,
+    delinquencyBps: delinquencyBps,
+    revenueShareBps: revenueShareBps,
+  );
+}
+
+@freezed
+abstract class FundCompositionDto with _$FundCompositionDto {
+  const factory({
+    required String referenceOn,
+    int? largestTenantBps,
+    @Default([]) List<FundPropertyDto> properties,
+  }) = _FundCompositionDto;
+
+  const new _();
+
+  factory fromJson(Map<String, dynamic> json) =>
+      _$FundCompositionDtoFromJson(json);
+
+  FundComposition toDomain() => FundComposition(
+    referenceOn: Dates.parseIso(referenceOn),
+    largestTenantBps: largestTenantBps,
+    properties: [for (final property in properties) property.toDomain()],
   );
 }
 
@@ -351,6 +444,7 @@ abstract class AssetDto with _$AssetDto {
     String? sector,
     AssetQuoteDto? quote,
     FundReportDto? fundReport,
+    FundCompositionDto? composition,
     AssetIndicatorsDto? indicators,
     @Default([]) List<AssetDistributionDto> distributions,
   }) = _AssetDto;
@@ -366,6 +460,7 @@ abstract class AssetDto with _$AssetDto {
     sector: sector,
     quote: quote?.toDomain(),
     fundReport: fundReport?.toDomain(),
+    composition: composition?.toDomain(),
     indicators: indicators?.toDomain(),
     distributions: [
       for (final distribution in distributions) distribution.toDomain(),

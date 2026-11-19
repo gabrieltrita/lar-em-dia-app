@@ -345,7 +345,8 @@ void main() {
     blocTest<ExploreCubit, ExploreState>(
       'loads the first page of the default query',
       setUp: () => when(() => repository.screen(query)).thenAnswer(
-        (_) async => ScreenerPage(assets: [hglgScreened], nextPage: 2),
+        (_) async =>
+            ScreenerPage(assets: [hglgScreened], nextPage: 2, total: 51),
       ),
       build: () => ExploreCubit(repository),
       act: (cubit) => cubit.load(),
@@ -355,6 +356,7 @@ void main() {
           query: query,
           results: LoadState.loaded([hglgScreened]),
           nextPage: 2,
+          total: 51,
         ),
       ],
     );
@@ -532,12 +534,22 @@ void main() {
       );
       expect(Indicator.forType(AssetType.fii), [
         Indicator.dividendYield,
-        Indicator.priceToBook,
+        Indicator.monthsPaying,
         Indicator.yearsPaying,
+        Indicator.priceToBook,
+        Indicator.propertiesCount,
+        Indicator.largestProperty,
+        Indicator.largestTenant,
+        Indicator.vacancy,
+        Indicator.delinquency,
+        Indicator.development,
         Indicator.liquidity,
       ]);
-      for (final indicator in Indicator.values) {
+      for (final indicator in Indicator.forType(AssetType.stock)) {
         expect(petrIndicators.value(indicator), isNotNull);
+      }
+      for (final indicator in Indicator.forType(AssetType.fii)) {
+        expect(hglgIndicators.value(indicator), isNotNull);
       }
     });
   });
