@@ -17,6 +17,9 @@ import 'package:lar_em_dia/features/admin/presentation/pages/admin_category_form
 import 'package:lar_em_dia/features/admin/presentation/pages/admin_metrics_page.dart';
 import 'package:lar_em_dia/features/admin/presentation/pages/admin_user_detail_page.dart';
 import 'package:lar_em_dia/features/admin/presentation/pages/admin_users_page.dart';
+import 'package:lar_em_dia/features/allocation/presentation/cubits/allocation_cubits.dart';
+import 'package:lar_em_dia/features/allocation/presentation/pages/allocation_page.dart';
+import 'package:lar_em_dia/features/allocation/presentation/pages/allocation_target_form_page.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/auth_cubits.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
 import 'package:lar_em_dia/features/auth/presentation/pages/check_email_page.dart';
@@ -93,6 +96,8 @@ abstract final class AppRoutes {
   static const reserve = '$investments/reserve';
   static const reserveAccountForm = '$reserve/accounts/new';
   static const reserveMovementForm = '$reserve/movements/new';
+  static const allocation = '/allocation';
+  static const allocationTargetForm = '$allocation/target';
   static const more = '/more';
   static const projection = '/projection';
   static const simulation = '$projection/simulate';
@@ -383,6 +388,28 @@ GoRouter buildRouter(SessionCubit sessionCubit) => GoRouter(
           start: (cubit) => cubit.load(),
           reload: (cubit) => cubit.load(quiet: true),
           child: const ReserveAccountPage(),
+        ),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.allocation,
+      builder: (context, state) => _withChanges(
+        _reloading(
+          create: getIt.get<AllocationCubit>,
+          start: (cubit) => cubit.load(),
+          reload: (cubit) => cubit.load(quiet: true),
+          child: const AllocationPage(),
+        ),
+      ),
+    ),
+    formRoute(
+      path: AppRoutes.allocationTargetForm,
+      redirect: (context, state) =>
+          state.extra is AllocationTargetFormArgs ? null : AppRoutes.allocation,
+      builder: (context, state) => BlocProvider(
+        create: (_) => getIt<AllocationTargetFormCubit>(),
+        child: AllocationTargetFormPage(
+          args: state.extra! as AllocationTargetFormArgs,
         ),
       ),
     ),
