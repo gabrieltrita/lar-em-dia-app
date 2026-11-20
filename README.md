@@ -138,6 +138,17 @@ The emergency reserve (lar-em-dia-api README feature 23) lives under the Investi
 
 On Início the card shows the net total, the coverage and each account; with the `no_reserve` alert it invites the user to inform a reserve, and "Agora não" hides it for 30 days (`ReserveDismissal`, stored with `shared_preferences`). Without fixed expenses and accounts it does not appear. The Projeção tab adds a "Reserva" line to the month readout and details and "Saldo + reserva" under the hero from each month's `reserve_cents`; the cash-flow chart is unchanged. Rates come as integers (`_bps`, `_e8`) and coverage as `coverage_months_e2`, formatted by `Rates` (`lib/core/money/rates.dart`) without `double`. Every reserve page ends with the disclaimer that the numbers are educational, computed from the user's data, not investment advice, and that rates come from the Central Bank (SGS).
 
+## Leftover balance split
+
+"Distribuir sobra do mês" in Mais opens `/allocation` (lar-em-dia-api README feature 26). The user creates destinations (renda fixa, investimentos, caridade, reserva...) with a fixed amount, a percentage of the month's leftover or "O que sobrar" (only one), optionally linked to a reserve account. The page shows the month switcher, the month's leftover (`base_cents`, the projected closing balance plus what was already used), what was used, the closing balance now and what has no destination, and one row per destination with the amount the API planned. The app never splits the money itself: it shows `GET /allocation_plan`.
+
+| Route | What it does |
+|---|---|
+| `/allocation` | Ticking a destination asks for the amount (the planned one by default) and calls `POST /allocations`, which records a paid expense (or a reserve deposit) so the money leaves the month's closing balance; unticking undoes it after confirmation (`insufficient_reserve` when a later reserve withdrawal needs it). Future months cannot be ticked. The menu edits or deletes a destination; what was used stays in the entries |
+| `/allocation/target` | Create or edit a destination (`extra` is an `AllocationTargetFormArgs` with the reserve accounts, the destination and whether a remainder already exists) |
+
+The demo build does not answer these endpoints.
+
 ## Authentication
 
 | Route | Page |

@@ -18,6 +18,8 @@ import 'package:lar_em_dia/features/admin/presentation/pages/admin_category_form
 import 'package:lar_em_dia/features/admin/presentation/pages/admin_metrics_page.dart';
 import 'package:lar_em_dia/features/admin/presentation/pages/admin_user_detail_page.dart';
 import 'package:lar_em_dia/features/admin/presentation/pages/admin_users_page.dart';
+import 'package:lar_em_dia/features/allocation/domain/allocation_repository.dart';
+import 'package:lar_em_dia/features/allocation/presentation/cubits/allocation_cubits.dart';
 import 'package:lar_em_dia/features/auth/domain/auth_repository.dart';
 import 'package:lar_em_dia/features/auth/presentation/cubits/session_cubit.dart';
 import 'package:lar_em_dia/features/auth/presentation/pages/check_email_page.dart';
@@ -66,6 +68,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../helpers/account_fixtures.dart';
 import '../../helpers/admin_fixtures.dart';
+import '../../helpers/allocation_fixtures.dart';
 import '../../helpers/auth_fixtures.dart';
 import '../../helpers/finance_fixtures.dart';
 import '../../helpers/investment_fixtures.dart';
@@ -130,11 +133,13 @@ void main() {
     late MockAccountRepository account;
     late MockInvestmentRepository investments;
     late MockReserveRepository reserve;
+    late MockAllocationRepository allocation;
 
     setUpAll(() {
       registerFinanceFallbacks();
       registerInvestmentFallbacks();
       registerReserveFallbacks();
+      registerAllocationFallbacks();
       configureDependencies();
       getIt.allowReassignment = true;
     });
@@ -159,6 +164,7 @@ void main() {
       account = MockAccountRepository();
       investments = MockInvestmentRepository();
       reserve = reserveRepositoryWith(reserveSummary);
+      allocation = allocationRepositoryWith(novemberPlan);
       when(() => reserve.projection(any()))
           .thenAnswer((_) async => reserveProjection);
       when(() => reserve.movements(treasury.id))
@@ -201,6 +207,7 @@ void main() {
         ..registerSingleton<AccountRepository>(account)
         ..registerSingleton<InvestmentRepository>(investments)
         ..registerSingleton<ReserveRepository>(reserve)
+        ..registerSingleton<AllocationRepository>(allocation)
         ..registerSingleton<ReserveDismissal>(dismissalUntil(null))
         ..registerSingleton<ProjectionPreferences>(FakeProjectionPreferences());
       events = SessionEvents();
@@ -521,6 +528,34 @@ void main() {
       router.go(AppRoutes.reserveMovementForm);
       await tester.pumpAndSettle();
       expect(find.text('Total líquido'), findsOneWidget);
+    });
+
+    testWidgets('opens the leftover split and its form only with arguments', (
+      tester,
+    ) async {
+      await pumpRouter(tester);
+      session.signedIn(ana);
+      await tester.pumpAndSettle();
+      unawaited(router.push(AppRoutes.allocation));
+      await tester.pumpAndSettle();
+      expect(find.text('Sobra do mês'), findsOneWidget);
+      clearInteractions(allocation);
+
+      getIt<FinanceChanges>().notify();
+      await tester.pumpAndSettle();
+      verify(() => allocation.plan(any())).called(1);
+
+      unawaited(
+        router.push(
+          AppRoutes.allocationTargetForm,
+          extra: const AllocationTargetFormArgs(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Novo destino'), findsWidgets);
+      router.go(AppRoutes.allocationTargetForm);
+      await tester.pumpAndSettle();
+      expect(find.text('Sobra do mês'), findsOneWidget);
     });
 
     testWidgets('opens the projection details only with a projection', (

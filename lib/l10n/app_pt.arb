@@ -1748,5 +1748,99 @@
         "type": "int"
       }
     }
-  }
+  },
+  "allocationTitle": "Distribuir sobra",
+  "allocationMoreLink": "Distribuir sobra do mês",
+  "allocationBase": "Sobra do mês",
+  "allocationBaseHelper": "Saldo final previsto do mês, antes do que você já usou",
+  "allocationUsed": "Já usado",
+  "allocationClosing": "Saldo final agora",
+  "allocationUnallocated": "Sem destino",
+  "allocationNothingToSplit": "Este mês não tem sobra para distribuir.",
+  "allocationEmptyTitle": "Para onde vai o que sobra?",
+  "allocationEmptyMessage": "Crie destinos como renda fixa, investimentos, caridade ou a reserva de emergência. Cada um pode ter um valor fixo, uma porcentagem da sobra ou ficar com o resto.",
+  "allocationNewTarget": "Novo destino",
+  "allocationModeFixed": "Valor fixo",
+  "allocationModePercent": "Porcentagem",
+  "allocationModeRemainder": "O que sobrar",
+  "allocationFixedSummary": "Valor fixo de {amount}",
+  "@allocationFixedSummary": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "allocationPercentSummary": "{percent} da sobra",
+  "@allocationPercentSummary": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "allocationRemainderSummary": "Fica com o resto",
+  "allocationReserveSummary": "Vai para a reserva: {name}",
+  "@allocationReserveSummary": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "allocationUsedOn": "Usado em {date}",
+  "@allocationUsedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "allocationMarkTooltip": "Marcar como usado",
+  "allocationUseTitle": "Marcar como usado",
+  "allocationUseMessage": "O valor de {name} sai do saldo final do mês. Até lá, o saldo continua como está.",
+  "@allocationUseMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "allocationUseReserveMessage": "O valor de {name} vira um depósito na reserva e sai do saldo final do mês.",
+  "@allocationUseReserveMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "allocationUseAmount": "Valor usado",
+  "allocationUseConfirm": "Marcar como usado",
+  "allocationUndoTitle": "Desfazer uso?",
+  "allocationUndoMessage": "O valor de {name} volta para o saldo final do mês.",
+  "@allocationUndoMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "allocationUndoConfirm": "Desfazer",
+  "allocationFutureMonth": "Você só pode marcar como usado no mês atual ou em meses passados.",
+  "allocationEdit": "Editar",
+  "allocationDeleteTitle": "Excluir destino?",
+  "allocationDeleteMessage": "O que já foi usado continua nos seus lançamentos.",
+  "allocationNewTitle": "Novo destino",
+  "allocationEditTitle": "Editar destino",
+  "allocationName": "Nome",
+  "allocationNameHelper": "Por exemplo: Renda fixa, Caridade",
+  "allocationMode": "Como dividir",
+  "allocationAmount": "Valor por mês",
+  "allocationPercent": "Porcentagem da sobra",
+  "allocationPercentInvalid": "Informe uma porcentagem entre 0,01 e 100",
+  "allocationRemainderHelper": "Fica com o que os outros destinos não usarem.",
+  "allocationRemainderTaken": "Você já tem um destino que fica com o resto.",
+  "allocationReserveAccount": "Depositar na reserva",
+  "allocationReserveNone": "Não depositar",
+  "allocationReserveHelper": "Ao marcar como usado, o valor vira um depósito nesse pote da reserva."
 }
