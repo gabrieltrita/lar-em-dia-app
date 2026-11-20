@@ -8,6 +8,7 @@ import 'package:lar_em_dia/core/dates/dates.dart';
 import 'package:lar_em_dia/core/forms/error_messages.dart';
 import 'package:lar_em_dia/core/money/money.dart';
 import 'package:lar_em_dia/core/money/per_share.dart';
+import 'package:lar_em_dia/core/money/rates.dart';
 import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/core/state/load_state.dart';
@@ -20,10 +21,12 @@ import 'package:lar_em_dia/features/investments/domain/distribution.dart';
 import 'package:lar_em_dia/features/investments/domain/investment_transaction.dart';
 import 'package:lar_em_dia/features/investments/domain/portfolio.dart';
 import 'package:lar_em_dia/features/investments/domain/screener.dart';
+import 'package:lar_em_dia/features/investments/domain/screener_presets.dart';
 import 'package:lar_em_dia/features/investments/presentation/cubits/investment_cubits.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/distribution_form_page.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/investment_form_page.dart';
 import 'package:lar_em_dia/features/investments/presentation/pages/investments_page.dart';
+import 'package:lar_em_dia/features/investments/presentation/widgets/asset_alert_chips.dart';
 import 'package:lar_em_dia/features/investments/presentation/widgets/indicator_labels.dart';
 import 'package:lar_em_dia/features/investments/presentation/widgets/investment_labels.dart';
 import 'package:lar_em_dia/features/investments/presentation/widgets/investments_disclaimer.dart';
@@ -163,6 +166,9 @@ class AssetDetailPage extends StatelessWidget {
                 indicators: indicators,
                 type: detail.asset.type,
               ),
+            if (detail.asset.composition case final composition?
+                when composition.properties.isNotEmpty)
+              _CompositionSection(composition: composition),
             _DistributionsSection(
               detail: detail,
               onAdd: () => unawaited(
@@ -391,6 +397,7 @@ class _IndicatorsSection extends StatelessWidget {
       if (indicators.distributionMedianE8 case final median?)
         (l10n.indicatorDistributionMedian, PerShare.formatE8(median)),
     ];
+    final alerts = indicators.alerts(type);
     if (figures.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -402,6 +409,10 @@ class _IndicatorsSection extends StatelessWidget {
         children: [
           Text(l10n.indicatorsTitle, style: theme.textTheme.titleSmall),
           const SizedBox(height: 8),
+          if (alerts.isNotEmpty) ...[
+            AssetAlertChips(alerts: alerts),
+            const SizedBox(height: 12),
+          ],
           Wrap(
             spacing: 16,
             runSpacing: 12,
@@ -431,6 +442,77 @@ class _IndicatorsSection extends StatelessWidget {
       ),
     );
   }
+}
+
+class _CompositionSection extends StatefulWidget {
+  const new({required this.composition});
+
+  final FundComposition composition;
+
+  @override
+  State<_CompositionSection> createState() => _CompositionSectionState();
+}
+
+class _CompositionSectionState extends State<_CompositionSection> {
+  static const _collapsed = 5;
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final properties = widget.composition.properties;
+    final shown = _expanded ? properties : properties.take(_collapsed);
+    return Padding(
+      key: const Key('asset_composition'),
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.compositionTitle, style: theme.textTheme.titleSmall),
+          for (final property in shown)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              title: Text(property.name),
+              subtitle: switch (_details(l10n, property)) {
+                '' => null,
+                final details => Text(details),
+              },
+              trailing: switch (property.revenueShareBps) {
+                final share? => Text(
+                  l10n.compositionRevenueShare(Rates.percentFromBps(share)),
+                ),
+                null => null,
+              },
+            ),
+          if (!_expanded && properties.length > _collapsed)
+            TextButton(
+              key: const Key('composition_show_all'),
+              onPressed: () => setState(() => _expanded = true),
+              child: Text(l10n.compositionShowAll(properties.length)),
+            ),
+          Text(
+            l10n.compositionSource(
+              Dates.display(widget.composition.referenceOn),
+            ),
+            style: theme.textTheme.bodySmall,
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _details(AppLocalizations l10n, FundProperty property) => [
+    switch (property.kind) {
+      FundPropertyKind.rentConstruction ||
+      FundPropertyKind.saleConstruction => l10n.compositionUnderConstruction,
+      FundPropertyKind.sale => l10n.compositionForSale,
+      FundPropertyKind.rent => null,
+    },
+    if (property.vacancyBps case final vacancy?)
+      l10n.compositionVacancy(Rates.percentFromBps(vacancy)),
+  ].nonNulls.join(' · ');
 }
 
 class _DistributionsSection extends StatelessWidget {

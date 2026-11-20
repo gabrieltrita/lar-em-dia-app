@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/core/routing/app_router.dart';
 import 'package:lar_em_dia/features/entries/data/finance_cache.dart';
+import 'package:lar_em_dia/features/investments/domain/asset.dart';
 import 'package:lar_em_dia/features/investments/domain/investment_transaction.dart';
 import 'package:lar_em_dia/features/investments/domain/screener.dart';
 import 'package:lar_em_dia/features/investments/presentation/cubits/investment_cubits.dart';
@@ -266,6 +267,45 @@ void main() {
     expect(find.text(r'R$ 1,08'), findsOneWidget);
     expect(find.textContaining('Calculados em 11/11/2026'), findsOneWidget);
     expect(find.textContaining('Ações: DY e payout'), findsNothing);
+  });
+
+  testWidgets('shows the alerts and the FII properties, five at first', (
+    tester,
+  ) async {
+    when(() => repository.asset('HGLG11')).thenAnswer(
+      (_) async => hglg.copyWith(
+        indicators: ajfiIndicators,
+        composition: hglgComposition,
+      ),
+    );
+    await pump(tester);
+
+    expect(find.text('Monoativo'), findsOneWidget);
+    expect(find.text('Inquilino concentrado'), findsOneWidget);
+    expect(find.byKey(const Key('asset_composition')), findsOneWidget);
+    expect(find.text('Betim'), findsOneWidget);
+    expect(find.text('5,43% da receita'), findsOneWidget);
+    expect(find.text('vacância 1,2%'), findsOneWidget);
+    expect(find.text('em construção'), findsNWidgets(2));
+    expect(find.text('à venda'), findsOneWidget);
+    expect(find.text('Sumaré'), findsNothing);
+    expect(find.textContaining('trimestral da CVM de 30/09/2026'), findsOne);
+
+    await tester.tap(find.byKey(const Key('composition_show_all')));
+    await tester.pumpAndSettle();
+    expect(find.text('Sumaré'), findsOneWidget);
+    expect(find.byKey(const Key('composition_show_all')), findsNothing);
+  });
+
+  testWidgets('hides the properties of a fund without any', (tester) async {
+    when(() => repository.asset('HGLG11')).thenAnswer(
+      (_) async => hglg.copyWith(
+        composition: FundComposition(referenceOn: DateTime(2026, 9, 30)),
+      ),
+    );
+    await pump(tester);
+
+    expect(find.byKey(const Key('asset_composition')), findsNothing);
   });
 
   testWidgets('shows the stock indicators from the statements', (tester) async {

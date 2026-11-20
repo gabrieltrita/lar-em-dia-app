@@ -605,6 +605,27 @@ void main() {
     expect(find.byKey(const Key('entry_kind')), findsNothing);
   });
 
+  testWidgets('capitalizes the first letter of the description', (
+    tester,
+  ) async {
+    await pump(tester);
+
+    await tester.enterText(
+      find.byKey(const Key('entry_description')),
+      'conta de luz',
+    );
+    await tester.pump();
+
+    expect(find.text('Conta de luz'), findsOneWidget);
+    final field = tester.widget<TextField>(
+      find.descendant(
+        of: find.byKey(const Key('entry_description')),
+        matching: find.byType(TextField),
+      ),
+    );
+    expect(field.textCapitalization, TextCapitalization.sentences);
+  });
+
   testWidgets('does not save before the categories load', (tester) async {
     when(() => repository.categories(EntryKind.income))
         .thenThrow(const ApiError(code: 'network_error'));

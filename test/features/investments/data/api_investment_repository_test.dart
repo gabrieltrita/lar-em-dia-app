@@ -152,6 +152,50 @@ void main() {
     expect(await repository.asset('HGLG11'), hglgWithIncome);
   });
 
+  test('reads an FII with the properties of its latest quarter', () async {
+    Map<String, Object?> property(String name, String kind) => {
+      'name': name,
+      'kind': kind,
+      'area_m2': null,
+      'vacancy_bps': null,
+      'delinquency_bps': null,
+      'revenue_share_bps': null,
+    };
+    final repository = build(
+      (_) => ok({
+        ...assetJson,
+        'composition': {
+          'reference_on': '2026-09-30',
+          'largest_tenant_bps': 466,
+          'properties': [
+            {
+              'name': 'Betim',
+              'kind': 'rent',
+              'area_m2': 35331,
+              'vacancy_bps': 120,
+              'delinquency_bps': 0,
+              'revenue_share_bps': 543,
+            },
+            property('Cajamar', 'rent'),
+            property('Extrema', 'rent_construction'),
+            property('Jundiaí', 'sale'),
+            property('Louveira', 'sale_construction'),
+            property('Sumaré', 'rent'),
+          ],
+        },
+        'indicators': {
+          'computed_on': '2026-11-11',
+          'fund_category': 'fund_of_funds',
+        },
+      }),
+    );
+
+    final asset = await repository.asset('HGLG11');
+
+    expect(asset.composition, hglgComposition);
+    expect(asset.indicators?.fundCategory, FundCategory.fundOfFunds);
+  });
+
   test('reads the passive income', () async {
     final repository = build(
       (_) => ok({
@@ -414,6 +458,14 @@ void main() {
       'net_debt_to_equity_bps': null,
       'liquidity_cents': 2854943689,
       'financial_years': null,
+      'fund_category': 'brick',
+      'development_bps': 0,
+      'properties_count': 36,
+      'largest_property_bps': 543,
+      'vacancy_bps': 245,
+      'delinquency_bps': 0,
+      'largest_tenant_bps': 466,
+      'months_paying_12m': 11,
     };
     const petrIndicatorsJson = {
       'computed_on': '2026-11-11',
@@ -447,13 +499,16 @@ void main() {
               'indicators': hglgIndicatorsJson,
             },
           ],
-          'meta': {'next': 2},
+          'meta': {'next': 2, 'total': 51},
         }),
       );
 
       final page = await repository.screen(
         const ScreenerQuery(
           payingOnly: true,
+          hideSingleProperty: true,
+          hideDevelopment: true,
+          categories: {FundCategory.hybrid, FundCategory.brick},
           ranges: {
             Indicator.dividendYield: IndicatorRange(min: 800),
             Indicator.priceToBook: IndicatorRange(max: 100),
@@ -463,7 +518,10 @@ void main() {
         ),
       );
 
-      expect(page, ScreenerPage(assets: [hglgScreened], nextPage: 2));
+      expect(
+        page,
+        ScreenerPage(assets: [hglgScreened], nextPage: 2, total: 51),
+      );
       expect(adapter.requests.single.path, '/assets');
       expect(adapter.requests.single.queryParameters, {
         'asset_type': 'fii',
@@ -472,6 +530,9 @@ void main() {
         'page': 1,
         'limit': 50,
         'paying': true,
+        'hide_single_property': true,
+        'hide_development': true,
+        'fund_category': 'brick,hybrid',
         'dy_12m_bps_min': 800,
         'p_vp_e2_max': 100,
       });
@@ -495,6 +556,9 @@ void main() {
           type: AssetType.stock,
           sort: Indicator.priceToEarnings,
           ascending: true,
+          hideSingleProperty: true,
+          hideDevelopment: true,
+          categories: {FundCategory.brick},
         ),
         page: 3,
       );

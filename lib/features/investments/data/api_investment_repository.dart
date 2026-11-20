@@ -173,6 +173,14 @@ class ApiInvestmentRepository implements InvestmentRepository {
         'page': page,
         'limit': screenerLimit,
         if (query.payingOnly) 'paying': true,
+        if (query.hidesSingleProperty) 'hide_single_property': true,
+        if (query.hidesDevelopment) 'hide_development': true,
+        if (query.activeCategories.isNotEmpty)
+          'fund_category': [
+            for (final category in FundCategory.values)
+              if (query.activeCategories.contains(category))
+                InvestmentWire.category(category),
+          ].join(','),
         for (final MapEntry(key: indicator, value: range)
             in query.activeRanges.entries) ...{
           '${InvestmentWire.indicator(indicator)}_min': ?range.min,
@@ -183,6 +191,7 @@ class ApiInvestmentRepository implements InvestmentRepository {
     return ScreenerPage(
       assets: response.data,
       nextPage: response.meta['next'] as int?,
+      total: response.meta['total'] as int?,
     );
   }
 

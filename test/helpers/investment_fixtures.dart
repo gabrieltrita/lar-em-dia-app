@@ -218,6 +218,60 @@ final hglgIndicators = AssetIndicators(
   yearsPaying: 3,
   priceToBookE2: 97,
   liquidityCents: 2854943689,
+  fundCategory: FundCategory.brick,
+  developmentBps: 0,
+  propertiesCount: 36,
+  largestPropertyBps: 543,
+  vacancyBps: 245,
+  delinquencyBps: 0,
+  largestTenantBps: 466,
+  monthsPaying12m: 11,
+);
+
+final ajfiIndicators = AssetIndicators(
+  computedOn: DateTime(2026, 11, 11),
+  priceCents: 827,
+  dividendYieldBps: 640,
+  fundCategory: FundCategory.brick,
+  propertiesCount: 1,
+  largestTenantBps: 4000,
+  vacancyBps: 1800,
+  monthsPaying12m: 6,
+  liquidityCents: 5000000,
+);
+
+final ajfiScreened = Asset(
+  ticker: 'AJFI11',
+  name: 'AJ MALLS FII',
+  type: AssetType.fii,
+  sector: 'Shoppings',
+  indicators: ajfiIndicators,
+);
+
+final hglgComposition = FundComposition(
+  referenceOn: DateTime(2026, 9, 30),
+  largestTenantBps: 466,
+  properties: [
+    const FundProperty(
+      name: 'Betim',
+      kind: FundPropertyKind.rent,
+      areaM2: 35331,
+      vacancyBps: 120,
+      delinquencyBps: 0,
+      revenueShareBps: 543,
+    ),
+    const FundProperty(name: 'Cajamar', kind: FundPropertyKind.rent),
+    const FundProperty(
+      name: 'Extrema',
+      kind: FundPropertyKind.rentConstruction,
+    ),
+    const FundProperty(name: 'Jundiaí', kind: FundPropertyKind.sale),
+    const FundProperty(
+      name: 'Louveira',
+      kind: FundPropertyKind.saleConstruction,
+    ),
+    const FundProperty(name: 'Sumaré', kind: FundPropertyKind.rent),
+  ],
 );
 
 final petrIndicators = AssetIndicators(

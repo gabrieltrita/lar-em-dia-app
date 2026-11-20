@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lar_em_dia/core/dates/dates.dart';
+import 'package:lar_em_dia/core/forms/capitalize_first_formatter.dart';
 import 'package:lar_em_dia/core/forms/error_messages.dart';
 import 'package:lar_em_dia/core/forms/submission.dart';
 import 'package:lar_em_dia/core/forms/validators.dart';
@@ -411,6 +412,8 @@ class _EntryFormPageState extends State<EntryFormPage> {
                 TextFormField(
                   key: const Key('entry_description'),
                   controller: _description,
+                  textCapitalization: TextCapitalization.sentences,
+                  inputFormatters: [CapitalizeFirstFormatter()],
                   decoration: InputDecoration(
                     labelText: l10n.entryDescriptionLabel,
                   ),

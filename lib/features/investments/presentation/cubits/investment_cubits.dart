@@ -256,6 +256,7 @@ abstract class ExploreState with _$ExploreState {
     required ScreenerQuery query,
     required LoadState<List<Asset>> results,
     int? nextPage,
+    int? total,
     @Default(false) bool loadingMore,
   }) = _ExploreState;
 }
@@ -290,6 +291,7 @@ class ExploreCubit extends Cubit<ExploreState> {
           state.copyWith(
             results: LoadState.loaded(page.assets),
             nextPage: page.nextPage,
+            total: page.total,
           ),
         );
       }

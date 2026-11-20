@@ -45,6 +45,8 @@ Future<void> pumpPage(
         AppRoutes.reserveAccountForm,
         AppRoutes.reserveMovementForm,
         AppRoutes.reserveAccount(':id'),
+        AppRoutes.allocation,
+        AppRoutes.allocationTargetForm,
         AppRoutes.more,
         AppRoutes.projection,
         AppRoutes.simulation,
