@@ -1751,6 +1751,7 @@
   },
   "allocationTitle": "Distribuir sobra",
   "allocationMoreLink": "Distribuir sobra do mês",
+  "homeAllocationCaption": "Escolha para onde vai o que sobrar no fim do mês",
   "allocationBase": "Sobra do mês",
   "allocationBaseHelper": "Saldo final previsto do mês, antes do que você já usou",
   "allocationUsed": "Já usado",
