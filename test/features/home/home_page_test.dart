@@ -220,6 +220,23 @@ void main() {
       expect(find.text(routeMarker(AppRoutes.due)), findsOneWidget);
     });
 
+    testWidgets('opens the leftover split and reloads on return', (
+      tester,
+    ) async {
+      await pump(tester);
+
+      expect(
+        find.text('Escolha para onde vai o que sobrar no fim do mês'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Distribuir sobra do mês'));
+      await tester.pumpAndSettle();
+      expect(find.text(routeMarker(AppRoutes.allocation)), findsOneWidget);
+      await tester.tap(find.text(closedAndBack));
+      await tester.pumpAndSettle();
+      expect(notified, 1);
+    });
+
     testWidgets('opens the quick actions and reloads after a save', (
       tester,
     ) async {

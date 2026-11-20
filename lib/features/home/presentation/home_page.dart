@@ -101,6 +101,7 @@ class _HomeLayout extends StatelessWidget {
       _gap,
       _Indicators(summary: summary),
       _gap,
+      const _AllocationShortcut(),
       const ReserveCardView(padding: EdgeInsets.only(bottom: 12)),
       if (summary.months.isNotEmpty) _ForecastCard(months: summary.months),
     ];
@@ -119,7 +120,7 @@ class _HomeLayout extends StatelessWidget {
           main.first,
           _gap,
           ...side.take(2),
-          ...main.skip(2).take(3),
+          ...main.skip(2).take(4),
           ...side.skip(2),
         ],
       );
@@ -620,6 +621,32 @@ class _DueShortcut extends StatelessWidget {
         subtitle: count == 0 ? null : Text(Money.format(summary.upcomingCents)),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => unawaited(context.push<void>(AppRoutes.due)),
+      ),
+    );
+  }
+}
+
+class _AllocationShortcut extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final changes = context.read<FinanceChanges>();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Card(
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          leading: const Icon(Icons.call_split),
+          title: Text(l10n.allocationMoreLink),
+          subtitle: Text(l10n.homeAllocationCaption),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () async {
+            await context.push<void>(AppRoutes.allocation);
+            changes.notify();
+          },
+        ),
       ),
     );
   }
