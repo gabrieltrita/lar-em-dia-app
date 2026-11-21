@@ -23,8 +23,11 @@ enum ProjectionPeriod {
 
 @freezed
 abstract class CategoryAmount with _$CategoryAmount {
-  const factory({required String categoryKey, required int amountCents}) =
-      _CategoryAmount;
+  const factory({
+    required String categoryKey,
+    required int amountCents,
+    String? categoryName,
+  }) = _CategoryAmount;
 }
 
 @freezed

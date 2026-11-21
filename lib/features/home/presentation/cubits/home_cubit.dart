@@ -6,6 +6,7 @@ import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/core/state/load_state.dart';
 import 'package:lar_em_dia/features/balance/domain/balance.dart';
 import 'package:lar_em_dia/features/balance/domain/balance_repository.dart';
+import 'package:lar_em_dia/features/entries/domain/category.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/domain/entry_repository.dart';
 import 'package:lar_em_dia/features/projection/domain/projection.dart';
@@ -122,7 +123,7 @@ class HomeCubit extends Cubit<LoadState<HomeSummary>> {
                 if (!entry.isPaid) entry,
             ],
             expenseByCategory: _byCategory(expenses, {
-              for (final category in categories) category.id: category.key,
+              for (final category in categories) category.id: category,
             }),
             fixedCents: natureCents(EntryNature.fixed),
             variableCents: natureCents(EntryNature.variable),
@@ -143,18 +144,27 @@ class HomeCubit extends Cubit<LoadState<HomeSummary>> {
 
   static List<CategoryAmount> _byCategory(
     List<Entry> expenses,
-    Map<String, String> keys,
+    Map<String, Category> categories,
   ) {
     final totals = <String, int>{};
+    final names = <String, String>{};
     for (final entry in expenses) {
-      final key = keys[entry.categoryId] ?? entry.categoryId;
+      final category = categories[entry.categoryId];
+      final key = category?.key ?? entry.categoryId;
       totals[key] = (totals[key] ?? 0) + entry.amountCents;
+      if (category != null) {
+        names[key] = category.name;
+      }
     }
     return [
       for (final MapEntry(:key, :value)
           in totals.entries.toList()
             ..sort((a, b) => b.value.compareTo(a.value)))
-        CategoryAmount(categoryKey: key, amountCents: value),
+        CategoryAmount(
+          categoryKey: key,
+          amountCents: value,
+          categoryName: names[key],
+        ),
     ];
   }
 }

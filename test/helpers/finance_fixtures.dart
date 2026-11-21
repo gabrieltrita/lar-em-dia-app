@@ -86,6 +86,15 @@ const groceriesCategory = Category(
   defaultNature: EntryNature.variable,
 );
 
+const petCategory = Category(
+  id: 'cat-pet',
+  kind: EntryKind.expense,
+  key: 'custom_0123456789abcdef',
+  name: 'Pet',
+  defaultNature: EntryNature.variable,
+  custom: true,
+);
+
 final housing = Entry(
   id: 'entry-3',
   kind: EntryKind.expense,
@@ -119,7 +128,11 @@ final novemberProjection = ProjectionMonth(
   closingCents: 493456,
   savingsCents: 370000,
   expenseByCategory: const [
-    CategoryAmount(categoryKey: 'housing', amountCents: 200000),
+    CategoryAmount(
+      categoryKey: 'housing',
+      amountCents: 200000,
+      categoryName: 'Housing',
+    ),
     CategoryAmount(categoryKey: 'groceries', amountCents: 80000),
   ],
 );
@@ -218,6 +231,7 @@ void registerFinanceFallbacks() {
   registerFallbackValue(EntryScope.one);
   registerFallbackValue(salary.toDraft());
   registerFallbackValue(salary);
+  registerFallbackValue(salaryCategory);
   registerFallbackValue(balance);
   registerFallbackValue(
     const Recurrence(count: 2, direction: RecurrenceDirection.forward),

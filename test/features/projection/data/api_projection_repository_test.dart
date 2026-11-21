@@ -35,6 +35,7 @@ void main() {
       for (final amount in month.expenseByCategory)
         {
           'category_key': amount.categoryKey,
+          'category_name': ?amount.categoryName,
           'amount_cents': amount.amountCents,
         },
     ],

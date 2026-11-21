@@ -14,6 +14,7 @@ abstract class CategoryDto with _$CategoryDto {
     required String key,
     required String name,
     EntryNature? defaultNature,
+    @Default(false) bool custom,
   }) = _CategoryDto;
 
   const new _();
@@ -26,6 +27,7 @@ abstract class CategoryDto with _$CategoryDto {
     key: key,
     name: name,
     defaultNature: defaultNature,
+    custom: custom,
   );
 }
 

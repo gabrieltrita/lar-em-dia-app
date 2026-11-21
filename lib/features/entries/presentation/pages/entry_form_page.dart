@@ -19,7 +19,7 @@ import 'package:lar_em_dia/features/balance/presentation/cubits/balance_cubits.d
 import 'package:lar_em_dia/features/entries/domain/category.dart';
 import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/presentation/cubits/entry_cubits.dart';
-import 'package:lar_em_dia/features/entries/presentation/widgets/category_grid.dart';
+import 'package:lar_em_dia/features/entries/presentation/widgets/category_picker.dart';
 import 'package:lar_em_dia/features/entries/presentation/widgets/nature_label.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
@@ -180,27 +180,33 @@ class _EntryFormPageState extends State<EntryFormPage> {
   }
 
   Widget _categoryField(AppLocalizations l10n, List<Category> categories) {
+    final cubit = context.read<CategoriesCubit>();
     return FormField<String>(
       key: const Key('entry_category'),
       initialValue: _categoryId,
       validator: (_) => Validators.required(_categoryId)?.localized(l10n),
-      builder: (field) => InputDecorator(
-        decoration: InputDecoration(
-          labelText: l10n.entryCategoryLabel(_kind.name),
-          border: InputBorder.none,
-          errorText: field.errorText,
-        ),
-        child: CategoryGrid(
-          categories: categories,
-          selected: _categoryId,
-          onSelected: (category) {
-            setState(() {
-              _categoryId = category.id;
-              _nature = category.defaultNature;
-            });
-            field.didChange(category.id);
-          },
-        ),
+      builder: (field) => CategoryPickerField(
+        kind: _kind,
+        categories: categories,
+        selected: _categoryId,
+        label: l10n.entryCategoryLabel(_kind.name),
+        errorText: field.errorText,
+        onSelected: (category) {
+          setState(() {
+            _categoryId = category.id;
+            _nature = category.defaultNature;
+          });
+          field.didChange(category.id);
+        },
+        onCreate: (name, nature) =>
+            cubit.create(kind: _kind, name: name, defaultNature: nature),
+        onDelete: (category) async {
+          await cubit.delete(category);
+          if (category.id == _categoryId) {
+            setState(() => _categoryId = null);
+            field.didChange(null);
+          }
+        },
       ),
     );
   }
@@ -400,8 +406,6 @@ class _EntryFormPageState extends State<EntryFormPage> {
                     onRetry: () =>
                         unawaited(context.read<CategoriesCubit>().load(_kind)),
                   ),
-                  Loaded(value: final options) when options.isEmpty =>
-                    InfoMessage(l10n.entryNoCategories),
                   Loaded(value: final options) => _categoryField(l10n, options),
                 },
                 const SizedBox(height: 8),

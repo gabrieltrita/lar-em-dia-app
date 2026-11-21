@@ -488,7 +488,7 @@ class _WhereMoneyGoes extends StatelessWidget {
           categoryKeyLabel(
             l10n,
             amount.categoryKey,
-            fallback: amount.categoryKey,
+            fallback: amount.categoryName ?? amount.categoryKey,
           ),
           amount.amountCents,
         ),

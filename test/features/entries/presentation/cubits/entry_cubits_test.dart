@@ -373,6 +373,45 @@ void main() {
     ],
   );
 
+  blocTest<CategoriesCubit, LoadState<List<Category>>>(
+    'creates a category and reloads the list',
+    setUp: () {
+      when(
+        () => repository.createCategory(
+          kind: EntryKind.expense,
+          name: 'Pet',
+          defaultNature: EntryNature.variable,
+        ),
+      ).thenAnswer((_) async => petCategory);
+      when(() => repository.categories(EntryKind.expense))
+          .thenAnswer((_) async => [housingCategory, petCategory]);
+    },
+    build: () => CategoriesCubit(repository),
+    act: (cubit) async => expect(
+      await cubit.create(
+        kind: EntryKind.expense,
+        name: 'Pet',
+        defaultNature: EntryNature.variable,
+      ),
+      petCategory,
+    ),
+    expect: () => const [
+      LoadState.loaded([housingCategory, petCategory]),
+    ],
+  );
+
+  blocTest<CategoriesCubit, LoadState<List<Category>>>(
+    'deletes a category and reloads the list',
+    setUp: () =>
+        when(() => repository.deleteCategory(petCategory))
+            .thenAnswer((_) async {}),
+    build: () => CategoriesCubit(repository),
+    act: (cubit) => cubit.delete(petCategory),
+    expect: () => const [
+      LoadState.loaded([housingCategory, groceriesCategory]),
+    ],
+  );
+
   blocTest<EntryFormCubit, Submission<Entry>>(
     'creates a new entry',
     setUp: () =>

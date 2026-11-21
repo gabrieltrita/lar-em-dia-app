@@ -36,6 +36,13 @@ class ProjectionDetailsPage extends StatelessWidget {
     );
   }
 
+  static Map<String, String> categoryNames(Iterable<ProjectionMonth> months) =>
+      {
+        for (final month in months)
+          for (final amount in month.expenseByCategory)
+            amount.categoryKey: ?amount.categoryName,
+      };
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -65,7 +72,10 @@ class ProjectionDetailsPage extends StatelessWidget {
           ),
           _Section(
             title: l10n.projectionTopTitle,
-            child: _TopCategories(totals: categoryTotals(months)),
+            child: _TopCategories(
+              totals: categoryTotals(months),
+              names: categoryNames(months),
+            ),
           ),
           _Section(
             title: l10n.projectionAttentionTitle,
@@ -282,9 +292,10 @@ class _NatureDonut extends StatelessWidget {
 }
 
 class _TopCategories extends StatelessWidget {
-  const new({required this.totals});
+  const new({required this.totals, required this.names});
 
   final Map<String, int> totals;
+  final Map<String, String> names;
 
   @override
   Widget build(BuildContext context) {
@@ -311,7 +322,11 @@ class _TopCategories extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              categoryKeyLabel(l10n, key, fallback: key),
+                              categoryKeyLabel(
+                                l10n,
+                                key,
+                                fallback: names[key] ?? key,
+                              ),
                             ),
                           ),
                           Text(Money.compact(cents)),
@@ -349,7 +364,7 @@ class _AttentionMonths extends StatelessWidget {
     final label = categoryKeyLabel(
       l10n,
       amount.categoryKey,
-      fallback: amount.categoryKey,
+      fallback: amount.categoryName ?? amount.categoryKey,
     );
     return '$label ${Money.format(amount.amountCents)}';
   }

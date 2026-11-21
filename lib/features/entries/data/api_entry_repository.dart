@@ -46,6 +46,39 @@ class ApiEntryRepository implements EntryRepository {
   }
 
   @override
+  Future<Category> createCategory({
+    required EntryKind kind,
+    required String name,
+    EntryNature? defaultNature,
+  }) async {
+    final response = await _client.post<Category>(
+      '/categories',
+      body: {
+        'kind': kind.name,
+        'name': name,
+        'default_nature': ?defaultNature?.name,
+      },
+      decode: (data) => CategoryDto.fromJson(data! as Json).toDomain(),
+    );
+    final category = response.data;
+    if (_cache.categories[kind] case final List<Category> cached) {
+      _cache.categories[kind] = [...cached, category];
+    }
+    return category;
+  }
+
+  @override
+  Future<void> deleteCategory(Category category) async {
+    await _client.delete('/categories/${category.id}');
+    if (_cache.categories[category.kind] case final List<Category> cached) {
+      _cache.categories[category.kind] = [
+        for (final item in cached)
+          if (item.id != category.id) item,
+      ];
+    }
+  }
+
+  @override
   Future<List<Entry>> month(DateTime month, {EntryKind? kind}) =>
       between(Dates.firstOfMonth(month), Dates.lastOfMonth(month), kind: kind);
 

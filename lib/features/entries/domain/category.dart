@@ -11,5 +11,6 @@ abstract class Category with _$Category {
     required String key,
     required String name,
     EntryNature? defaultNature,
+    @Default(false) bool custom,
   }) = _Category;
 }

@@ -300,11 +300,45 @@
       }
     }
   },
-  "entryNoCategories": "Nenhuma categoria disponível agora. Tente de novo mais tarde.",
   "entryCategoryLabel": "{kind, select, income{Tipo de receita} other{Categoria}}",
   "@entryCategoryLabel": {
     "placeholders": {
       "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "categoryPickerHint": "Toque para escolher",
+  "categoryPickerSearch": "Buscar categoria",
+  "categoryPickerEmpty": "Nenhuma categoria com esse nome",
+  "categoryPickerMine": "Minhas categorias",
+  "categoryPickerAll": "Categorias do app",
+  "categoryCreate": "Criar categoria",
+  "categoryCreateTitle": "{kind, select, income{Novo tipo de receita} other{Nova categoria de despesa}}",
+  "@categoryCreateTitle": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "categoryCreateName": "Nome",
+  "categoryCreateNameHint": "Ex.: Pet, Casa, Viagem",
+  "categoryCreateNatureHelper": "Usada como sugestão nos novos lançamentos desta categoria",
+  "categoryCreateSubmit": "Criar",
+  "categoryDeleteTitle": "Apagar categoria?",
+  "categoryDeleteMessage": "A categoria \"{name}\" deixa de aparecer na lista.",
+  "@categoryDeleteMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "categoryDeleteTooltip": "Apagar {name}",
+  "@categoryDeleteTooltip": {
+    "placeholders": {
+      "name": {
         "type": "String"
       }
     }
@@ -1138,6 +1172,8 @@
   },
   "categoryReserveDeposit": "Depósito na reserva de emergência",
   "categoryReserveWithdrawal": "Resgate da reserva de emergência",
+  "errorCategoryInUse": "Esta categoria tem lançamentos. Mude a categoria deles ou apague-os antes.",
+  "validationTooManyCategories": "Você chegou ao limite de 50 categorias próprias",
   "errorInsufficientReserve": "Não dá para fazer isso: um resgate depois desta data ficaria sem dinheiro suficiente no pote.",
   "validationInsufficientReserve": "O pote não tem esse valor nesta data",
   "validationAnchorNotAllowed": "O saldo atual não mexe no saldo da conta",
