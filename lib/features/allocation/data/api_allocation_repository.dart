@@ -94,6 +94,7 @@ class ApiAllocationRepository implements AllocationRepository {
         ? draft.percentBps
         : null,
     'reserve_account_id': draft.reserveAccountId,
+    'category_id': draft.categoryId,
   };
 
   static AllocationTarget _target(Object? data) =>

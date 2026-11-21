@@ -14,6 +14,7 @@ abstract class AllocationTargetDto with _$AllocationTargetDto {
     int? amountCents,
     int? percentBps,
     String? reserveAccountId,
+    String? categoryId,
     @Default(0) int position,
   }) = _AllocationTargetDto;
 
@@ -29,6 +30,7 @@ abstract class AllocationTargetDto with _$AllocationTargetDto {
     amountCents: amountCents,
     percentBps: percentBps,
     reserveAccountId: reserveAccountId,
+    categoryId: categoryId,
     position: position,
   );
 }
@@ -42,6 +44,7 @@ abstract class AllocationItemDto with _$AllocationItemDto {
     required int amountCents,
     int? percentBps,
     String? reserveAccountId,
+    String? categoryId,
     @Default(false) bool used,
     String? allocationId,
     String? usedOn,
@@ -59,6 +62,7 @@ abstract class AllocationItemDto with _$AllocationItemDto {
     amountCents: amountCents,
     percentBps: percentBps,
     reserveAccountId: reserveAccountId,
+    categoryId: categoryId,
     used: used,
     allocationId: allocationId,
     usedOn: usedOn == null ? null : Dates.parseIso(usedOn!),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lar_em_dia/core/forms/capitalize_first_formatter.dart';
 import 'package:lar_em_dia/core/forms/error_messages.dart';
 import 'package:lar_em_dia/core/forms/submission.dart';
 import 'package:lar_em_dia/core/forms/validators.dart';
@@ -15,6 +16,8 @@ import 'package:lar_em_dia/core/widgets/form_widgets.dart';
 import 'package:lar_em_dia/features/allocation/domain/allocation.dart';
 import 'package:lar_em_dia/features/allocation/presentation/cubits/allocation_cubits.dart';
 import 'package:lar_em_dia/features/allocation/presentation/widgets/allocation_labels.dart';
+import 'package:lar_em_dia/features/entries/domain/category.dart';
+import 'package:lar_em_dia/features/entries/presentation/widgets/category_label.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
 class AllocationTargetFormPage extends StatefulWidget {
@@ -29,6 +32,7 @@ class AllocationTargetFormPage extends StatefulWidget {
 
 class _AllocationTargetFormPageState extends State<AllocationTargetFormPage> {
   static const _maxPercentBps = 10000;
+  static const _hiddenCategoryKey = 'surplus_allocation';
 
   final _formKey = GlobalKey<FormState>();
   late final AllocationTarget? _existing = widget.args.existing;
@@ -55,6 +59,14 @@ class _AllocationTargetFormPageState extends State<AllocationTargetFormPage> {
         (account) => account.id == _existing?.reserveAccountId,
       )
       ? _existing?.reserveAccountId
+      : null;
+  late final List<Category> _categories = [
+    for (final category in widget.args.categories)
+      if (category.key != _hiddenCategoryKey) category,
+  ];
+  late String? _categoryId =
+      _categories.any((category) => category.id == _existing?.categoryId)
+      ? _existing?.categoryId
       : null;
 
   static int? _parsePercent(String text) =>
@@ -87,6 +99,7 @@ class _AllocationTargetFormPageState extends State<AllocationTargetFormPage> {
               ? _parsePercent(_percent.text)
               : null,
           reserveAccountId: _accountId,
+          categoryId: _categoryId,
         ),
         id: _existing?.id,
       ),
@@ -101,6 +114,7 @@ class _AllocationTargetFormPageState extends State<AllocationTargetFormPage> {
       ('amount_cents', l10n.allocationAmount),
       ('percent_bps', l10n.allocationPercent),
       ('reserve_account_id', l10n.allocationReserveAccount),
+      ('category_id', l10n.allocationCategory),
     ])
       if (error.localizedField(l10n, field) case final message?)
         '$label: $message',
@@ -142,8 +156,32 @@ class _AllocationTargetFormPageState extends State<AllocationTargetFormPage> {
                     helperText: l10n.allocationNameHelper,
                   ),
                   maxLength: 100,
+                  textCapitalization: TextCapitalization.sentences,
+                  inputFormatters: [CapitalizeFirstFormatter()],
                   validator: validateWith(l10n, Validators.required),
                 ),
+                if (_categories.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String?>(
+                    key: const Key('allocation_category'),
+                    initialValue: _categoryId,
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      labelText: l10n.allocationCategory,
+                    ),
+                    items: [
+                      DropdownMenuItem(
+                        child: Text(l10n.allocationCategoryNone),
+                      ),
+                      for (final category in _categories)
+                        DropdownMenuItem(
+                          value: category.id,
+                          child: Text(categoryLabel(l10n, category)),
+                        ),
+                    ],
+                    onChanged: (id) => setState(() => _categoryId = id),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 Text(l10n.allocationMode),
                 const SizedBox(height: 8),

@@ -1,8 +1,35 @@
 import 'package:lar_em_dia/features/allocation/domain/allocation.dart';
 import 'package:lar_em_dia/features/allocation/domain/allocation_repository.dart';
+import 'package:lar_em_dia/features/entries/domain/category.dart';
+import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'finance_fixtures.dart';
+
 class MockAllocationRepository extends Mock implements AllocationRepository;
+
+const giftsCategory = Category(
+  id: 'cat-gifts',
+  kind: EntryKind.expense,
+  key: 'gifts_donations',
+  name: 'Gifts and donations',
+);
+
+const surplusCategory = Category(
+  id: 'cat-surplus',
+  kind: EntryKind.expense,
+  key: 'surplus_allocation',
+  name: 'Surplus allocation',
+);
+
+const List<Category> allocationCategories = [giftsCategory, surplusCategory];
+
+MockEntryRepository allocationCategoriesRepository() {
+  final entries = MockEntryRepository();
+  when(() => entries.categories(EntryKind.expense))
+      .thenAnswer((_) async => allocationCategories);
+  return entries;
+}
 
 const fixedIncome = AllocationTarget(
   id: 'target-1',
@@ -17,6 +44,7 @@ const charity = AllocationTarget(
   name: 'Caridade',
   mode: AllocationMode.fixed,
   amountCents: 1000,
+  categoryId: 'cat-gifts',
   position: 2,
 );
 
@@ -54,6 +82,7 @@ final novemberPlan = AllocationPlan(
       name: 'Caridade',
       mode: AllocationMode.fixed,
       amountCents: 1000,
+      categoryId: 'cat-gifts',
       used: true,
       allocationId: 'allocation-1',
       usedOn: DateTime(2026, 11, 20),

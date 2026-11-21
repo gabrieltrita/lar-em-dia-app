@@ -13,6 +13,7 @@ abstract class AllocationTarget with _$AllocationTarget {
     int? amountCents,
     int? percentBps,
     String? reserveAccountId,
+    String? categoryId,
     @Default(0) int position,
   }) = _AllocationTarget;
 }
@@ -25,6 +26,7 @@ abstract class AllocationTargetDraft with _$AllocationTargetDraft {
     int? amountCents,
     int? percentBps,
     String? reserveAccountId,
+    String? categoryId,
   }) = _AllocationTargetDraft;
 }
 
@@ -37,6 +39,7 @@ abstract class AllocationItem with _$AllocationItem {
     required int amountCents,
     int? percentBps,
     String? reserveAccountId,
+    String? categoryId,
     @Default(false) bool used,
     String? allocationId,
     DateTime? usedOn,
