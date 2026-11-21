@@ -21,16 +21,22 @@ abstract class ProjectionAnchorDto with _$ProjectionAnchorDto {
 
 @freezed
 abstract class CategoryAmountDto with _$CategoryAmountDto {
-  const factory({required String categoryKey, required int amountCents}) =
-      _CategoryAmountDto;
+  const factory({
+    required String categoryKey,
+    required int amountCents,
+    String? categoryName,
+  }) = _CategoryAmountDto;
 
   const new _();
 
   factory fromJson(Map<String, dynamic> json) =>
       _$CategoryAmountDtoFromJson(json);
 
-  CategoryAmount toDomain() =>
-      CategoryAmount(categoryKey: categoryKey, amountCents: amountCents);
+  CategoryAmount toDomain() => CategoryAmount(
+    categoryKey: categoryKey,
+    amountCents: amountCents,
+    categoryName: categoryName,
+  );
 }
 
 @freezed

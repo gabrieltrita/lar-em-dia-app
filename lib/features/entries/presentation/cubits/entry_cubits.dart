@@ -269,6 +269,25 @@ class CategoriesCubit extends Cubit<LoadState<List<Category>>> {
       emit(LoadState.failure(error));
     }
   }
+
+  Future<Category> create({
+    required EntryKind kind,
+    required String name,
+    EntryNature? defaultNature,
+  }) async {
+    final category = await _repository.createCategory(
+      kind: kind,
+      name: name,
+      defaultNature: defaultNature,
+    );
+    emit(LoadState.loaded(await _repository.categories(kind)));
+    return category;
+  }
+
+  Future<void> delete(Category category) async {
+    await _repository.deleteCategory(category);
+    emit(LoadState.loaded(await _repository.categories(category.kind)));
+  }
 }
 
 @injectable

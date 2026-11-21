@@ -64,6 +64,32 @@ void main() {
     expect(find.byType(LinearProgressIndicator), findsNWidgets(4));
   });
 
+  testWidgets("labels the user's own categories by name", (tester) async {
+    const pet = CategoryAmount(
+      categoryKey: 'custom_0123456789abcdef',
+      amountCents: 900000,
+      categoryName: 'Pet',
+    );
+    await pump(
+      tester,
+      projection.copyWith(
+        months: [
+          novemberProjection,
+          decemberProjection.copyWith(
+            expenseByCategory: [pet, ...decemberProjection.expenseByCategory],
+          ),
+        ],
+      ),
+    );
+
+    expect(find.text('Pet'), findsOneWidget);
+    expect(
+      find.text(r'Pesaram: Pet R$ 9.000,00 · Viagens R$ 3.200,00'),
+      findsOneWidget,
+    );
+    expect(find.text('custom_0123456789abcdef'), findsNothing);
+  });
+
   testWidgets('shows the months that spend more than they earn', (
     tester,
   ) async {

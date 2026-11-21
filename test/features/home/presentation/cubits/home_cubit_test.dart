@@ -57,7 +57,11 @@ void main() {
           negativeMonthsCount: 1,
           upcoming: [housing],
           expenseByCategory: [
-            const CategoryAmount(categoryKey: 'housing', amountCents: 200000),
+            const CategoryAmount(
+              categoryKey: 'housing',
+              amountCents: 200000,
+              categoryName: 'Housing',
+            ),
             CategoryAmount(
               categoryKey: groceries.categoryId,
               amountCents: 80000,

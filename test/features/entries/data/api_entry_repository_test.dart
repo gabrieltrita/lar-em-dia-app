@@ -56,6 +56,116 @@ void main() {
     expect(adapter.requests.single.queryParameters, {'kind': 'income'});
   });
 
+  Map<String, Object?> petJson() => {
+    'id': 'cat-pet',
+    'kind': 'expense',
+    'key': 'custom_0123456789abcdef',
+    'name': 'Pet',
+    'position': 1,
+    'default_nature': 'variable',
+    'custom': true,
+  };
+
+  test('creates a category and adds it to the cached list', () async {
+    final repository = build(
+      (options) => options.method == 'POST'
+          ? FakeAdapter.json(201, {'data': petJson()})
+          : FakeAdapter.json(200, {
+              'data': [
+                {
+                  'id': 'cat-housing',
+                  'kind': 'expense',
+                  'key': 'housing',
+                  'name': 'Housing',
+                  'position': 0,
+                  'default_nature': 'fixed',
+                },
+              ],
+            }),
+    );
+    await repository.categories(EntryKind.expense);
+
+    final category = await repository.createCategory(
+      kind: EntryKind.expense,
+      name: 'Pet',
+      defaultNature: EntryNature.variable,
+    );
+
+    expect(category, petCategory);
+    expect(adapter.requests.last.path, '/categories');
+    expect(adapter.requests.last.data, {
+      'kind': 'expense',
+      'name': 'Pet',
+      'default_nature': 'variable',
+    });
+    expect(await repository.categories(EntryKind.expense), [
+      housingCategory,
+      petCategory,
+    ]);
+    expect(adapter.requests, hasLength(2));
+  });
+
+  test(
+    'creates an income category without a nature or a cached list',
+    () async {
+      final repository = build(
+        (_) => FakeAdapter.json(201, {
+          'data': {
+            'id': 'cat-freelance',
+            'kind': 'income',
+            'key': 'custom_ffff',
+            'name': 'Freela',
+            'position': 1,
+            'custom': true,
+          },
+        }),
+      );
+
+      final category = await repository.createCategory(
+        kind: EntryKind.income,
+        name: 'Freela',
+      );
+
+      expect(category.custom, isTrue);
+      expect(adapter.requests.single.data, {
+        'kind': 'income',
+        'name': 'Freela',
+      });
+      expect(cache.categories, isEmpty);
+    },
+  );
+
+  test('deletes a category and drops it from the cached list', () async {
+    final repository = build(
+      (options) => options.method == 'DELETE'
+          ? FakeAdapter.json(200, {
+              'data': {'deleted_id': 'cat-pet'},
+            })
+          : FakeAdapter.json(200, {
+              'data': [petJson()],
+            }),
+    );
+    await repository.categories(EntryKind.expense);
+
+    await repository.deleteCategory(petCategory);
+
+    expect(adapter.requests.last.method, 'DELETE');
+    expect(adapter.requests.last.path, '/categories/cat-pet');
+    expect(await repository.categories(EntryKind.expense), isEmpty);
+  });
+
+  test('deletes a category that was never listed', () async {
+    final repository = build(
+      (_) => FakeAdapter.json(200, {
+        'data': {'deleted_id': 'cat-pet'},
+      }),
+    );
+
+    await repository.deleteCategory(petCategory);
+
+    expect(cache.categories, isEmpty);
+  });
+
   test('reads every page of a block of months around the month', () async {
     final repository = build((options) {
       final page = options.queryParameters['page'] as int;

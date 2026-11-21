@@ -182,6 +182,18 @@ void main() {
       expect(find.text('Outras'), findsNothing);
     });
 
+    testWidgets("names the user's own categories", (tester) async {
+      when(() => entries.categories(EntryKind.expense))
+          .thenAnswer((_) async => [housingCategory, petCategory]);
+      when(
+        () => entries.month(any()),
+      ).thenAnswer((_) async => [housing.copyWith(categoryId: petCategory.id)]);
+      await pump(tester);
+
+      expect(find.text('Pet'), findsOneWidget);
+      expect(find.text(petCategory.key), findsNothing);
+    });
+
     testWidgets('groups the smaller categories as others', (tester) async {
       when(() => entries.month(any())).thenAnswer(
         (_) async => [

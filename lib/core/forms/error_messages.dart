@@ -24,6 +24,7 @@ extension ApiErrorMessages on ApiError {
     'installment_amount_locked' => l10n.errorInstallmentAmountLocked,
     'insufficient_quantity' => l10n.errorInsufficientQuantity,
     'insufficient_reserve' => l10n.errorInsufficientReserve,
+    'category_in_use' => l10n.errorCategoryInUse,
     'invalid_filter' || 'invalid_sort' => l10n.errorInvalidFilter,
     'google_sign_in_failed' => l10n.errorGoogleSignInFailed,
     'oauth_token_invalid' => l10n.errorOauthTokenInvalid,
@@ -61,6 +62,7 @@ extension ApiErrorMessages on ApiError {
       'anchor_not_allowed' => l10n.validationAnchorNotAllowed,
       'rate_required' => l10n.validationRateRequired,
       'rate_not_allowed' => l10n.validationRateNotAllowed,
+      'too_many_categories' => l10n.validationTooManyCategories,
       'greater_than' || 'not_an_integer' => l10n.validationAmountRequired,
       _ => l10n.validationInvalid,
     };

@@ -4,6 +4,14 @@ import 'package:lar_em_dia/features/entries/domain/entry.dart';
 abstract interface class EntryRepository {
   Future<List<Category>> categories(EntryKind kind);
 
+  Future<Category> createCategory({
+    required EntryKind kind,
+    required String name,
+    EntryNature? defaultNature,
+  });
+
+  Future<void> deleteCategory(Category category);
+
   Future<List<Entry>> month(DateTime month, {EntryKind? kind});
 
   Future<List<Entry>> between(DateTime from, DateTime to, {EntryKind? kind});

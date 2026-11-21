@@ -10,6 +10,7 @@ import 'package:lar_em_dia/features/entries/domain/entry.dart';
 import 'package:lar_em_dia/features/entries/presentation/cubits/entry_cubits.dart';
 import 'package:lar_em_dia/features/entries/presentation/pages/entry_form_page.dart';
 import 'package:lar_em_dia/features/entries/presentation/widgets/category_label.dart';
+import 'package:lar_em_dia/features/entries/presentation/widgets/category_picker.dart';
 import 'package:lar_em_dia/features/entries/presentation/widgets/nature_label.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
@@ -97,7 +98,13 @@ void main() {
 
   final save = find.text('Salvar');
 
+  Future<void> openPicker(WidgetTester tester) async {
+    await tester.tap(find.byKey(const Key('category_picker')));
+    await tester.pumpAndSettle();
+  }
+
   Future<void> fillIn(WidgetTester tester) async {
+    await openPicker(tester);
     await tester.tap(find.byKey(const ValueKey('category_salary')));
     await tester.pumpAndSettle();
     await tester.enterText(
@@ -347,9 +354,10 @@ void main() {
 
   group('expenses', () {
     Future<void> pickCategory(WidgetTester tester, String label) async {
+      await openPicker(tester);
       await tester.tap(
         find.descendant(
-          of: find.byKey(const Key('entry_category')),
+          of: find.byType(CategoryPickerSheet),
           matching: find.text(label),
         ),
       );
@@ -562,20 +570,123 @@ void main() {
     expect(popped, isEmpty);
   });
 
-  testWidgets('explains an empty category list', (tester) async {
+  testWidgets('requires a category even when the list is empty', (
+    tester,
+  ) async {
     when(() => repository.categories(EntryKind.income))
         .thenAnswer((_) async => []);
     await pump(tester);
 
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+    expect(find.text('Campo obrigatório'), findsWidgets);
+    expect(popped, isEmpty);
+
+    await openPicker(tester);
+    expect(find.text('Nenhuma categoria com esse nome'), findsOneWidget);
+    expect(find.byKey(const Key('category_create')), findsOneWidget);
+  });
+
+  testWidgets('creates a category from the picker and selects it', (
+    tester,
+  ) async {
+    var categories = [housingCategory];
+    when(() => repository.categories(EntryKind.expense))
+        .thenAnswer((_) async => categories);
+    when(
+      () => repository.createCategory(
+        kind: EntryKind.expense,
+        name: 'Pet',
+        defaultNature: EntryNature.variable,
+      ),
+    ).thenAnswer((_) async {
+      categories = [housingCategory, petCategory];
+      return petCategory;
+    });
+    await pump(tester, kind: EntryKind.expense);
+
+    await openPicker(tester);
+    await tester.tap(find.byKey(const Key('category_create')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('category_create_name')),
+      'Pet',
+    );
+    await tester.tap(find.byKey(const Key('category_create_submit')));
+    await tester.pumpAndSettle();
+
     expect(
-      find.text(
-        'Nenhuma categoria disponível agora. Tente de novo mais tarde.',
+      find.descendant(
+        of: find.byKey(const Key('category_picker')),
+        matching: find.text('Pet'),
       ),
       findsOneWidget,
     );
-    await tester.tap(save);
+  });
+
+  testWidgets('clears the selection when its category is deleted', (
+    tester,
+  ) async {
+    var categories = [housingCategory, petCategory];
+    when(() => repository.categories(EntryKind.expense))
+        .thenAnswer((_) async => categories);
+    when(() => repository.deleteCategory(petCategory)).thenAnswer((_) async {
+      categories = [housingCategory];
+    });
+    await pump(tester, kind: EntryKind.expense);
+
+    await openPicker(tester);
+    await tester.tap(find.text('Pet'));
     await tester.pumpAndSettle();
-    expect(popped, isEmpty);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('category_picker')),
+        matching: find.text('Pet'),
+      ),
+      findsOneWidget,
+    );
+
+    await openPicker(tester);
+    await tester.tap(
+      find.byKey(ValueKey('category_delete_${petCategory.key}')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('category_delete_confirm')));
+    await tester.pumpAndSettle();
+    await tester.tapAt(Offset.zero);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('category_picker')),
+        matching: find.text('Pet'),
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets('keeps the selection when another category is deleted', (
+    tester,
+  ) async {
+    when(() => repository.categories(EntryKind.expense))
+        .thenAnswer((_) async => [housingCategory, petCategory]);
+    when(() => repository.deleteCategory(petCategory)).thenAnswer((_) async {});
+    await pump(tester, kind: EntryKind.expense);
+
+    await openPicker(tester);
+    await tester.tap(find.text('Moradia'));
+    await tester.pumpAndSettle();
+    await openPicker(tester);
+    await tester.tap(
+      find.byKey(ValueKey('category_delete_${petCategory.key}')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('category_delete_confirm')));
+    await tester.pumpAndSettle();
+    await tester.tapAt(Offset.zero);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Moradia'), findsOneWidget);
   });
 
   testWidgets('switches between expense and income in a new entry', (
@@ -584,6 +695,7 @@ void main() {
     await pump(tester, kind: EntryKind.expense);
 
     expect(find.text('Nova despesa'), findsOneWidget);
+    await openPicker(tester);
     await tester.tap(find.text('Moradia'));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('entry_nature')), findsOneWidget);
@@ -593,7 +705,10 @@ void main() {
 
     expect(find.text('Nova receita'), findsOneWidget);
     expect(find.text('Moradia'), findsNothing);
+    await openPicker(tester);
     expect(find.text('Salário'), findsOneWidget);
+    await tester.tapAt(Offset.zero);
+    await tester.pumpAndSettle();
     expect(find.byKey(const Key('entry_nature')), findsNothing);
     expect(find.byKey(const Key('entry_installments')), findsNothing);
     verify(() => repository.categories(EntryKind.income)).called(1);
