@@ -20,6 +20,7 @@ void main() {
     'amount_cents': null,
     'percent_bps': 1000,
     'reserve_account_id': null,
+    'category_id': null,
     'position': 1,
     'created_at': '2026-11-20T10:00:00Z',
     'updated_at': '2026-11-20T10:00:00Z',
@@ -50,6 +51,7 @@ void main() {
         'amount_cents': 1000,
         'percent_bps': null,
         'reserve_account_id': null,
+        'category_id': 'cat-gifts',
         'used': true,
         'allocation_id': 'allocation-1',
         'used_on': '2026-11-20',
@@ -99,7 +101,11 @@ void main() {
 
     expect(
       await repository.createTarget(
-        targetDraft.copyWith(amountCents: 500, reserveAccountId: 'account'),
+        targetDraft.copyWith(
+          amountCents: 500,
+          reserveAccountId: 'account',
+          categoryId: 'cat-gifts',
+        ),
       ),
       fixedIncome,
     );
@@ -111,6 +117,7 @@ void main() {
       'amount_cents': null,
       'percent_bps': 1000,
       'reserve_account_id': 'account',
+      'category_id': 'cat-gifts',
     });
   });
 
@@ -136,6 +143,7 @@ void main() {
       'amount_cents': 1000,
       'percent_bps': null,
       'reserve_account_id': null,
+      'category_id': null,
     });
   });
 

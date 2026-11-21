@@ -40,7 +40,11 @@ void main() {
       tester,
       BlocProvider(
         create: (_) => started(
-          AllocationCubit(repository, reserveRepositoryWith(reserveSummary)),
+          AllocationCubit(
+            repository,
+            reserveRepositoryWith(reserveSummary),
+            allocationCategoriesRepository(),
+          ),
           (cubit) => cubit.load(month: november),
         ),
         child: AllocationPage(today: today ?? DateTime(2026, 11, 20)),
@@ -59,10 +63,12 @@ void main() {
     expect(find.text('novembro de 2026'), findsOneWidget);
     expect(find.text(r'R$ 94,00'), findsOneWidget);
     expect(find.text(r'R$ 84,00'), findsOneWidget);
-    expect(find.text('Renda fixa'), findsOneWidget);
+    expect(find.text('Renda fixa'), findsNWidgets(2));
     expect(find.text('10% da sobra'), findsOneWidget);
     expect(
-      find.text(r'Valor fixo de R$ 10,00 · Usado em 20/11/2026'),
+      find.text(
+        r'Presentes e doações · Valor fixo de R$ 10,00 · Usado em 20/11/2026',
+      ),
       findsOneWidget,
     );
     expect(
@@ -207,10 +213,56 @@ void main() {
       find.text(
         routeMarker(
           AppRoutes.allocationTargetForm,
-          const AllocationTargetFormArgs(accounts: [treasury, idle]),
+          const AllocationTargetFormArgs(
+            accounts: [treasury, idle],
+            categories: allocationCategories,
+          ),
         ),
       ),
       findsOneWidget,
+    );
+  });
+
+  testWidgets('charts the split by category, destination and what is left', (
+    tester,
+  ) async {
+    when(() => repository.plan(any())).thenAnswer(
+      (_) async => novemberPlan.copyWith(
+        unallocatedCents: 1000,
+        items: [
+          ...novemberPlan.items,
+          const AllocationItem(
+            targetId: 'target-4',
+            name: 'Viagem',
+            mode: AllocationMode.percent,
+            amountCents: 0,
+            percentBps: 500,
+          ),
+        ],
+      ),
+    );
+    await pump(tester);
+
+    final chart = find.byKey(const Key('allocation_chart'));
+    expect(find.text('Como a sobra se divide'), findsOneWidget);
+    for (final label in [
+      'Renda fixa',
+      'Presentes e doações',
+      'Reserva',
+      'Sem destino',
+      '9%',
+      '10%',
+      '72%',
+    ]) {
+      expect(
+        find.descendant(of: chart, matching: find.text(label)),
+        findsWidgets,
+        reason: label,
+      );
+    }
+    expect(
+      find.descendant(of: chart, matching: find.text('Viagem')),
+      findsNothing,
     );
   });
 

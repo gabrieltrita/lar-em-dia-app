@@ -171,6 +171,7 @@ void main() {
         code: 'validation_failed',
         details: {
           'mode': [FieldError(code: 'taken', message: 'taken')],
+          'category_id': [FieldError(code: 'inclusion', message: 'inclusion')],
         },
       ),
     );
@@ -181,6 +182,69 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Como dividir:'), findsOneWidget);
+    expect(find.textContaining('Categoria:'), findsOneWidget);
     expect(popped, isEmpty);
+  });
+
+  testWidgets('capitalizes the name and picks a category', (tester) async {
+    await pumpForm(
+      tester,
+      const AllocationTargetFormArgs(
+        remainderTaken: true,
+        categories: allocationCategories,
+      ),
+    );
+
+    await tester.enterText(find.byKey(const Key('allocation_name')), 'pet');
+    await tester.enterText(find.byKey(const Key('allocation_percent')), '5');
+    await tester.tap(find.byKey(const Key('allocation_category')));
+    await tester.pumpAndSettle();
+    expect(find.text('Surplus allocation'), findsNothing);
+    await tester.tap(find.text('Presentes e doações').last);
+    await tester.pumpAndSettle();
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+
+    verify(
+      () => repository.createTarget(
+        const AllocationTargetDraft(
+          name: 'Pet',
+          mode: AllocationMode.percent,
+          percentBps: 500,
+          categoryId: 'cat-gifts',
+        ),
+      ),
+    ).called(1);
+  });
+
+  testWidgets('keeps the category of the destination being edited', (
+    tester,
+  ) async {
+    await pumpForm(
+      tester,
+      const AllocationTargetFormArgs(
+        existing: charity,
+        categories: allocationCategories,
+      ),
+    );
+
+    expect(find.text('Presentes e doações'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('allocation_category')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sem categoria').last);
+    await tester.pumpAndSettle();
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+
+    verify(
+      () => repository.updateTarget(
+        'target-2',
+        const AllocationTargetDraft(
+          name: 'Caridade',
+          mode: AllocationMode.fixed,
+          amountCents: 1000,
+        ),
+      ),
+    ).called(1);
   });
 }

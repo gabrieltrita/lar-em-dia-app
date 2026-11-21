@@ -142,10 +142,12 @@ On Início the card shows the net total, the coverage and each account; with the
 
 "Distribuir sobra do mês" in Mais opens `/allocation` (lar-em-dia-api README feature 26). The user creates destinations (renda fixa, investimentos, caridade, reserva...) with a fixed amount, a percentage of the month's leftover or "O que sobrar" (only one), optionally linked to a reserve account. The page shows the month switcher, the month's leftover (`base_cents`, the projected closing balance plus what was already used), what was used, the closing balance now and what has no destination, and one row per destination with the amount the API planned. The app never splits the money itself: it shows `GET /allocation_plan`.
 
+Each destination can carry an expense category (`category_id`, from the categories loaded for expenses, without `surplus_allocation`); rows show its label and a pie chart ("Como a sobra se divide") groups the planned and used amounts by category, or by destination name when there is none, plus what has no destination. The name field starts with an uppercase letter (`CapitalizeFirstFormatter`). The home page also has a "Distribuir sobra do mês" shortcut.
+
 | Route | What it does |
 |---|---|
 | `/allocation` | Ticking a destination asks for the amount (the planned one by default) and calls `POST /allocations`, which records a paid expense (or a reserve deposit) so the money leaves the month's closing balance; unticking undoes it after confirmation (`insufficient_reserve` when a later reserve withdrawal needs it). Future months cannot be ticked. The menu edits or deletes a destination; what was used stays in the entries |
-| `/allocation/target` | Create or edit a destination (`extra` is an `AllocationTargetFormArgs` with the reserve accounts, the destination and whether a remainder already exists) |
+| `/allocation/target` | Create or edit a destination (`extra` is an `AllocationTargetFormArgs` with the reserve accounts, the expense categories, the destination and whether a remainder already exists) |
 
 The demo build does not answer these endpoints.
 

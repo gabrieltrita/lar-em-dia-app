@@ -18,7 +18,9 @@ import 'package:lar_em_dia/core/widgets/skeleton.dart';
 import 'package:lar_em_dia/features/allocation/domain/allocation.dart';
 import 'package:lar_em_dia/features/allocation/presentation/cubits/allocation_cubits.dart';
 import 'package:lar_em_dia/features/allocation/presentation/widgets/allocation_labels.dart';
+import 'package:lar_em_dia/features/allocation/presentation/widgets/allocation_split_chart.dart';
 import 'package:lar_em_dia/features/allocation/presentation/widgets/use_allocation_dialog.dart';
+import 'package:lar_em_dia/features/entries/presentation/widgets/category_label.dart';
 import 'package:lar_em_dia/features/shell/presentation/finance_changes.dart';
 import 'package:lar_em_dia/l10n/gen/app_localizations.dart';
 
@@ -89,6 +91,7 @@ Future<void> openTargetForm(
     AppRoutes.allocationTargetForm,
     extra: AllocationTargetFormArgs(
       accounts: view.accounts,
+      categories: view.categories,
       existing: existing,
       remainderTaken: view.targets.any(
         (target) =>
@@ -116,6 +119,7 @@ class _AllocationContent extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 96),
       children: [
         _Summary(plan: plan),
+        AllocationSplitChart(view: view),
         if (plan.baseCents <= 0)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -245,6 +249,7 @@ class _ItemTile extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final account = view.accountName(item.reserveAccountId);
     final target = view.target(item.targetId);
+    final category = view.category(item.categoryId);
     return ListTile(
       leading: Checkbox(
         key: Key('allocation_use_${item.targetId}'),
@@ -256,6 +261,7 @@ class _ItemTile extends StatelessWidget {
       title: Text(item.name),
       subtitle: Text(
         [
+          if (category != null) categoryLabel(l10n, category),
           item.describe(l10n, target),
           if (account != null) l10n.allocationReserveSummary(account),
           if (item.usedOn case final usedOn?)

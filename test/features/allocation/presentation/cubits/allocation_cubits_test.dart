@@ -27,10 +27,12 @@ void main() {
     plan: novemberPlan,
     targets: allocationTargets,
     accounts: reserveSummary.accounts,
+    categories: allocationCategories,
   );
   final loaded = AllocationState(month: november, view: LoadState.loaded(view));
 
-  AllocationCubit build() => AllocationCubit(repository, reserve);
+  AllocationCubit build() =>
+      AllocationCubit(repository, reserve, allocationCategoriesRepository());
 
   group('AllocationCubit', () {
     test('starts in the current month', () {
@@ -116,6 +118,8 @@ void main() {
 
   test('finds targets and account names in the view', () {
     expect(view.target('target-2'), charity);
+    expect(view.category('cat-gifts'), giftsCategory);
+    expect(view.category(null), isNull);
     expect(view.target('missing'), isNull);
     expect(view.accountName('reserve-account-1'), 'Tesouro Selic');
     expect(view.accountName(null), isNull);

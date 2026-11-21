@@ -7,6 +7,9 @@ import 'package:lar_em_dia/core/network/api_error.dart';
 import 'package:lar_em_dia/core/state/load_state.dart';
 import 'package:lar_em_dia/features/allocation/domain/allocation.dart';
 import 'package:lar_em_dia/features/allocation/domain/allocation_repository.dart';
+import 'package:lar_em_dia/features/entries/domain/category.dart';
+import 'package:lar_em_dia/features/entries/domain/entry.dart';
+import 'package:lar_em_dia/features/entries/domain/entry_repository.dart';
 import 'package:lar_em_dia/features/reserve/domain/reserve.dart';
 import 'package:lar_em_dia/features/reserve/domain/reserve_repository.dart';
 
@@ -18,6 +21,7 @@ abstract class AllocationView with _$AllocationView {
     required AllocationPlan plan,
     required List<AllocationTarget> targets,
     @Default([]) List<ReserveAccount> accounts,
+    @Default([]) List<Category> categories,
   }) = _AllocationView;
 
   const new _();
@@ -27,6 +31,9 @@ abstract class AllocationView with _$AllocationView {
 
   String? accountName(String? id) =>
       accounts.where((account) => account.id == id).firstOrNull?.name;
+
+  Category? category(String? id) =>
+      categories.where((category) => category.id == id).firstOrNull;
 }
 
 @freezed
@@ -40,11 +47,12 @@ abstract class AllocationState with _$AllocationState {
 
 @injectable
 class AllocationCubit extends Cubit<AllocationState> {
-  new(this._repository, this._reserve)
+  new(this._repository, this._reserve, this._entries)
     : super(AllocationState(month: Dates.firstOfMonth(DateTime.now())));
 
   final AllocationRepository _repository;
   final ReserveRepository _reserve;
+  final EntryRepository _entries;
 
   Future<void> load({bool quiet = false, DateTime? month}) async {
     final selected = month ?? state.month;
@@ -55,7 +63,8 @@ class AllocationCubit extends Cubit<AllocationState> {
       final plan = _repository.plan(selected);
       final targets = _repository.targets();
       final summary = _reserve.summary();
-      await Future.wait([plan, targets, summary]);
+      final categories = _entries.categories(EntryKind.expense);
+      await Future.wait([plan, targets, summary, categories]);
       emit(
         AllocationState(
           month: selected,
@@ -64,6 +73,7 @@ class AllocationCubit extends Cubit<AllocationState> {
               plan: await plan,
               targets: await targets,
               accounts: (await summary).accounts,
+              categories: await categories,
             ),
           ),
         ),
@@ -102,6 +112,7 @@ class AllocationCubit extends Cubit<AllocationState> {
 abstract class AllocationTargetFormArgs with _$AllocationTargetFormArgs {
   const factory({
     @Default([]) List<ReserveAccount> accounts,
+    @Default([]) List<Category> categories,
     AllocationTarget? existing,
     @Default(false) bool remainderTaken,
   }) = _AllocationTargetFormArgs;
