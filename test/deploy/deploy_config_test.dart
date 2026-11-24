@@ -230,6 +230,57 @@ void main() {
     });
   });
 
+  group('Demo workflow', () {
+    final demo = readYaml('.github/workflows/demo.yml');
+    final demoJobs = demo['jobs'] as YamlMap;
+    final build = demoJobs['build'] as YamlMap;
+    final publish = demoJobs['publish'] as YamlMap;
+    final buildSteps = (build['steps'] as YamlList).cast<YamlMap>();
+
+    YamlMap buildStep(String name) =>
+        buildSteps.firstWhere((step) => step['name'] == name);
+
+    test('publishes main to GitHub Pages after the CI', () {
+      final on = demo['on'] as YamlMap;
+      expect((on['push'] as YamlMap)['branches'], ['main']);
+      expect(on.containsKey('workflow_dispatch'), isTrue);
+      expect((demoJobs['ci'] as YamlMap)['uses'], './.github/workflows/ci.yml');
+      expect(build['needs'], 'ci');
+      expect(build['if'], "vars.APP_HOST != ''");
+      expect(publish['needs'], 'build');
+      expect((publish['environment'] as YamlMap)['name'], 'github-pages');
+    });
+
+    test('builds the demo without an API under the repository path', () {
+      final run = '${buildStep('Build demo')['run']}';
+      expect(run, contains('--dart-define=DEMO=true'));
+      expect(run, isNot(contains('API_BASE_URL')));
+      expect(run, isNot(contains('GOOGLE_CLIENT_ID')));
+      expect(run, contains(r'--base-href="$BASE_HREF"'));
+      expect(
+        (build['env'] as YamlMap)['BASE_HREF'],
+        r'/${{ github.event.repository.name }}/',
+      );
+    });
+
+    test('keeps the demo out of search engines and points to production', () {
+      expect(
+        buildStep('Prepare search engine files')['run'],
+        r'tool/prepare_web_build.sh web "https://$APP_HOST" false',
+      );
+      expect((build['env'] as YamlMap)['APP_HOST'], r'${{ vars.APP_HOST }}');
+    });
+
+    test('grants the Pages permissions only to the publish job', () {
+      expect(demo['permissions'], {'contents': 'read'});
+      expect(build.containsKey('permissions'), isFalse);
+      expect(publish['permissions'], {'pages': 'write', 'id-token': 'write'});
+      for (final step in buildSteps) {
+        expect('${step['run'] ?? ''}', isNot(contains(r'${{')));
+      }
+    });
+  });
+
   group('Kamal configuration', () {
     final config = File('config/deploy.yml').readAsStringSync();
 
