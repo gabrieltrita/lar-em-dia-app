@@ -1,0 +1,63 @@
+name: Demo
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: demo-pages
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  build:
+    if: vars.APP_HOST != ''
+    needs: ci
+    runs-on: ubuntu-latest
+    env:
+      APP_HOST: ${{ vars.APP_HOST }}
+      BASE_HREF: /${{ github.event.repository.name }}/
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.9
+          channel: stable
+          cache: true
+
+      - name: Prepare search engine files
+        run: tool/prepare_web_build.sh web "https://$APP_HOST" false
+
+      - name: Build demo
+        run: |
+          flutter pub get
+          dart run build_runner build --delete-conflicting-outputs
+          flutter build web --release --no-web-resources-cdn --dart-define=DEMO=true --dart-define=SITE_URL="https://$APP_HOST" --base-href="$BASE_HREF" --build-number="$GITHUB_RUN_NUMBER"
+
+      - name: Upload demo
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: build/web
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publish to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
